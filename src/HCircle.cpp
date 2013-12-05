@@ -902,7 +902,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click midpoint");}
-	wxString BitmapPath(){return _T("click_circle_midpoint");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_circle_midpoint.png");}
 };
 
 ClickMidpointOfCircle click_midpoint_of_circle;
@@ -927,7 +927,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-top point");}
-	wxString BitmapPath(){return _T("click_circle_centre_top");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_circle_centre_top.png");}
 };
 
 ClickNorthernMidpointOfCircle click_northern_midpoint_of_circle;
@@ -951,7 +951,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-bottom point");}
-	wxString BitmapPath(){return _T("click_circle_centre_bottom");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_circle_centre_bottom.png");}
 };
 
 ClickSouthernMidpointOfCircle click_southern_midpoint_of_circle;
@@ -975,7 +975,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-right point");}
-	wxString BitmapPath(){return _T("click_circle_centre_right");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_circle_centre_right.png");}
 };
 
 ClickEasternMidpointOfCircle click_eastern_midpoint_of_circle;
@@ -999,7 +999,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-left point");}
-	wxString BitmapPath(){return _T("click_circle_centre_left");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_circle_centre_left.png");}
 };
 
 ClickWesternMidpointOfCircle click_western_midpoint_of_circle;

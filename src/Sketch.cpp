@@ -3,6 +3,7 @@
 // This program is released under the BSD license. See the file COPYING for details.
 
 #include "stdafx.h"
+#include "ConversionTools.h"
 #include "Sketch.h"
 #include "HLine.h"
 #include "HArc.h"
@@ -21,6 +22,7 @@
 
 #include "DigitizeMode.h"
 #include "Drawing.h"
+#include "Face.h"
 
 extern CHeeksCADInterface heekscad_interface;
 
@@ -256,7 +258,7 @@ public:
 		wxGetApp().Repaint();
 	}
 	const wxChar* GetTitle(){return _("Split Sketch");}
-	wxString BitmapPath(){return _T("splitsketch");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/splitsketch.png");}
 };
 
 static SplitSketch split_sketch;
@@ -279,7 +281,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Convert sketch to face");}
-	wxString BitmapPath(){return _T("la2face");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/la2face.png");}
 };
 
 static ConvertSketchToFace convert_sketch_to_face;
@@ -303,7 +305,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Convert sketch to wire");}
-	wxString BitmapPath(){return _T("la2face");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/la2face.png");}
 };
 
 static ConvertSketchToWire convert_sketch_to_wire;
@@ -362,7 +364,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Copy Parallel");}
-	wxString BitmapPath(){return _T("la2face");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/la2face.png");}
 };
 
 static CopyParallel copy_parallel;
@@ -380,7 +382,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Split arcs to little lines");}
-	wxString BitmapPath(){return _T("splitarcs");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/splitarcs.png");}
 };
 
 static SketchArcsToLines sketch_arcs_to_lines;
@@ -390,7 +392,7 @@ class SketchEnterSketchMode: public Tool
 public:
 	void Run(){wxGetApp().EnterSketchMode(sketch_for_tools);}
 	const wxChar* GetTitle(){return _("Enter Sketch Mode");}
-	wxString BitmapPath(){return _T("sketchmode");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/sketchmode.png");}
 };
 
 static SketchEnterSketchMode enter_sketch_mode;
@@ -414,7 +416,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click midpoint");}
-	wxString BitmapPath(){return _T("click_sketch_midpoint");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_sketch_midpoint.png");}
 };
 
 ClickMidpointOfSketch click_midpoint_of_sketch;
@@ -439,7 +441,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-top point");}
-	wxString BitmapPath(){return _T("click_sketch_centre_top");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_sketch_centre_top.png");}
 };
 
 ClickNorthernMidpointOfSketch click_northern_midpoint_of_sketch;
@@ -463,7 +465,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-bottom point");}
-	wxString BitmapPath(){return _T("click_sketch_centre_bottom");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_sketch_centre_bottom.png");}
 };
 
 ClickSouthernMidpointOfSketch click_southern_midpoint_of_sketch;
@@ -487,7 +489,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-right point");}
-	wxString BitmapPath(){return _T("click_sketch_centre_right");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_sketch_centre_right.png");}
 };
 
 ClickEasternMidpointOfSketch click_eastern_midpoint_of_sketch;
@@ -511,7 +513,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre-left point");}
-	wxString BitmapPath(){return _T("click_sketch_centre_left");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_sketch_centre_left.png");}
 };
 
 ClickWesternMidpointOfSketch click_western_midpoint_of_sketch;

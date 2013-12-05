@@ -341,7 +341,7 @@ public:
 		pTextForSketchTool = NULL;
 	}
 	const wxChar* GetTitle(){return _("Make a Sketch");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Convert the lines and arcs that make up this text into a sketch object.");}
 };
 static TextToSketch text_to_sketch;
@@ -357,7 +357,7 @@ public:
 		pOrientationForTextTool = NULL;
 	}
 	const wxChar* GetTitle(){return _("Add Orientation Modifier");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Add graphics to orient text");}
 };
 static AddOrientationModifierTool orientation_tool;

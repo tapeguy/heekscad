@@ -53,8 +53,6 @@ CObjectIdsCtrl::CObjectIdsCtrl(wxWindow* parent, wxWindowID id)
 {
 }
 
-#ifdef OP_SKETCHES_AS_CHILDREN
-
 void CObjectIdsCtrl::GetAddChildren(HeeksObj* object, int group_type)
 {
 #ifdef HEEKSCAD
@@ -117,7 +115,6 @@ void CObjectIdsCtrl::SetFromChildren(HeeksObj* object, int group_type)
 	wxTextCtrl::SetValue(str);
 }
 
-#else
 void CObjectIdsCtrl::GetIDList(std::list<int> &id_list)
 {
 	wxString str = wxTextCtrl::GetValue();
@@ -156,4 +153,3 @@ void CObjectIdsCtrl::SetFromIDList(std::list<int> &id_list)
 	wxTextCtrl::SetValue(str);
 }
 
-#endif

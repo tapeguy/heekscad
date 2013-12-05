@@ -1258,7 +1258,7 @@ public:
 		coord_system_for_Tool->PickFrom3Points();
 	}
 	const wxChar* GetTitle(){return _("Set position and orientation by picking 3 points");}
-	wxString BitmapPath(){return _T("coords3");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/coords3.png");}
 };
 
 static CoordSystem3Points coord_system_3_points;
@@ -1272,7 +1272,7 @@ public:
 		wxGetApp().Repaint();
 	}
 	const wxChar* GetTitle(){return _("Set this coordinate system as the active one");}
-	wxString BitmapPath(){return _T("setcoordsys");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/setcoordsys.png");}
 };
 
 static SetCoordSystemActive coord_system_set;
@@ -1296,7 +1296,7 @@ public:
 		wxGetApp().Changed();
 	}
 	const wxChar* GetTitle(){return _("Transform selected items to world coordinates");}
-	wxString BitmapPath(){return _T("trsfw");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/trsfw.png");}
 };
 
 static TransformToWorld transform_to_world;

@@ -295,7 +295,7 @@ class DeleteMarkedListTool : public Tool
 public:
 	const wxChar* GetTitle() {return _("Delete Marked Items");}
 	void Run() {wxGetApp().DeleteMarkedItems();}
-	wxString BitmapPath(){return _T("delete");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/delete.png");}
 } delete_marked_list_tool;
 
 class CopyMarkedList: public Tool
@@ -303,7 +303,7 @@ class CopyMarkedList: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Copy");}
-	wxString BitmapPath(){return _T("copy");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/copy.png");}
 	const wxChar* GetToolTip(){return _("Copies the selected items to the clipboard");}
 } copy_marked_list;
 
@@ -320,7 +320,7 @@ public:
 	PasteTool():m_paste_into(NULL){}
 	void Run();
 	const wxChar* GetTitle(){return m_paste_into ? _("Paste Into") : _("Paste");}
-	wxString BitmapPath(){return _T("paste");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/paste.png");}
 	const wxChar* GetToolTip(){return _("Paste items from the clipboard to the drawing");}
 } paste_tool;
 
@@ -377,9 +377,7 @@ void MarkedList::CutSelectedItems()
 
 void MarkedList::CopySelectedItems()
 {
-	wxStandardPaths sp;
-	sp.GetTempDir();
-	wxFileName temp_file(sp.GetTempDir().c_str(), _T("temp_Heeks_clipboard_file.xml"));
+	wxFileName temp_file(wxGetApp().GetTmpFolder(), _T("temp_Heeks_clipboard_file.xml"));
 
 	wxGetApp().SaveXMLFile(m_list, temp_file.GetFullPath().c_str(), true);
 

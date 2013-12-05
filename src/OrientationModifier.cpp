@@ -2,11 +2,13 @@
 
 #include "stdafx.h"
 #include "OrientationModifier.h"
+#include "ConversionTools.h"
 #include "../interface/PropertyChoice.h"
 #include "../interface/PropertyInt.h"
 #include "../interface/PropertyCheck.h"
 #include "HeeksConfig.h"
 #include <BRepAdaptor_Curve.hxx>
+
 
 void COrientationModifierParams::set_initial_values()
 {
@@ -25,10 +27,10 @@ void COrientationModifierParams::write_values_to_config()
 	HeeksConfig config;
 
 	// These values are in mm.
-	config.Write(_T("OrientationModifier_m_spacing"), m_spacing);
+	config.Write(_T("OrientationModifier_m_spacing"), (int)m_spacing);
 	config.Write(_T("OrientationModifier_number_of_rotations"), m_number_of_rotations);
 	config.Write(_T("OrientationModifier_sketch_rotates_text"), m_sketch_rotates_text);
-	config.Write(_T("OrientationModifier_justification"), m_justification);
+	config.Write(_T("OrientationModifier_justification"), (int)m_justification);
 }
 
 static void on_set_justification(int zero_based_choice, HeeksObj* object)

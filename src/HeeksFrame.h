@@ -81,11 +81,13 @@ public:
 	COptionsCanvas* m_options;
 	CInputModeCanvas* m_input_canvas;
 	wxAuiManager* m_aui_manager;
-	wxToolBar *m_toolBar;
-	wxToolBar *m_geometryBar;
-	wxToolBar *m_solidBar;
-	wxToolBar *m_viewingBar;
-	wxToolBar *m_transformBar;
+
+        wxAuiToolBar *m_toolBar;
+        wxAuiToolBar *m_geometryBar;
+        wxAuiToolBar *m_solidBar;
+        wxAuiToolBar *m_viewingBar;
+        wxAuiToolBar *m_transformBar;
+
 	wxMenuBar *m_menuBar;
 	wxMenu* m_recent_files_menu;
 	wxMenu *m_menuWindow;
@@ -111,7 +113,7 @@ public:
 	CHeeksFrame( const wxString& title, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize );
 	virtual ~CHeeksFrame();
 
-    void OnClose( wxCloseEvent& event );
+	void OnClose( wxCloseEvent& event );
 	void OnResetLayout( wxCommandEvent& event );
 	void OnSetToolBarsToLeft( wxCommandEvent& event );
 	void OnExternalButton( wxCommandEvent& event );
@@ -121,14 +123,14 @@ public:
 	void OnMove( wxMoveEvent& evt );
 	void OnKeyDown(wxKeyEvent& event);
 	void OnKeyUp(wxKeyEvent& event);
-	wxToolBarToolBase* AddToolBarTool(wxToolBar* toolbar, const wxString& title, const wxBitmap& bitmap, const wxString& caption, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&) = NULL);
-	void AddToolBarTool(wxToolBar* toolbar, Tool* tool);
-	void AddToolBarFlyout(wxToolBar* toolbar, const CFlyOutList& flyout);
+	wxAuiToolBarItem* AddToolBarTool(wxAuiToolBar* toolbar, const wxString& title, const wxBitmap& bitmap, const wxString& caption, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&) = NULL);
+	void AddToolBarTool(wxAuiToolBar* toolbar, Tool* tool);
+	void AddToolBarFlyout(wxAuiToolBar* toolbar, const CFlyOutList& flyout);
 	int MakeNextIDForTool(void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&));
 	void SetToolFunctions(int Id, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&));
-	void ClearToolBar(wxToolBar* m_toolBar);
+	void ClearToolBar(wxAuiToolBar* m_toolBar);
 	int AddMenuItem(wxMenu* menu, const wxString& text, const wxBitmap& bitmap, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&) = NULL, wxMenu* submenu = NULL, bool check_item = false);
-    void Draw(wxDC& dc);
+	void Draw(wxDC& dc);
 	void OnChangeBitmapSize();
 	void MakeMenus();
 	void AddToolBars();

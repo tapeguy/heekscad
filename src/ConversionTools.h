@@ -23,7 +23,7 @@ class ConvertAreasToSketches: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Convert areas to sketches");}
-	wxString BitmapPath(){return _T("sketch");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/sketch.png");}
 };
 
 class SketchesArcsToLines: public Tool
@@ -31,7 +31,7 @@ class SketchesArcsToLines: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Split arcs to little lines");}
-	wxString BitmapPath(){return _T("splitarcs");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/splitarcs.png");}
 };
 
 class ConvertToArea: public Tool
@@ -39,7 +39,7 @@ class ConvertToArea: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Convert to Area");}
-	wxString BitmapPath(){return _T("area");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/area.png");}
 };
 
 class AreaUnion: public Tool
@@ -47,7 +47,7 @@ class AreaUnion: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Unite Areas");}
-	wxString BitmapPath(){return _T("areaunite");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/areaunite.png");}
 };
 
 
@@ -56,7 +56,7 @@ class AreaCut: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Cut Areas");}
-	wxString BitmapPath(){return _T("areacut");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/areacut.png");}
 };
 
 
@@ -65,7 +65,7 @@ class AreaIntersect: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Intersect Areas");}
-	wxString BitmapPath(){return _T("areaintersect");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/areaintersect.png");}
 };
 
 class AreaXor: public Tool
@@ -73,7 +73,7 @@ class AreaXor: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Xor Areas");}
-	wxString BitmapPath(){return _T("areaxor");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/areaxor.png");}
 };
 
 class ConvertSketchesToFace: public Tool
@@ -81,7 +81,7 @@ class ConvertSketchesToFace: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Convert sketch to face");}
-	wxString BitmapPath(){return _T("la2face");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/la2face.png");}
 };
 
 class MakeToSketch: public Tool
@@ -89,7 +89,7 @@ class MakeToSketch: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Make To Sketch");}
-	wxString BitmapPath(){return _T("makesketch");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/makesketch.png");}
 	const wxChar* GetToolTip(){return _("Make selected objects into a new sketch");}
 };
 
@@ -98,7 +98,7 @@ class MakeEdgesToSketch: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Make To Sketch");}
-	wxString BitmapPath(){return _T("makesketch");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/makesketch.png");}
 	const wxChar* GetToolTip(){return _("Make selected edges into a new sketch");}
 };
 
@@ -107,7 +107,7 @@ class CombineSketches: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Combine sketches");}
-	wxString BitmapPath(){return _T("sketchjoin");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/sketchjoin.png");}
 	const wxChar* GetToolTip(){return _("Combine selected sketches");}
 };
 
@@ -116,7 +116,7 @@ class UniteSketches: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Unite sketches");}
-	wxString BitmapPath(){return _T("sketchunite");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/sketchunite.png");}
 	const wxChar* GetToolTip(){return _("Unite selected sketches");}
 };
 
@@ -125,7 +125,7 @@ class GroupSelected: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Group");}
-	wxString BitmapPath(){return _T("group");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/group.png");}
 	const wxChar* GetToolTip(){return _("Group selected items");}
 };
 
@@ -134,7 +134,7 @@ class UngroupSelected: public Tool
 public:
 	void Run();
 	const wxChar* GetTitle(){return _("Ungroup");}
-	wxString BitmapPath(){return _T("ungroup");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/ungroup.png");}
 	const wxChar* GetToolTip(){return _("Ungroup selected items");}
 };
 
@@ -146,7 +146,7 @@ public:
 	TransformToCoordSys():coordsys1(NULL),coordsys2(NULL){}
 	void Run();
 	const wxChar* GetTitle(){return _("Transform to Coordinate System");}
-	wxString BitmapPath(){return _T("trsf2");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/trsf2.png");}
 	const wxChar* GetToolTip(){return _("Transform selected items using two coordinate systems");}
 };
 

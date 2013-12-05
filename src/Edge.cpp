@@ -11,6 +11,8 @@
 #include "HeeksConfig.h"
 #include "Gripper.h"
 #include "../interface/PropertyLength.h"
+#include "ConversionTools.h"
+
 
 CEdge::CEdge(const TopoDS_Edge &edge):m_topods_edge(edge), m_vertex0(NULL), m_vertex1(NULL), m_midpoint_calculated(false), m_temp_attr(0){
 	GetCurveParams2(&m_start_u, &m_end_u, &m_isClosed, &m_isPeriodic);
@@ -149,7 +151,7 @@ class FilletTool:public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Blend edge");}
-	wxString BitmapPath(){return _T("edgeblend");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/edgeblend.png");}
 	void Run(){
 		double rad = 2.0;
 		HeeksConfig config;
@@ -169,7 +171,7 @@ class ChamferTool:public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Chamfer");}
-	wxString BitmapPath(){return _T("edgeblend");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/edgeblend.png");}
 	void Run(){
 		double rad = 2.0;
 		HeeksConfig config;
@@ -189,7 +191,7 @@ class EdgeToSketchTool:public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Make a sketch from edge");}
-	wxString BitmapPath(){return _T("edge2sketch");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/edge2sketch.png");}
 	void Run(){
 		CSketch* new_object = new CSketch();
 		ConvertEdgeToSketch2(edge_for_tools->Edge(), new_object, FaceToSketchTool::deviation);
@@ -209,7 +211,7 @@ class SelectLinkedEdgesTool:public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Select Flat Linked Edges");}
-	wxString BitmapPath(){return _T("linked");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/linked.png");}
 	void Run(){
 		if(edge_for_tools == NULL)return;
 		std::list<CEdge*> live_edges;

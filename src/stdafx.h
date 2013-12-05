@@ -184,56 +184,57 @@
 #include <UnitsAPI.hxx>
 
 #include <wx/aui/aui.h>
-#include "wx/brush.h"
-#include "wx/button.h"
+#include <wx/aui/auibar.h>
+#include <wx/brush.h>
+#include <wx/button.h>
 #include <wx/clipbrd.h>
 #include <wx/checklst.h>
-#include "wx/choice.h"
+#include <wx/choice.h>
 #include <wx/choicdlg.h>
 #include <wx/cmdline.h>
-#include "wx/combobox.h"
+#include <wx/combobox.h>
 #include <wx/confbase.h>
 #include <wx/config.h>
-#include "wx/cursor.h"
+#include <wx/cursor.h>
 #include <wx/dc.h>
-#include "wx/dcclient.h"
+#include <wx/dcclient.h>
 #include <wx/dcmirror.h>
-#include "wx/defs.h"
-#include "wx/dirdlg.h"
-#include "wx/dnd.h"
+#include <wx/defs.h>
+#include <wx/dirdlg.h>
+#include <wx/dnd.h>
 #include <wx/dynlib.h>
-#include "wx/event.h"
+#include <wx/event.h>
 #include <wx/fileconf.h>
 #include <wx/filedlg.h>
 #include <wx/filename.h>
 #include <wx/glcanvas.h>
-#include "wx/hash.h"
+#include <wx/hash.h>
 #include <wx/image.h>
 #include <wx/imaglist.h>
-#include "wx/intl.h"
-#include "wx/layout.h"
-#include "wx/log.h"
+#include <wx/intl.h>
+#include <wx/layout.h>
+#include <wx/log.h>
 #include <wx/menuitem.h>
-#include "wx/msgdlg.h"
-#include "wx/object.h"
-#include "wx/panel.h"
-#include "wx/pen.h"
-#include "wx/popupwin.h"
+#include <wx/msgdlg.h>
+#include <wx/object.h>
+#include <wx/panel.h>
+#include <wx/pen.h>
+#include <wx/popupwin.h>
 #include <wx/print.h>
 #include <wx/printdlg.h>
-#include "wx/settings.h"
-#include "wx/scrolwin.h"
-#include "wx/sizer.h"
-#include "wx/stattext.h"
-#include <wx/stdpaths.h>
-#include "wx/string.h"
+#include <wx/settings.h>
+#include <wx/scrolwin.h>
 #include <wx/sizer.h>
-#include "wx/textctrl.h"
-#include "wx/textdlg.h"
+#include <wx/stattext.h>
+#include <wx/stdpaths.h>
+#include <wx/string.h>
+#include <wx/sizer.h>
+#include <wx/textctrl.h>
+#include <wx/textdlg.h>
 #include <wx/toolbar.h>
 #include <wx/tooltip.h>
 #include <wx/treectrl.h>
-#include "wx/window.h"
+#include <wx/window.h>
 #include <wx/tokenzr.h>
 
 #include "../tinyxml/tinyxml.h"
@@ -280,20 +281,17 @@ extern "C" {
 #include "../interface/ObjectCanvas.h"
 #include "HeeksCAD.h"
 
-#include "ConversionTools.h"
 #include "CoordinateSystem.h"
-#include "Face.h"
 #include "Edge.h"
 #include "Loop.h"
 #include "Gripper.h"
 #include "Geom.h"
-//#include "Loop.h"
 #include "MarkedList.h"
 #include "Shape.h"
 #include "Sketch.h"
 #include "Solid.h"
 
-// Visual Studio 2010 work arround
+// Visual Studio 2010 workaround
 
 #if _MSC_VER == 1600
 	#include <iterator>

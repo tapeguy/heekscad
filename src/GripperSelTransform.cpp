@@ -201,6 +201,7 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			double old_x = make_vector(from) * object_x - gp_Vec(scale_centre_point.XYZ()) * object_x;
 			double new_x = make_vector(to) * object_x - gp_Vec(scale_centre_point.XYZ()) * object_x;
 			if(fabs(old_x) < 0.000000001)return;
+			if(fabs(new_x) < 0.000000001)return;
 			double scale = new_x/old_x;
 			double m[16] = {scale, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 			mat = object_mat * make_matrix(m) * object_mat.Inverted();
@@ -214,6 +215,7 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			double old_y = make_vector(from) * object_y - gp_Vec(scale_centre_point.XYZ()) * object_y;
 			double new_y = make_vector(to) * object_y - gp_Vec(scale_centre_point.XYZ()) * object_y;
 			if(fabs(old_y) < 0.000000001)return;
+			if(fabs(new_y) < 0.000000001)return;
 			double scale = new_y/old_y;
 			double m[16] = {1, 0, 0, 0, 0, scale, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 			mat = object_mat * make_matrix(m) * object_mat.Inverted();
@@ -227,6 +229,7 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			double old_z = make_vector(from) * object_z - gp_Vec(scale_centre_point.XYZ()) * object_z;
 			double new_z = make_vector(to) * object_z - gp_Vec(scale_centre_point.XYZ()) * object_z;
 			if(fabs(old_z) < 0.000000001)return;
+			if(fabs(new_z) < 0.000000001)return;
 			double scale = new_z/old_z;
 			double m[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, scale, 0, 0, 0, 0, 1};
 			mat = object_mat * make_matrix(m) * object_mat.Inverted();

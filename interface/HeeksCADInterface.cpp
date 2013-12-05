@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include "HeeksCADInterface.h"
 #include "HeeksFrame.h"
+#include "ConversionTools.h"
 #include "PropertiesCanvas.h"
 #include "MarkedList.h"
 #include "HLine.h"
@@ -53,7 +54,6 @@
 #include "ViewZooming.h"
 #include "ViewPanning.h"
 #include "Sectioning.h"
-#include "../libarea/Area.h"
 #include "HArea.h"
 
 double CHeeksCADInterface::GetTolerance()
@@ -133,7 +133,7 @@ wxAuiManager* CHeeksCADInterface::GetAuiManager()
 	return wxGetApp().m_frame->m_aui_manager;
 }
 
-void CHeeksCADInterface::AddToolBarButton(wxToolBar* toolbar, const wxString& title, const wxBitmap& bitmap, const wxString& caption, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&))
+void CHeeksCADInterface::AddToolBarButton(wxAuiToolBar* toolbar, const wxString& title, const wxBitmap& bitmap, const wxString& caption, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&))
 {
 	wxGetApp().m_frame->AddToolBarTool(toolbar, title, bitmap, caption, onButtonFunction, onUpdateButtonFunction);
 }
@@ -154,7 +154,7 @@ void CHeeksCADInterface::AddFlyoutButton(const wxString& title, const wxBitmap& 
 	}
 }
 
-void CHeeksCADInterface::EndToolBarFlyout(wxToolBar* toolbar)
+void CHeeksCADInterface::EndToolBarFlyout(wxAuiToolBar* toolbar)
 {
 	if(toolbar_flyout)
 	{
@@ -1437,12 +1437,12 @@ void CHeeksCADInterface::RegisterIsModifiedFn( bool(*callbackfunc)() )
 	wxGetApp().RegisterIsModifiedFn(callbackfunc);
 }
 
-void CHeeksCADInterface::RegisterToolBar( wxToolBarBase* toolbar )
+void CHeeksCADInterface::RegisterToolBar( wxAuiToolBar* toolbar )
 {
 	wxGetApp().m_external_toolbars.push_back(toolbar);
 }
 
-void CHeeksCADInterface::RemoveToolBar( wxToolBarBase* toolbar )
+void CHeeksCADInterface::RemoveToolBar( wxAuiToolBar* toolbar )
 {
 	wxGetApp().m_external_toolbars.remove(toolbar);
 }
@@ -1998,19 +1998,19 @@ void CHeeksCADInterface::SetNoCreationMode()
 
 	// from the main toolbar
 	// remove "Paste" button
-	wxGetApp().m_frame->m_toolBar->DeleteToolByPos(5);
+	wxGetApp().m_frame->m_toolBar->DeleteByIndex(5);
 
 	// remove "Copy" button
-	wxGetApp().m_frame->m_toolBar->DeleteToolByPos(4);
+	wxGetApp().m_frame->m_toolBar->DeleteByIndex(4);
 
 	// remove "Cut" button
-	wxGetApp().m_frame->m_toolBar->DeleteToolByPos(3);
+	wxGetApp().m_frame->m_toolBar->DeleteByIndex(3);
 
 	// remove "Save" button
-	wxGetApp().m_frame->m_toolBar->DeleteToolByPos(2);
+	wxGetApp().m_frame->m_toolBar->DeleteByIndex(2);
 
 	// remove "New" button
-	wxGetApp().m_frame->m_toolBar->DeleteToolByPos(0);
+	wxGetApp().m_frame->m_toolBar->DeleteByIndex(0);
 
 	// remove separator
 	wxMenu* menuTranform = wxGetApp().m_frame->GetMenuBar()->GetMenu(6);

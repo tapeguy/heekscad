@@ -171,7 +171,7 @@ class EndDrawing:public Tool{
 public:
 	void Run(){if(drawing_for_tools->DragDoneWithXOR())wxGetApp().m_current_viewport->EndDrawFront();drawing_for_tools->clear_drawing_objects(2); wxGetApp().SetInputMode(wxGetApp().m_select_mode);}
 	const wxChar* GetTitle(){return _("Stop drawing");}
-	wxString BitmapPath(){return _T("enddraw");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/enddraw.png");}
 	const wxChar* GetToolTip(){return _("Finish drawing");}
 };
 
@@ -189,7 +189,7 @@ public:
 		m_drawing->AddPoint();
 	}
 	const wxChar* GetTitle(){return _("Add point");}
-	wxString BitmapPath(){return _T("add");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/add.png");}
 	const wxChar* GetToolTip(){return _("Add a point to drawing");}
 };
 
@@ -206,7 +206,7 @@ public:
 		m_drawing->m_getting_position = true;
 	}
 	const wxChar* GetTitle(){return _("Get Position");}
-	wxString BitmapPath(){return _T("pickpos");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/pickpos.png");}
 	const wxChar* GetToolTip(){return _("Pick position without adding to the drawing");}
 };
 

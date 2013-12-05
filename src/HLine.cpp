@@ -49,7 +49,7 @@ public:
 		wxGetApp().Changed();
 	}
 	const wxChar* GetTitle(){return _("Make Cylinder On Line");}
-	wxString BitmapPath(){return _T("cylonlin");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/cylonlin.png");}
 };
 static MakeCylinderOnLine make_cylinder_on_line;
 
@@ -63,7 +63,7 @@ public:
 		wxGetApp().Changed();
 	}
 	const wxChar* GetTitle(){return _("Make Cone On Line");}
-	wxString BitmapPath(){return _T("coneonlin");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/coneonlin.png");}
 };
 static MakeConeOnLine make_cone_on_line;
 
@@ -81,7 +81,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Click Midpoint On Line");}
-	wxString BitmapPath(){return _T("click_line_midpoint");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_line_midpoint.png");}
 };
 static ClickMidpointOnLine click_midpoint_on_line;
 
@@ -97,7 +97,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Click Start Of Line");}
-	wxString BitmapPath(){return _T("click_line_end_one");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_line_end_one.png");}
 };
 static ClickStartPointOnLine click_start_point_on_line;
 
@@ -113,7 +113,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Click End Of Line");}
-	wxString BitmapPath(){return _T("click_line_end_two");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_line_end_two.png");}
 };
 static ClickEndPointOnLine click_end_point_on_line;
 

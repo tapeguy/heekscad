@@ -90,7 +90,7 @@ public:
 	// Tool's virtual functions
     virtual void Run();
 	virtual const wxChar* GetTitle(){return _("Simplify Sketch to Lines");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Pad Sketch");}
 };
 

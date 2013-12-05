@@ -7,14 +7,14 @@ endif( ${CMAKE_VERSION} STREQUAL "2.8.2" )
 
 set( CMAKE_BUILD_TYPE Debug )
 if( UNIX )
-  set( CMAKE_INSTALL_PREFIX "/usr" )
+  set( CMAKE_INSTALL_PREFIX "/usr/local" )
 else()
   set( CMAKE_INSTALL_PREFIX "c:/HeeksCAD" )
 endif()
 set( BUILD_STARTED_IN_RIGHT_DIR "true" )  #used in src/CMakeLists.txt to print a message
 
 add_definitions ( -Wall )
-FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS base core gl )
+FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS base core gl propgrid )
 
 #find OCE or OpenCASCADE
 set( CASCADE_LIBS TKernel )
@@ -37,6 +37,7 @@ if( APPLE )
   # Apple includes two different openGL implementations, for Carbon and X11.  We want X11
   set( OSX_INCLUDE_DIRS /usr/X11R6/include )
   set( OSX_LIBS -L/usr/X11R6/lib -lGL -lX11 -lGLU -lglut )
+  set ( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup" )
 endif( APPLE )
 
 INCLUDE(${wxWidgets_USE_FILE})

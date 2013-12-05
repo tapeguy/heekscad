@@ -70,7 +70,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){ return _("Delete Curve");}
-	wxString BitmapPath(){return _T("delete");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/delete.png");}
 };
 
 static DeleteCurveTool delete_selected_curve;
@@ -98,7 +98,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){ return _("Offset Area");}
-	wxString BitmapPath(){return _T("offsetarea");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/offsetarea.png");}
 };
 
 static OffsetAreaTool offset_area_tool;
@@ -126,7 +126,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){ return _("Thicken Area");}
-	wxString BitmapPath(){return _T("thickenarea");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/thickenarea.png");}
 };
 
 static ObroundAreaTool obround_area_tool;
@@ -138,7 +138,7 @@ public:
 		object_for_tool->m_area.Reorder();
 	}
 	const wxChar* GetTitle(){ return _("Reorder Area");}
-	wxString BitmapPath(){return _T("reorderarea");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/reorderarea.png");}
 };
 
 static ReorderAreaTool reorder_area_tool;
@@ -158,7 +158,7 @@ public:
 		wxGetApp().Remove(object_for_tool);
 	}
 	const wxChar* GetTitle(){ return _("Split Area");}
-	wxString BitmapPath(){return _T("areasplit");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/areasplit.png");}
 };
 
 static SplitAreaTool split_area_tool;

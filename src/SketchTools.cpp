@@ -118,7 +118,7 @@ public:
 		CPad::PadSketch(sketch,height);
 	}
 	const wxChar* GetTitle(){return _("Pad Sketch");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Pad Sketch");}
 };
 
@@ -132,7 +132,7 @@ public:
 		HPocket::PocketSketch(sketch,height);
 	}
 	const wxChar* GetTitle(){return _("Pocket Sketch");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Pocket Sketch");}
 };
 
@@ -152,7 +152,7 @@ public:
 		part->Add(sketch,NULL);
 	}
 	const wxChar* GetTitle(){return _("Make To Part");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Make To Part");}
 };
 
@@ -180,7 +180,7 @@ public:
 		pad->Add(sketch,NULL);
 	}
 	const wxChar* GetTitle(){return _("Add To Part");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Add To Part");}
 };
 
@@ -270,7 +270,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Fix Wire");}
-	wxString BitmapPath(){return _T("new");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/new.png");}
 	const wxChar* GetToolTip(){return _("Add To Part");}
 };
 

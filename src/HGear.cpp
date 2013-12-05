@@ -620,7 +620,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Make Sketches");}
-	//wxString BitmapPath(){return _T("trsfw");}
+	//wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/trsfw.png");}
 
 	virtual bool oneTooth(){return false;}
 };

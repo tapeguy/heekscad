@@ -134,7 +134,7 @@ void DigitizeMode::OnMouse( wxMouseEvent& event ){
 
 void DigitizeMode::OnKeyDown(wxKeyEvent& event)
 {
-	switch(event.KeyCode())
+	switch(event.GetKeyCode())
 	{
 	case WXK_ESCAPE:
 		digitized_point.m_type = DigitizeNoItemType;
@@ -454,7 +454,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Stop Picking");}
-	wxString BitmapPath(){return _T("endpospick");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/endpospick.png");}
 	const wxChar* GetToolTip(){return _("Finish picking");}
 };
 

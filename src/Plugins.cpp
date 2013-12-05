@@ -229,7 +229,7 @@ void ReadPluginsList(std::list<PluginData> &plugins)
     #define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
   #endif
 #else
-		const char* cncPlugPath = "/usr/lib/libheekscnc.so";  //this is the path that cmake installs the lib to
+		const char* cncPlugPath = "/usr/local/lib/libheekscnc.so";  //this is the path that cmake installs the lib to
 #endif
 		if( stat(cncPlugPath, &cncstat) == 0 ) {
 			if( S_ISREG(cncstat.st_mode) )
@@ -241,7 +241,7 @@ void ReadPluginsList(std::list<PluginData> &plugins)
 			pd.enabled = true;
 			pd.hard_coded = false; //if this was true, the plugin wouldn't be added to the config - meaning the user couldn't disable it
 			pd.name = _T("HeeksCNC (Automatically added)");
-			pd.path = _T("/usr/lib/libheekscnc.so");
+			pd.path = _T("/usr/local/lib/libheekscnc.so");
 			plugins.push_back(pd);
 		}
 	}

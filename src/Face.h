@@ -83,7 +83,7 @@ class FaceToSketchTool:public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Make a sketch from face");}
-	wxString BitmapPath(){return _T("face2sketch");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/face2sketch.png");}
 	void Run();
 
 	static double deviation;

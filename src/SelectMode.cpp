@@ -62,7 +62,7 @@ bool CSelectMode::GetLastClickPosition(double *pos)
 
 const wxChar* CSelectMode::GetTitle()
 {
-	return m_doing_a_main_loop ? (m_prompt_when_doing_a_main_loop.c_str()):_("Select Mode");
+	return m_doing_a_main_loop ? (m_prompt_when_doing_a_main_loop):_("Select Mode");
 }
 
 static wxString str_for_GetHelpText;
@@ -584,7 +584,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Accept selection");}
-	wxString BitmapPath(){return _T("endpick");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/endpick.png");}
 };
 
 static EndPicking end_picking;
@@ -603,7 +603,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Cancel selection");}
-	wxString BitmapPath(){return _T("escpick");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/escpick.png");}
 };
 
 static CancelPicking cancel_picking;
@@ -615,7 +615,7 @@ public:
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
 	const wxChar* GetTitle(){return _("Pick Anything");}
-	wxString BitmapPath(){return _T("pickany");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/pickany.png");}
 	const wxChar* GetToolTip(){return _("Set the selection filter to all items");}
 };
 
@@ -628,7 +628,7 @@ public:
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
 	const wxChar* GetTitle(){return _("Pick Edges");}
-	wxString BitmapPath(){return _T("pickedges");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/pickedges.png");}
 	const wxChar* GetToolTip(){return _("Set the selection filter to only edges");}
 };
 
@@ -641,7 +641,7 @@ public:
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
 	const wxChar* GetTitle(){return _("Pick Faces");}
-	wxString BitmapPath(){return _T("pickfaces");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/pickfaces.png");}
 	const wxChar* GetToolTip(){return _("Set the selection filter to only faces");}
 };
 
@@ -654,7 +654,7 @@ public:
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
 	const wxChar* GetTitle(){return _("End Sketch Mode");}
-	wxString BitmapPath(){return _T("endsketchmode");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/endsketchmode.png");}
 };
 
 static EndSketchModeTool end_sketch_mode;

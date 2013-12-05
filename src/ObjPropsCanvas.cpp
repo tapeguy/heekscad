@@ -6,7 +6,7 @@
 #include "../interface/Property.h"
 #include "../interface/ToolImage.h"
 #include "../interface/PropertyVertex.h"
-#include "propgrid.h"
+#include "wx/propgrid/propgrid.h"
 #include "HeeksFrame.h"
 #include "MarkedList.h"
 #include "../interface/MarkedObject.h"
@@ -46,7 +46,7 @@ void CObjPropsCanvas::AddToolBar()
 	if(m_toolBar)delete m_toolBar;
 
 	// make a toolbar for the current input modes's tools
-	m_toolBar = new wxToolBar(this, -1, wxDefaultPosition, wxDefaultSize, wxTB_NODIVIDER | wxTB_FLAT);
+	m_toolBar = new wxAuiToolBar(this, -1, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	m_toolBar->SetToolBitmapSize(wxSize(ToolImage::GetBitmapSize(), ToolImage::GetBitmapSize()));
 	m_toolBar->Realize();
 }
@@ -58,7 +58,7 @@ CObjPropsCanvas::~CObjPropsCanvas()
 
 void CObjPropsCanvas::OnSize(wxSizeEvent& event)
 {
-	wxScrolledWindow::OnSize(event);
+	wxScrolledWindow::HandleOnSize(event);
 
 	Resize();
 
@@ -153,7 +153,7 @@ void CObjPropsCanvas::Resize()
 	wxSize size = GetClientSize();
 	wxSize pg_size = size;
 
-	if(m_toolBar->GetToolsCount() > 0){
+	if(m_toolBar->GetToolCount() > 0){
 		int toolbar_height = ToolImage::GetBitmapSize() + EXTRA_TOOLBAR_HEIGHT;
 		pg_size = wxSize(size.x, size.y - toolbar_height);
 		m_toolBar->SetSize(0, pg_size.y , size.x, toolbar_height );

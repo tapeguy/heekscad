@@ -7,6 +7,7 @@
 #include "../interface/HeeksObj.h"
 
 class CFace;
+class CShape;
 class HVertex;
 
 class CEdge:public HeeksObj{

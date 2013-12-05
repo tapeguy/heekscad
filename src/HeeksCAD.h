@@ -166,7 +166,7 @@ public:
 	double m_geom_tol;
 	std::list<Plugin> m_loaded_libraries;
 	std::list< void(*)() > m_on_glCommands_list;
-	std::list< wxToolBarBase* > m_external_toolbars;
+	std::list< wxAuiToolBar* > m_external_toolbars;
 	std::list< void(*)() > m_AddToolBars_list;
 	std::list<wxWindow*> m_hideable_windows;
 	HRuler* m_ruler;
@@ -340,6 +340,7 @@ public:
 	void GetTools2(MarkedObject* marked_object, std::list<Tool*>& t_list, const wxPoint& point, bool control_pressed);
 	wxString GetExeFolder()const;
 	wxString GetResFolder()const;
+	wxString GetTmpFolder()const;
 	void get_2d_arc_segments(double xs, double ys, double xe, double ye, double xc, double yc, bool dir, bool want_start, double pixels_per_mm, void(*callbackfunc)(const double* xy));
 	int PickObjects(const wxChar* str, long marking_filter = -1, bool just_one = false);
 	void StartPickObjects(const wxChar* str, long marking_filter = -1, bool just_one = false);

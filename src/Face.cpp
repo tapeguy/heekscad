@@ -9,6 +9,8 @@
 #include "RuledSurface.h"
 #include "HeeksFrame.h"
 #include "InputModeCanvas.h"
+#include "ConversionTools.h"
+
 
 CFace::CFace():m_temp_attr(0)
 {
@@ -218,7 +220,7 @@ class MakeCoordSystem:public Tool
 	// only use this if GetSurfaceType() == GeomAbs_Plane
 public:
 	const wxChar* GetTitle(){return _("Make Coordinate System");}
-	wxString BitmapPath(){return _T("coordsys");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/coordsys.png");}
 	void Run(){
 		gp_Pln plane;
 		face_for_tools->GetPlaneParams(plane);
@@ -245,7 +247,7 @@ class SketchOnFace:public Tool
 	// only use this if GetSurfaceType() == GeomAbs_Plane
 public:
 	const wxChar* GetTitle(){return _("Sketch On Face");}
-	wxString BitmapPath(){return _T("sketchmode");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/sketchmode.png");}
 	void Run(){
 		gp_Pln plane;
 		face_for_tools->GetPlaneParams(plane);
@@ -277,7 +279,7 @@ class ExtrudeFace:public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Extrude Face");}
-	wxString BitmapPath(){return _T("extface");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/extface.png");}
 	void Run(){
 		wxGetApp().m_marked_list->Clear(false);
 		wxGetApp().m_marked_list->Add(face_for_tools, false);
@@ -291,7 +293,7 @@ class RotateToFace:public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Rotate to Face");}
-	wxString BitmapPath(){return _T("rotface");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/rotface.png");}
 	void Run(){
 		gp_Pln plane;
 		face_for_tools->GetPlaneParams(plane);

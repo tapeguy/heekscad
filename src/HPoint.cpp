@@ -150,7 +150,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Click point location");}
-	wxString BitmapPath(){return _T("pickpos");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/pickpos.png");}
 	const wxChar* GetToolTip(){return _("Click point location");}
 };
 static ClickPointLocation click_point_location;
@@ -206,7 +206,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return _("Offset from point");}
-	wxString BitmapPath(){return _T("offset_from_point");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/offset_from_point.png");}
 	const wxChar* GetToolTip(){return _("Offset from point");}
 };
 static OffsetFromPoint offset_from_point;

@@ -459,7 +459,7 @@ bool HeeksCADapp::OnInit()
 		cmdLineDesc[0].kind = wxCMD_LINE_PARAM;
 		cmdLineDesc[0].shortName = NULL;
 		cmdLineDesc[0].longName = NULL;
-		cmdLineDesc[0].description = wxT("input files");
+		cmdLineDesc[0].description = _("input files");
 		cmdLineDesc[0].type = wxCMD_LINE_VAL_STRING;
 		cmdLineDesc[0].flags = wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_PARAM_MULTIPLE;
 
@@ -493,7 +493,7 @@ bool HeeksCADapp::OnInit()
 		// the wxStandardPaths class might be useful for this
 		// look here for docs:
 		// http://docs.wxwidgets.org/trunk/classwx_standard_paths.html
-		wxStandardPaths sp;
+		wxStandardPaths& sp = wxStandardPaths::Get();
 		//sp.SetInstallPrefix(_T("/myPrefixDirectory")); //set the prefix directory here, if needed
 		wprintf(_T("system configs directory: ") + sp.GetConfigDir()  + _T("\n"));
 		wprintf(_T("applications global data directory: ") + sp.GetDataDir()  + _T("\n"));
@@ -551,13 +551,13 @@ void HeeksCADapp::WriteConfig()
 	config.Write(_T("DatumSize"), CoordinateSystem::size);
 	config.Write(_T("DatumSizeIsPixels"), CoordinateSystem::size_is_pixels);
 	config.Write(_T("DrawRuler"), m_show_ruler);
-	config.Write(_T("RegularShapesMode"), regular_shapes_drawing.m_mode);
+	config.Write(_T("RegularShapesMode"), (int)regular_shapes_drawing.m_mode);
 	config.Write(_T("RegularShapesNSides"), regular_shapes_drawing.m_number_of_side_for_polygon);
 	config.Write(_T("RegularShapesRectRad"), regular_shapes_drawing.m_rect_radius);
 	config.Write(_T("RegularShapesObRad"), regular_shapes_drawing.m_obround_radius);
 	config.Write(_T("ExtrudeRemovesSketches"), m_extrude_removes_sketches);
 	config.Write(_T("LoftRemovesSketches"), m_loft_removes_sketches);
-	config.Write(_T("GraphicsTextMode"), m_graphics_text_mode);
+	config.Write(_T("GraphicsTextMode"), (int)m_graphics_text_mode);
 	config.Write(_T("AllowOpenGLStippling"), m_allow_opengl_stippling);
 	config.Write(_T("DxfMakeSketch"), HeeksDxfRead::m_make_as_sketch);
 	config.Write(_T("DxfIgnoreErrors"), HeeksDxfRead::m_ignore_errors);
@@ -573,7 +573,7 @@ void HeeksCADapp::WriteConfig()
 	config.Write(_T("AutoSaveInterval"), m_auto_save_interval);
 	config.Write(_T("ExtrudeToSolid"), m_extrude_to_solid);
 	config.Write(_T("RevolveAngle"), m_revolve_angle);
-	config.Write(_T("SolidViewMode"), m_solid_view_mode);
+	config.Write(_T("SolidViewMode"), (int)m_solid_view_mode);
 	config.Write(_T("STLSaveBinary"), m_stl_save_as_binary);
 
 	HDimension::WriteToConfig(config);
@@ -793,9 +793,7 @@ static HeeksObj* ReadSTEPFileFromXMLElement(TiXmlElement* pElem)
 			const char* file_text = subElem->GetText();
 			if(file_text)
 			{
-				wxStandardPaths sp;
-				sp.GetTempDir();
-				wxFileName temp_file(sp.GetTempDir().c_str(), _T("temp_HeeksCAD_STEP_file.step") );
+				wxFileName temp_file(wxGetApp().GetTmpFolder(), _T("temp_HeeksCAD_STEP_file.step") );
 				{
 #if wxUSE_UNICODE
 #ifdef __WXMSW__
@@ -819,9 +817,7 @@ static HeeksObj* ReadSTEPFileFromXMLElement(TiXmlElement* pElem)
 		std::string name(a->Name());
 		if(name == "text")
 		{
-			wxStandardPaths sp;
-			sp.GetTempDir();
-			wxFileName temp_file( sp.GetTempDir().c_str(), _T("temp_HeeksCAD_STEP_file.step") );
+			wxFileName temp_file( wxGetApp().GetTmpFolder(), _T("temp_HeeksCAD_STEP_file.step") );
 			{
 #ifdef __WXMSW__
 				ofstream ofs(temp_file.GetFullPath());
@@ -1691,9 +1687,7 @@ void HeeksCADapp::SaveXMLFile(const std::list<HeeksObj*>& objects, const wxChar 
 
 	// write a step file for all the solids
 	if(CShape::m_solids_found){
-		wxStandardPaths sp;
-		sp.GetTempDir();
-		wxFileName temp_file( sp.GetTempDir().c_str(), _T("temp_HeeksCAD_STEP_file.step") );
+		wxFileName temp_file(wxGetApp().GetTmpFolder(), _T("temp_HeeksCAD_STEP_file.step") );
 		std::map<int, CShapeData> index_map;
 		CShape::ExportSolidsFile(objects, temp_file.GetFullPath(), &index_map);
 
@@ -1780,7 +1774,7 @@ void HeeksCADapp::SaveXMLFile(const std::list<HeeksObj*>& objects, const wxChar 
 bool HeeksCADapp::SaveFile(const wxChar *filepath, bool use_dialog, bool update_recent_file_list, bool set_app_caption)
 {
 	if(use_dialog){
-		wxFileDialog fd(m_frame, _("Save graphical data file"), wxEmptyString, filepath, GetKnownFilesWildCardString(false), wxSAVE|wxOVERWRITE_PROMPT);
+		wxFileDialog fd(m_frame, _("Save graphical data file"), wxEmptyString, filepath, GetKnownFilesWildCardString(false), wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 		fd.SetFilterIndex(1);
 		if (fd.ShowModal() == wxID_CANCEL)return false;
 		return SaveFile( fd.GetPath().c_str(), false, update_recent_file_list );
@@ -2128,7 +2122,7 @@ public:
 	void Run(){
 		wxGetApp().m_frame->ShowFullScreen(!wxGetApp().m_frame->IsFullScreen());
 	}
-	wxString BitmapPath(){return _T("fullscreen");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/fullscreen.png");}
 };
 
 class MoveOrCopyTool: public Tool
@@ -2158,7 +2152,8 @@ public:
 		wxGetApp().Changed();
 	}
 	const wxChar* GetTitle(){return m_move_not_copy ? _("Move here") : _("Copy here");}
-	wxString BitmapPath(){return m_move_not_copy ? _T("move") : _T("copy");}
+	wxString BitmapPath(){ return m_move_not_copy ? (wxGetApp().GetResFolder() + _T("/bitmaps/move.png"))
+	                                              : (wxGetApp().GetResFolder() + _T("/bitmaps/copy.png")); }
 };
 
 static MoveOrCopyTool move_tool(true);
@@ -2192,7 +2187,7 @@ public:
 		wxGetApp().Repaint();
 	}
 	const wxChar* GetTitle(){return _("Set world coordinate system active");}
-	wxString BitmapPath(){return _T("unsetcoordsys");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/unsetcoordsys.png");}
 };
 
 static UnsetCoordSystemActive coord_system_unset;
@@ -2244,7 +2239,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){return(_("Add points at intersections"));}
-	wxString BitmapPath(){return _T("add_intersection_points");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/add_intersection_points.png");}
 
 private:
 	wxString	m_title;
@@ -3520,9 +3515,9 @@ void HeeksCADapp::GetTools2(MarkedObject* marked_object, std::list<Tool*>& t_lis
 	}
 }
 
-wxString HeeksCADapp::GetExeFolder()const
+wxString HeeksCADapp::GetExeFolder() const
 {
-	wxStandardPaths sp;
+	wxStandardPaths& sp = wxStandardPaths::Get();
 	wxString exepath = sp.GetExecutablePath();
 	int last_fs = exepath.Find('/', true);
 	int last_bs = exepath.Find('\\', true);
@@ -3537,7 +3532,7 @@ wxString HeeksCADapp::GetExeFolder()const
 	return exedir;
 }
 
-wxString HeeksCADapp::GetResFolder()const
+wxString HeeksCADapp::GetResFolder() const
 {
 #ifdef WIN32
 	return GetExeFolder();
@@ -3552,6 +3547,12 @@ wxString HeeksCADapp::GetResFolder()const
 #endif
 #endif
 #endif
+}
+
+wxString HeeksCADapp::GetTmpFolder() const
+{
+	wxStandardPaths& sp = wxStandardPaths::Get();
+	return sp.GetTempDir();
 }
 
 // do your own glBegin and glEnd
@@ -3864,7 +3865,7 @@ void HeeksCADapp::SetFrameTitle()
 {
 	if(m_frame == NULL)return;
 	wxString str = GetAppName().c_str();
-	if((!m_untitled) || (!m_no_creation_mode))str += wxString(_T(" - ")) + m_filepath.c_str();
+	if((!m_untitled) || (!m_no_creation_mode))str += wxString(_T(" - ")) + m_filepath;
 	m_frame->SetTitle(str);
 }
 
@@ -4050,7 +4051,7 @@ bool HeeksCADapp::IsPasteReady()
 	wxString fstr;
 
 #ifndef WIN32
-	if(wxTheClipboard->m_open)return false;
+	if(wxTheClipboard->IsOpened())return false;
 #endif
 
 	if (wxTheClipboard->Open())
@@ -4088,9 +4089,7 @@ void HeeksCADapp::Paste(HeeksObj* paste_into, HeeksObj* paste_before)
 	}
 
 	// write a temporary file
-	wxStandardPaths sp;
-	sp.GetTempDir();
-	wxFileName temp_file( sp.GetTempDir().c_str(), _T("temp_Heeks_clipboard_file.heeks"));
+	wxFileName temp_file(wxGetApp().GetTmpFolder(), _T("temp_Heeks_clipboard_file.heeks"));
 
 	{
 #if wxUSE_UNICODE
@@ -4336,7 +4335,7 @@ void HeeksCADapp::InitialiseLocale()
 		}
 
 		// Initialize the catalogs we'll be using
-		if ( !m_locale.Init(language, wxLOCALE_CONV_ENCODING) )
+		if ( !m_locale.Init(language, wxLOCALE_LOAD_DEFAULT) )
 		{
 			wxLogError(_T("This language is not supported by the system."));
 			return;

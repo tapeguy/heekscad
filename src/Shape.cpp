@@ -287,7 +287,7 @@ public:
 		}
 	}
 	const wxChar* GetTitle(){ return _("Offset Shape");}
-	wxString BitmapPath(){return _T("offsetsolid");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/offsetsolid.png");}
 };
 
 static OffsetShapeTool offset_shape_tool;
@@ -807,8 +807,7 @@ bool CShape::ImportSolidsFile(const wxChar* filepath, std::map<int, CShapeData> 
 //		// if the const char* filename is different to the original unicode filename, then copy the file to a temporary file with a simple name
 //		if(stricmp(Ctt(aFileName), filepath))
 //		{
-//			wxStandardPaths standard_paths;
-//			wxFileName path( standard_paths.GetTempDir().c_str(), _("temp_iges.igs"));
+//			wxFileName path(wxGetApp().GetTmpFolder(), _("temp_iges.igs"));
 //			copy_file; // to do
 //	m_backup_file_name = path.GetFullPath();
 //#endif

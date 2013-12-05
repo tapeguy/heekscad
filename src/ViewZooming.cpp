@@ -59,7 +59,7 @@ public:
 		wxGetApp().input_mode_object = m_saved_mode;
 	}
 	const wxChar* GetTitle(){return _("Stop zooming");}
-	wxString BitmapPath(){return _T("endpick");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/endpick.png");}
 };
 
 static EndZooming end_zooming;

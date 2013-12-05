@@ -292,7 +292,7 @@ VectorFont::Glyph::Glyph( const std::list<std::string> &cxf_glyph_definition, co
             *token = PrepareStringForConversion( *token );
 		}
 
-		switch (tokens[0][0])
+		switch (tokens[0][0].GetValue())
 		{
 		case 'L':
 			if (tokens.size() != 5)
@@ -349,7 +349,7 @@ VectorFont::Glyph::Glyph( const std::list<std::string> &cxf_glyph_definition, co
 
 		default:
 			std::ostringstream l_ossError;
-			l_ossError << "Unexpected graphics element type '" << tokens[0][0] << "'";
+			l_ossError << "Unexpected graphics element type '" << tokens[0][0].GetValue() << "'";
 			throw(std::runtime_error(l_ossError.str().c_str()));
 		} // End switch
 	} // End for
@@ -1079,7 +1079,7 @@ void VectorFonts::Add( const VectorFont::Name_t & directory )
 			{
 				wxString path( directory );
 				path = path + _T("/");
-				path = path + l_itFile->c_str();
+				path = path + *l_itFile;
 				CxfFont *pFont = new CxfFont( path.c_str(), m_word_space_percentage, m_character_space_percentage );
 				m_fonts.insert( std::make_pair( pFont->Name(), pFont ) );
 			} // End if - then
@@ -1087,7 +1087,7 @@ void VectorFonts::Add( const VectorFont::Name_t & directory )
 			{
 				wxString path( directory );
 				path = path + _T("/");
-				path = path + l_itFile->c_str();
+				path = path + *l_itFile;
 				HersheyFont *pFont = new HersheyFont( path.c_str(), m_word_space_percentage, m_character_space_percentage );
 				m_fonts.insert( std::make_pair( pFont->Name(), pFont ) );
 			} // End if - then

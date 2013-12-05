@@ -278,7 +278,7 @@ public:
 		wxGetApp().Repaint();
 	}
 	const wxChar* GetTitle(){return _("ResetRuler");}
-	wxString BitmapPath(){return _T("resetruler");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/resetruler.png");}
 	const wxChar* GetToolTip(){return _("Reset the ruler");}
 };
 

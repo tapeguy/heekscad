@@ -113,7 +113,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click centre point");}
-	wxString BitmapPath(){return _T("click_arc_midpoint");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_arc_midpoint.png");}
 };
 
 ClickArcCentre click_arc_centre;
@@ -135,7 +135,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click first end point");}
-	wxString BitmapPath(){return _T("click_arc_end_one");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_arc_end_one.png");}
 };
 
 ClickArcEndOne click_arc_first_one;
@@ -157,7 +157,7 @@ public:
 	}
 
 	const wxChar* GetTitle(){return _("Click second end point");}
-	wxString BitmapPath(){return _T("click_arc_end_two");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/click_arc_end_two.png");}
 };
 
 ClickArcEndTwo click_arc_first_two;

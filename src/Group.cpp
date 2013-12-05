@@ -287,7 +287,7 @@ class PickPos: public Tool{
 		wxGetApp().PickPosition(GetTitle(), p, callback_for_pick_pos);
 		wxGetApp().Changed();
 	}
-	wxString BitmapPath(){ return _T("pickpos");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/pickpos.png");}
 	virtual void SetVertexPtr()=0;
 };
 

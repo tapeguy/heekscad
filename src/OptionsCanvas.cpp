@@ -8,7 +8,7 @@
 #include "../interface/Property.h"
 #include "../interface/InputMode.h"
 #include "../interface/PropertyVertex.h"
-#include "propgrid.h"
+#include "wx/propgrid/propgrid.h"
 #include "HeeksFrame.h"
 
 BEGIN_EVENT_TABLE(COptionsCanvas, wxScrolledWindow)
@@ -31,7 +31,7 @@ COptionsCanvas::~COptionsCanvas()
 
 void COptionsCanvas::OnSize(wxSizeEvent& event)
 {
-	wxScrolledWindow::OnSize(event);
+	wxScrolledWindow::HandleOnSize(event);
 
 	wxSize size = GetClientSize();
 	m_pg->SetSize(0, 0, size.x, size.y );

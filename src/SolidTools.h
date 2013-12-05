@@ -13,5 +13,5 @@ public:
 
     virtual void Run();
 	const wxChar* GetTitle(){return _("Save Solids");}
-	wxString BitmapPath(){return _T("saveas");}
+	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/saveas.png");}
 };

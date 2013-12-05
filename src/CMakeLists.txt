@@ -10,7 +10,7 @@ set ( CMAKE_BUILD_TYPE Debug )
 add_definitions ( -Wall -DUSE_GENERIC_TREECTRL -DHEEKSCAD -DUNICODE -DTIXML_USE_STL )
 
 #find OCE or OpenCASCADE
-set( CASCADE_LIBS TKVRML TKSTL TKBRep TKIGES TKShHealing TKSTEP TKSTEP209 TKSTEPAttr TKSTEPBase TKXSBase TKShapeSchema FWOSPlugin TKBool TKCAF TKCDF TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo TKGeomBase TKHLR TKMath TKOffset TKPrim TKPShape TKService TKTopAlgo TKV2d TKV3d TKMesh TKAdvTools TKBO TKXDESTEP TKXCAF TKXCAFSchema TKLCAF TKPLCAF )
+set( CASCADE_LIBS TKVRML TKSTL TKBRep TKIGES TKShHealing TKSTEP TKSTEP209 TKSTEPAttr TKSTEPBase TKXSBase TKShapeSchema FWOSPlugin TKBool TKCAF TKCDF TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo TKGeomBase TKHLR TKMath TKOffset TKPrim TKPShape TKService TKTopAlgo TKV3d TKMesh TKAdvTools TKBO TKXDESTEP TKXCAF TKXCAFSchema TKLCAF TKPLCAF )
 #inherits variables from parent dir - don't need to 'find_package ( OCE )' again
 if( ${OCE_FOUND} )
   set( OpenCASCADE_LIBRARIES ${CASCADE_LIBS} )
@@ -21,7 +21,7 @@ else() #look for OpenCASCADE
 endif()
 
 find_package( OpenGL REQUIRED )
-FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS base core gl aui )
+FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS base core gl aui propgrid )
 find_package( PythonLibs REQUIRED )
 INCLUDE(${wxWidgets_USE_FILE})
 
@@ -36,7 +36,6 @@ set( LIBAREA_PATH ../libarea/ )
 
 set( heekscad_HDRS
     AboutBox.h
-    advprops.h
     ${LIBAREA_PATH}/Arc.h
     ${LIBAREA_PATH}/Area.h
     ${LIBAREA_PATH}/AreaOrderer.h
@@ -107,7 +106,6 @@ set( heekscad_HDRS
     LineArcDrawing.h
     Loop.h
     MagDragWindow.h
-    manager.h
     MarkedList.h
     ../interface/MarkedObject.h
     ../interface/Material.h
@@ -118,7 +116,6 @@ set( heekscad_HDRS
     ../interface/ObjList.h
     ObjPropsCanvas.h
     ../interface/Observer.h
-    odcombo.h
     OptionsCanvas.h
     OrientationModifier.h
     Pad.h
@@ -129,7 +126,6 @@ set( heekscad_HDRS
     ${LIBAREA_PATH}/Point.h
     PointDrawing.h
     PointOrWindow.h
-    propdev.h
     PropertiesCanvas.h
     ../interface/Property.h
     ../interface/PropertyCheck.h
@@ -142,7 +138,6 @@ set( heekscad_HDRS
     ../interface/PropertyString.h
     PropertyTrsf.h
     ../interface/PropertyVertex.h
-    propgrid.h
     RegularShapesDrawing.h
     RuledSurface.h
     Ruler.h
@@ -185,7 +180,6 @@ set( heekscad_HDRS
 
 set( heekscad_SRCS
     AboutBox.cpp
-    advprops.cpp
     ${LIBAREA_PATH}/Arc.cpp
     ${LIBAREA_PATH}/Area.cpp
     ${LIBAREA_PATH}/AreaClipper.cpp
@@ -208,7 +202,6 @@ set( heekscad_SRCS
     DigitizedPoint.cpp
     DigitizeMode.cpp
     DimensionDrawing.cpp
-    ../interface/DoubleInput.cpp
     Drawing.cpp
     dxf.cpp
     DynamicSolid.cpp
@@ -231,14 +224,10 @@ set( heekscad_SRCS
     HArc.cpp
     HArea.cpp
     HCircle.cpp
-    ../interface/HDialogs.cpp
     HDimension.cpp
     HDxf.cpp
     HeeksCAD.cpp
-    ../interface/HeeksCADInterface.cpp
-    ../interface/HeeksColor.cpp
     HeeksFrame.cpp
-    ../interface/HeeksObj.cpp
     HeeksPrintout.cpp
     HEllipse.cpp
     HGear.cpp
@@ -252,44 +241,26 @@ set( heekscad_SRCS
     Input.cpp
     InputModeCanvas.cpp
     ${LIBAREA_PATH}/kurve/kurve.cpp
-    ../interface/LeftAndRight.cpp
     LineArcDrawing.cpp
     Loop.cpp
     MagDragWindow.cpp
-    manager.cpp
     MarkedList.cpp
-    ../interface/MarkedObject.cpp
     ${LIBAREA_PATH}/kurve/Matrix.cpp
     MultiPoly.cpp
     NearMap.cpp
-    ../interface/NiceTextCtrl.cpp
-    ../interface/ObjList.cpp
     ObjPropsCanvas.cpp
-    odcombo.cpp
     ${LIBAREA_PATH}/kurve/offset.cpp
     OptionsCanvas.cpp
     OrientationModifier.cpp
     Pad.cpp
     Part.cpp
-    ../interface/PictureFrame.cpp
     Plugins.cpp
     Pocket.cpp
     PointDrawing.cpp
     PointOrWindow.cpp
     Polygon.cpp
     PropertiesCanvas.cpp
-    ../interface/PropertyCheck.cpp
-    ../interface/PropertyChoice.cpp
-    ../interface/PropertyColor.cpp
-    ../interface/PropertyDouble.cpp
-    ../interface/PropertyInt.cpp
-    ../interface/PropertyLength.cpp
-    ../interface/PropertyList.cpp
-    ../interface/PropertyString.cpp
     PropertyTrsf.cpp
-    ../interface/PropertyVertex.cpp
-    propgrid.cpp
-    props.cpp
     RegularShapesDrawing.cpp
     RS274X.cpp
     RuledSurface.cpp
@@ -307,18 +278,10 @@ set( heekscad_SRCS
     Sphere.cpp
     stdafx.cpp
     StlSolid.cpp
-    ../interface/strconv.cpp
     StretchTool.cpp
     svg.cpp
-    ../tinyxml/tinystr.cpp
-    ../tinyxml/tinyxml.cpp
-    ../tinyxml/tinyxmlerror.cpp
-    ../tinyxml/tinyxmlparser.cpp
-    ../interface/ToolImage.cpp
-    ../interface/ToolList.cpp
     TransformTool.cpp
     TransformTools.cpp
-    ../interface/TransientObject.cpp
     TreeCanvas.cpp
     UndoEngine.cpp
     Vertex.cpp
