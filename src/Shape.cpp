@@ -276,8 +276,8 @@ public:
 #endif
 
 				HeeksObj* new_object = CShape::MakeObject(new_shape, _("Result of 'Offset Shape'"), SOLID_TYPE_UNKNOWN, shape_for_tools->m_color, shape_for_tools->GetOpacity());
-				shape_for_tools->HEEKSOBJ_OWNER->Add(new_object, NULL);
-				shape_for_tools->HEEKSOBJ_OWNER->Remove(shape_for_tools);
+				shape_for_tools->Owner()->Add(new_object, NULL);
+				shape_for_tools->Owner()->Remove(shape_for_tools);
 				config.Write(_T("OffsetShapeValue"), offset_value);
 			}
 			catch (Standard_Failure) {
@@ -538,7 +538,7 @@ HeeksObj* CShape::CutShapes(std::list<HeeksObj*> &list_in, bool dodelete)
 	{
 		CGroup* group = (CGroup*)list_in.front();
 		CGroup* newgroup = new CGroup();
-		group->HEEKSOBJ_OWNER->Add(newgroup,NULL);
+		group->Owner()->Add(newgroup,NULL);
 
 		std::list<HeeksObj*> children;
 		HeeksObj* child = group->GetFirstChild();
@@ -561,12 +561,12 @@ HeeksObj* CShape::CutShapes(std::list<HeeksObj*> &list_in, bool dodelete)
 			newlist.pop_front();
 			newlist.push_front(*iter);
 			HeeksObj* newshape = CutShapes(newlist,false);
-			newshape->HEEKSOBJ_OWNER->Remove(newshape);
+			newshape->Owner()->Remove(newshape);
 			newgroup->Add(newshape,NULL);
 			++iter;
 		}
 
-		group->HEEKSOBJ_OWNER->Remove(group);
+		group->Owner()->Remove(group);
 		wxGetApp().Remove(list_in);
 		return newgroup;
 	}
@@ -665,7 +665,7 @@ void CShape::FilletOrChamferEdges(std::list<HeeksObj*> &list, double radius, boo
 		HeeksObj* edge = *It;
 		if(edge->GetType() == EdgeType)
 		{
-			HeeksObj* solid = edge->HEEKSOBJ_OWNER->HEEKSOBJ_OWNER;
+			HeeksObj* solid = edge->Owner()->Owner();
 			if(solid && solid->GetType() == SolidType)
 			{
 				std::map< HeeksObj*, std::list< HeeksObj* > >::iterator FindIt = solid_edge_map.find(solid);

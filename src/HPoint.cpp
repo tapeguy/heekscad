@@ -135,7 +135,6 @@ void HPoint::GetProperties(std::list<Property *> *list)
 
 HPoint* point_for_tool = NULL;
 
-#ifdef MULTIPLE_OWNERS
 class ClickPointLocation:public Tool{
 public:
 	HPoint *which;
@@ -211,7 +210,6 @@ public:
 };
 static OffsetFromPoint offset_from_point;
 
-#endif
 
 void HPoint::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 {

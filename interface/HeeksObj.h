@@ -23,12 +23,6 @@ class ObjectCanvas;
     #define MULTIPLE_OWNERS
 #endif
 
-#ifdef MULTIPLE_OWNERS
-#define HEEKSOBJ_OWNER Owner()
-#else
-#define HEEKSOBJ_OWNER m_owner
-#endif
-
 // NOTE: If adding to this enumeration, please also add the verbose description to the HeeksCADType() routine
 enum{
 	UnknownType,
@@ -104,11 +98,11 @@ enum{
 #endif
 
 class HeeksObj{
+protected:
 #ifdef MULTIPLE_OWNERS
 	std::list<HeeksObj*> m_owners;
 	std::list<HeeksObj*>::iterator m_owners_it;
 #else
-public:
 	HeeksObj* m_owner;
 #endif
 public:
@@ -205,9 +199,9 @@ public:
 	virtual unsigned int GetID(){return m_id;}
 	virtual bool UsesID(){return true;}
 	bool OnVisibleLayer();
-#ifdef MULTIPLE_OWNERS
-	virtual HeeksObj* Owner();
+	HeeksObj* Owner();
 	virtual void SetOwner(HeeksObj*);
+#ifdef MULTIPLE_OWNERS
 	virtual std::list<HeeksObj*> Owners();
 	virtual bool HasOwner();
 	virtual bool HasOwner(HeeksObj* obj);
@@ -217,6 +211,8 @@ public:
 	virtual void RemoveOwner(HeeksObj*);
 	virtual HeeksObj* GetFirstOwner();
 	virtual HeeksObj* GetNextOwner();
+#else
+	virtual void RemoveOwner();
 #endif
 	virtual const TopoDS_Shape *GetShape() { return(NULL); }
 	virtual bool IsTransient(){return false;}

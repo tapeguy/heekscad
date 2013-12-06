@@ -59,7 +59,7 @@ void CPad::Update()
 		SetShapes(new_shapes);
 	}
 
-	DynamicSolid* solid = dynamic_cast<DynamicSolid*>(HEEKSOBJ_OWNER);
+	DynamicSolid* solid = dynamic_cast<DynamicSolid*>(Owner());
 	if(solid)
 		solid->Update();
 }
@@ -161,13 +161,13 @@ HeeksObj* CPad::ReadFromXMLElement(TiXmlElement* element)
 void CPad::PadSketch(CSketch* sketch, double length)
 {
 	CPad *pad = new CPad(length);
-	sketch->HEEKSOBJ_OWNER->Add(pad,NULL);
+	sketch->Owner()->Add(pad,NULL);
 
-	sketch->HEEKSOBJ_OWNER->Remove(sketch);
+	sketch->Owner()->Remove(sketch);
 #ifdef MULTIPLE_OWNERS
 	sketch->RemoveOwner(sketch->Owner());
 #else
-	sketch->m_owner = NULL;
+	sketch->RemoveOwner();
 #endif
 	sketch->m_draw_with_transform = false;
 	pad->Add(sketch,NULL);

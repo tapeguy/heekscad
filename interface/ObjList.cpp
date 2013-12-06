@@ -26,7 +26,7 @@ void ObjList::Clear()
 		if(!(*It)->GetFirstOwner())
 			delete *It;
 #else
-		(*It)->m_owner = NULL;
+		(*It)->RemoveOwner();
 		delete *It;
 #endif
 	}
@@ -45,7 +45,7 @@ void ObjList::Clear(std::set<HeeksObj*> &to_delete)
 #ifdef MULTIPLE_OWNERS
 			(*It)->RemoveOwners();
 #else
-			(*It)->m_owner = NULL;
+			(*It)->RemoveOwner();
 #endif
 			It = m_objects.erase(It);
 		}

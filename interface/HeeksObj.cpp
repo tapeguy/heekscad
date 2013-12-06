@@ -418,6 +418,24 @@ HeeksObj* HeeksObj::GetNextOwner()
 		return *m_owners_it++;
 	return NULL;
 }
+
+#else
+
+HeeksObj* HeeksObj::Owner()
+{
+	return m_owner;
+}
+
+void HeeksObj::SetOwner(HeeksObj *obj)
+{
+	m_owner = obj;
+}
+
+void HeeksObj::RemoveOwner()
+{
+	m_owner = NULL;
+}
+
 #endif
 
 HeeksObj *HeeksObj::Find( const int type, const unsigned int id )

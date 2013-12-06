@@ -66,7 +66,6 @@ set( heekscad_HDRS
     Face.h
     FaceTools.h
     FastCurves.h
-    Geom.h
     ${LIBAREA_PATH}/kurve/geometry.h
     glfont2.h
     GLList.h
@@ -212,7 +211,6 @@ set( heekscad_SRCS
     FaceTools.cpp
     FastCurves.cpp
     ${LIBAREA_PATH}/kurve/Finite.cpp
-    Geom.cpp
     glfont2.cpp
     GLList.cpp
     GraphicsCanvas.cpp
@@ -301,10 +299,12 @@ set( HeeksCAD_LIBS
        -L../bin -ltinyxml -lheeksintf
    )
 add_executable( heekscad ${heekscad_SRCS} ${platform_SRCS} ${heekscad_HDRS} )
+# Link ${HeeksCAD_LIBS} first to prevent installed libs from being found first in the search order
 target_link_libraries( heekscad
+                       ${HeeksCAD_LIBS}
                        ${wxWidgets_LIBRARIES}  ${OpenCASCADE_LIBRARIES}
-                       ${PYTHON_LIBRARIES} ${HeeksCAD_LIBS} ${OSX_LIBS}
-                       ${OPENGL_LIBRARIES} )
+                       ${PYTHON_LIBRARIES} ${OSX_LIBS} ${OPENGL_LIBRARIES} )
+
 set_target_properties( heekscad PROPERTIES VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH} )
 install( TARGETS heekscad DESTINATION bin )
 

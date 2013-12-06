@@ -976,10 +976,10 @@ HeeksObj *HeeksCADapp::MergeCommonObjects( ObjectReferences_t & unique_set, Heek
 				}
 			}
 #else
-			if(object->m_owner)
+			if(object->Owner())
 			{
-				object->m_owner->Remove(object);
-				object->m_owner->Add( unique_reference, NULL );
+				object->Owner()->Remove(object);
+				object->Owner()->Add( unique_reference, NULL );
 			}
 #endif
 
@@ -2451,12 +2451,12 @@ void HeeksCADapp::Remove(HeeksObj* object)
 		owner = object->GetNextOwner();
 	}
 #else
-	if(object->m_owner)
+	if(object->Owner())
 	{
-		if(object->m_owner != this)
+		if(object->Owner() != this)
 		{
-			object->m_owner->Remove(object);
-			object->m_owner->ReloadPointers();
+			object->Owner()->Remove(object);
+			object->Owner()->ReloadPointers();
 		}
 		else
 			ObjList::Remove(object);

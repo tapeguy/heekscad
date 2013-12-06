@@ -81,7 +81,8 @@ void UndoEngine::RecalculateMapsRecursive(std::map<HeeksObjId,HeeksObj*> &treema
 			new_obj->AddOwner(obj);
 		}
 #else
-		if(new_obj->m_owner != obj)new_obj->m_owner = obj;
+		new_obj->SetOwner(obj);
+
 #endif
 		HeeksObjId id = GetHeeksObjId(new_obj);
 		treemap[id] = new_obj;
@@ -213,33 +214,20 @@ void UndoEngine::DealWithTransients(std::map<HeeksObjId,HeeksObj*> &treemap)
 #ifdef MULTIPLE_OWNERS
 				nobj->RemoveOwners();
 #else
-				nobj->m_owner = NULL;
+				nobj->RemoveOwner();
 #endif
 				needupdate.push_back(nobj);
 				treemap[GetHeeksObjId(nobj)] = nobj;
-#ifdef MULTIPLE_OWNERS
 				tobj->Owner()->Add(nobj,NULL);
-#else
-				tobj->m_owner->Add(nobj,NULL);
-#endif
-
 			}
 			else
 			{
 				needupdate.push_back((*it3).second);
-#ifdef MULTIPLE_OWNERS
 				tobj->Owner()->Add((*it3).second, NULL);
-#else
-				tobj->m_owner->Add((*it3).second, NULL);
-#endif
 			}
 		}
 
-#ifdef MULTIPLE_OWNERS
 		tobj->Owner()->Remove(tobj);
-#else
-		tobj->m_owner->Remove(tobj);
-#endif
 		//delete tobj;
 	}
 
@@ -256,7 +244,8 @@ void UndoEngine::DealWithTransients(std::map<HeeksObjId,HeeksObj*> &treemap)
 			owner = obj->GetNextOwner();
 		}
 #else
-		if(obj->m_owner)obj->m_owner->ReloadPointers();
+		if(obj->Owner())
+			obj->Owner()->ReloadPointers();
 #endif
 		obj->ReloadPointers();
 	}
@@ -296,11 +285,7 @@ void UndoEngine::UndoEvents(std::vector<UndoEvent> &events, EventTreeMap* tree)
 					tree->m_treemap[GetHeeksObjId(evt.m_parent)]->Add(new_obj,NULL);
 					tree->m_treemap[GetHeeksObjId(new_obj)] = new_obj;
 					new_obj->ReloadPointers();
-#ifdef MULTIPLE_OWNERS
 					new_obj->Owner()->ReloadPointers();
-#else
-					new_obj->m_owner->ReloadPointers();
-#endif
 				}
 				break;
 		}
@@ -322,11 +307,7 @@ void UndoEngine::DoEvents(std::vector<UndoEvent> &events, EventTreeMap* tree)
 					tree->m_treemap[GetHeeksObjId(evt.m_parent)]->Add(new_obj,NULL);
 					tree->m_treemap[GetHeeksObjId(new_obj)] = new_obj;
 					new_obj->ReloadPointers();
-#ifdef MULTIPLE_OWNERS
 					new_obj->Owner()->ReloadPointers();
-#else
-					new_obj->m_owner->ReloadPointers();
-#endif
 				}
 				break;
 			case EventTypeModified:

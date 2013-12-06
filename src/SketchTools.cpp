@@ -143,11 +143,11 @@ public:
 		CSketch* sketch = (CSketch*)(*wxGetApp().m_marked_list->list().begin());
 		CPart* part = new CPart();
 		wxGetApp().Add(part,NULL);
-		sketch->HEEKSOBJ_OWNER->Remove(sketch);
+		sketch->Owner()->Remove(sketch);
 #ifdef MULTIPLE_OWNERS
 		sketch->RemoveOwners();
 #else
-		sketch->m_owner = NULL;
+		sketch->RemoveOwner();
 #endif
 		part->Add(sketch,NULL);
 	}
@@ -171,11 +171,11 @@ public:
 			else
 				pad = (CPad*)obj;
 		}
-		sketch->HEEKSOBJ_OWNER->Remove(sketch);
+		sketch->Owner()->Remove(sketch);
 #ifdef MULTIPLE_OWNERS
 		sketch->RemoveOwners();
 #else
-		sketch->m_owner = NULL;
+		sketch->RemoveOwner();
 #endif
 		pad->Add(sketch,NULL);
 	}
@@ -924,7 +924,7 @@ static void SimplifySketch(const double deviation, bool make_bspline )
                 for (std::list<HeeksObj *>::iterator itOwner = parents.begin(); itOwner != parents.end(); itOwner++)
                 {
 #else
-				if(object->m_owner)
+				if(object->Owner())
 				{
 #endif
                     if ((object->CanEditString()) && (object->GetShortString()))
@@ -943,7 +943,7 @@ static void SimplifySketch(const double deviation, bool make_bspline )
 #ifdef MULTIPLE_OWNERS
                         (*itOwner)->Add( *itNewChild, NULL );
 #else
-                        object->m_owner->Add( *itNewChild, NULL );
+                        object->Owner()->Add( *itNewChild, NULL );
 #endif
                     } // End for
                 } // End for

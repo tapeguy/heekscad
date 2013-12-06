@@ -37,7 +37,7 @@ void CEdge::glCommands(bool select, bool marked, bool no_color){
 		wxGetApp().glColorEnsuringContrast(HeeksColor(0, 0, 0));
 	}
 
-	if(HEEKSOBJ_OWNER && HEEKSOBJ_OWNER->HEEKSOBJ_OWNER && HEEKSOBJ_OWNER->HEEKSOBJ_OWNER->GetType() == SolidType)
+	if(Owner() && Owner()->Owner() && Owner()->Owner()->GetType() == SolidType)
 	{
 		// triangulate a face on the edge first
 		if(this->m_faces.size() > 0)
@@ -77,7 +77,7 @@ void CEdge::glCommands(bool select, bool marked, bool no_color){
 	{
 		bool glwidth_done = false;
 		GLfloat save_depth_range[2];
-		if(HEEKSOBJ_OWNER == NULL || HEEKSOBJ_OWNER->HEEKSOBJ_OWNER == NULL || HEEKSOBJ_OWNER->HEEKSOBJ_OWNER->GetType() != WireType)
+		if(Owner() == NULL || Owner()->Owner() == NULL || Owner()->Owner()->GetType() != WireType)
 		{
 			BRepTools::Clean(m_topods_edge);
 			double pixels_per_mm = wxGetApp().GetPixelScale();
@@ -512,10 +512,10 @@ HVertex* CEdge::GetVertex1()
 
 CShape* CEdge::GetParentBody()
 {
-	if(HEEKSOBJ_OWNER == NULL)return NULL;
-	if(HEEKSOBJ_OWNER->HEEKSOBJ_OWNER == NULL)return NULL;
-	if(HEEKSOBJ_OWNER->HEEKSOBJ_OWNER->GetType() != SolidType)return NULL;
-	return (CShape*)(HEEKSOBJ_OWNER->HEEKSOBJ_OWNER);
+	if(Owner() == NULL)return NULL;
+	if(Owner()->Owner() == NULL)return NULL;
+	if(Owner()->Owner()->GetType() != SolidType)return NULL;
+	return (CShape*)(Owner()->Owner());
 }
 
 bool CEdge::GetMidPoint(double* pos)

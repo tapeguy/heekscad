@@ -96,8 +96,8 @@ void CSphere::OnApplyProperties()
 	CSphere* new_object = new CSphere(m_pos, m_radius, m_title.c_str(), m_color, m_opacity);
 	new_object->CopyIDsFrom(this);
 #ifdef MULTIPLE_OWNERS
-	HEEKSOBJ_OWNER->Add(new_object, NULL);
-	HEEKSOBJ_OWNER->Remove(this);
+	Owner()->Add(new_object, NULL);
+	Owner()->Remove(this);
 #else
 	m_owner->Add(new_object, NULL);
 	m_owner->Remove(this);

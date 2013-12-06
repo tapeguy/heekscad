@@ -1129,7 +1129,7 @@ void GroupSelected::Run(){
 #ifdef MULTIPLE_OWNERS
 		(*it)->RemoveOwners();
 #else
-		(*it)->m_owner = NULL;
+		(*it)->RemoveOwner();
 #endif
 
 	new_group->Add(copy_of_marked_list);

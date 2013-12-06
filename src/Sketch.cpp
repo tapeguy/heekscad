@@ -252,9 +252,9 @@ public:
 		for(std::list<HeeksObj*>::iterator It = new_sketches.begin(); It != new_sketches.end(); It++)
 		{
 			HeeksObj* new_object = *It;
-			sketch_for_tools->HEEKSOBJ_OWNER->Add(new_object, NULL);
+			sketch_for_tools->Owner()->Add(new_object, NULL);
 		}
-		sketch_for_tools->HEEKSOBJ_OWNER->Remove(sketch_for_tools);
+		sketch_for_tools->Owner()->Remove(sketch_for_tools);
 		wxGetApp().Repaint();
 	}
 	const wxChar* GetTitle(){return _("Split Sketch");}
