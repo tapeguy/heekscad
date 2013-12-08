@@ -92,7 +92,7 @@ void CPropertiesCanvas::Append(wxPGProperty* parent_prop, wxPGProperty* new_prop
 	}
 	else
 	{
-		m_pg->Append(new_prop);
+		m_pg->AppendIn(m_pg->GetRoot(), new_prop);
 		pset.insert(property);
 	}
 
@@ -287,7 +287,6 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 		{
 			wxAny var = event.GetPropertyValue();
 			wxColour wcol = wxANY_AS(var, wxColour);
-//			const wxColour* wcol = wxGetVariantCast(var,wxColour);
 			HeeksColor col(wcol.Red(), wcol.Green(), wcol.Blue());
 			(*(((PropertyColor*)property)->m_callbackfunc))(col, ((PropertyColor*)property)->m_object);
 		}
