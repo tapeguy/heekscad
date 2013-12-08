@@ -150,10 +150,18 @@ void CSelectMode::OnMouse( wxMouseEvent& event )
 				{
 					if(object->GetType() == GripperType)
 					{
+						Gripper* gripper = (Gripper*)object;
 						wxGetApp().m_current_viewport->DrawFront();
-						wxGetApp().drag_gripper = (Gripper*)object;
-						wxGetApp().m_digitizing->SetOnlyCoords(wxGetApp().drag_gripper, true);
-						wxGetApp().m_digitizing->digitize(button_down_point);
+						wxGetApp().drag_gripper = gripper;
+						wxGetApp().m_digitizing->SetOnlyCoords(gripper, true);
+						if(gripper->m_data.m_type == GripperTypeObjectScaleZ) {
+							gp_Lin ray = wxGetApp().m_current_viewport->m_view_point.SightLine(button_down_point);
+							gp_Pln pl = gp_Pln(gp_Pnt(0, 0, 0), gp_Vec(0, 1, 1));
+							wxGetApp().m_digitizing->DigitizeRay(ray, pl);
+						} else {
+							wxGetApp().m_digitizing->DigitizePoint(button_down_point);
+						}
+
 						wxGetApp().grip_from = wxGetApp().m_digitizing->digitized_point.m_point;
 						wxGetApp().grip_to = wxGetApp().grip_from;
 						double from[3];
@@ -205,7 +213,14 @@ void CSelectMode::OnMouse( wxMouseEvent& event )
 		if(wxGetApp().drag_gripper)
 		{
 			double to[3], from[3];
-			wxGetApp().m_digitizing->digitize(wxPoint(event.GetX(), event.GetY()));
+			if(wxGetApp().drag_gripper->m_data.m_type == GripperTypeObjectScaleZ) {
+				gp_Lin ray = wxGetApp().m_current_viewport->m_view_point.SightLine(wxPoint(event.GetX(), event.GetY()));
+				gp_Pln pl = gp_Pln(gp_Pnt(0, 0, 0), gp_Vec(0, 1, 1));
+				wxGetApp().m_digitizing->DigitizeRay(ray, pl);
+			} else {
+				wxGetApp().m_digitizing->DigitizePoint(wxPoint(event.GetX(), event.GetY()));
+			}
+
 			extract(wxGetApp().m_digitizing->digitized_point.m_point, to);
 			wxGetApp().grip_to = wxGetApp().m_digitizing->digitized_point.m_point;
 			extract(wxGetApp().grip_from, from);
@@ -383,12 +398,19 @@ void CSelectMode::OnMouse( wxMouseEvent& event )
 			if(wxGetApp().drag_gripper)
 			{
 				double to[3], from[3];
-				wxGetApp().m_digitizing->digitize(wxPoint(event.GetX(), event.GetY()));
+				if(wxGetApp().drag_gripper->m_data.m_type == GripperTypeObjectScaleZ) {
+					gp_Lin ray = wxGetApp().m_current_viewport->m_view_point.SightLine(wxPoint(event.GetX(), event.GetY()));
+					gp_Pln pl = gp_Pln(gp_Pnt(0, 0, 0), gp_Vec(0, 1, 1));
+					wxGetApp().m_digitizing->DigitizeRay(ray, pl);
+				} else {
+					wxGetApp().m_digitizing->DigitizePoint(wxPoint(event.GetX(), event.GetY()));
+				}
+
 				extract(wxGetApp().m_digitizing->digitized_point.m_point, to);
 				wxGetApp().grip_to = wxGetApp().m_digitizing->digitized_point.m_point;
 				extract(wxGetApp().grip_from, from);
+//			printf ("SelectMode::OnMouse from:%s  to:%s\n", AsString(make_point(from)).c_str(), AsString(make_point(to)).c_str());
 				wxGetApp().drag_gripper->OnGripperMoved(from, to);
-				wxGetApp().grip_from = gp_Pnt(from[0], from[1], from[2]);
 				wxGetApp().grip_from = make_point(from);
 			}
 			else if(abs(button_down_point.x - event.GetX())>2 || abs(button_down_point.y - event.GetY())>2)
@@ -438,7 +460,7 @@ void CSelectMode::OnMouse( wxMouseEvent& event )
 					{
 						wxGetApp().drag_gripper = &drag_object_gripper;
 						wxGetApp().m_digitizing->SetOnlyCoords(wxGetApp().drag_gripper, true);
-						wxGetApp().m_digitizing->digitize(button_down_point);
+						wxGetApp().m_digitizing->DigitizePoint(button_down_point);
 						wxGetApp().grip_from = wxGetApp().m_digitizing->digitized_point.m_point;
 						wxGetApp().grip_to = wxGetApp().grip_from;
 						double from[3];
@@ -448,7 +470,7 @@ void CSelectMode::OnMouse( wxMouseEvent& event )
 						wxGetApp().drag_gripper->OnGripperGrabbed(selected_objects_dragged, wxGetApp().m_show_grippers_on_drag, from);
 						wxGetApp().grip_from = gp_Pnt(from[0], from[1], from[2]);
 						double to[3];
-						wxGetApp().m_digitizing->digitize(wxPoint(event.GetX(), event.GetY()));
+						wxGetApp().m_digitizing->DigitizePoint(wxPoint(event.GetX(), event.GetY()));
 						extract(wxGetApp().m_digitizing->digitized_point.m_point, to);
 						wxGetApp().grip_to = wxGetApp().m_digitizing->digitized_point.m_point;
 						extract(wxGetApp().grip_from, from);

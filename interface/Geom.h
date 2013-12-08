@@ -82,9 +82,13 @@ gp_Vec make_vector(const gp_Pnt &p1, const gp_Pnt &p2);
 gp_Vec make_vector(const double* v);
 gp_Lin make_line(const gp_Pnt &p1, const gp_Pnt &p2);
 gp_Lin make_line(const gp_Pnt &p, const gp_Vec &v);
-
 gp_Trsf make_matrix(const double* m);
 gp_Trsf make_matrix(const gp_Pnt &origin, const gp_Vec &x_axis, const gp_Vec &y_axis);
+
+std::string AsString(const gp_XYZ& xyz);
+std::string AsString(const gp_Pnt& p);
+std::string AsString(const gp_Lin& l);
+std::string AsString(const gp_Trsf& m);
 
 void add_pnt_to_doubles(const gp_Pnt& pnt, std::list<double> &dlist);
 int convert_pnts_to_doubles(const std::list<gp_Pnt> &plist, std::list<double> &dlist);

@@ -14,6 +14,7 @@ set ( LIBRARY_OUTPUT_PATH ../bin )
 set( heeksintf_SRCS
     DoubleInput.cpp
     Geom.cpp
+    GripperTypes.cpp
     HDialogs.cpp
     HeeksCADInterface.cpp
     HeeksColor.cpp

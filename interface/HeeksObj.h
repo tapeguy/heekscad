@@ -20,7 +20,7 @@ class TopoDS_Shape;
 class ObjectCanvas;
 
 #ifndef MULTIPLE_OWNERS
-    #define MULTIPLE_OWNERS
+//    #define MULTIPLE_OWNERS
 #endif
 
 // NOTE: If adding to this enumeration, please also add the verbose description to the HeeksCADType() routine

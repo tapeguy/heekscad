@@ -407,6 +407,8 @@ public:
 	void RegisterOnBeforeNewOrOpen(void(*callbackfunc)(int, int));
 	void RegisterOnBeforeFrameDelete(void(*callbackfunc)());
 
+	void LogDebug(std::string msg);
+
 	typedef int ObjectType_t;
 	typedef int ObjectId_t;
 	typedef std::pair< ObjectType_t, ObjectId_t > ObjectReference_t;

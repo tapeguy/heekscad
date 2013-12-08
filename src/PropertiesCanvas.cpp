@@ -285,9 +285,10 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 		break;
 	case ColorPropertyType:
 		{
-			wxVariant var = event.GetPropertyValue();
-			const wxColour* wcol = wxGetVariantCast(var,wxColour);
-			HeeksColor col(wcol->Red(), wcol->Green(), wcol->Blue());
+			wxAny var = event.GetPropertyValue();
+			wxColour wcol = wxANY_AS(var, wxColour);
+//			const wxColour* wcol = wxGetVariantCast(var,wxColour);
+			HeeksColor col(wcol.Red(), wcol.Green(), wcol.Blue());
 			(*(((PropertyColor*)property)->m_callbackfunc))(col, ((PropertyColor*)property)->m_object);
 		}
 		break;

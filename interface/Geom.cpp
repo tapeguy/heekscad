@@ -1277,3 +1277,33 @@ bool IsEqual(gp_Ax1 ax1, gp_Ax1 ax2)
 
 	return true;
 }
+
+static char buf[256];
+std::string AsString(const gp_XYZ& xyz)
+{
+	sprintf(buf, "(%f,%f,%f)", xyz.X(), xyz.Y(), xyz.Z());
+	std::string str(buf);
+	return str;
+}
+
+std::string AsString(const gp_Pnt& p)
+{
+	return AsString(p.XYZ());
+}
+
+std::string AsString(const gp_Lin& l)
+{
+	sprintf(buf, "Loc%s, Dir%s", AsString(l.Location().XYZ()).c_str(), AsString(l.Direction().XYZ()).c_str());
+	std::string str(buf);
+	return str;
+}
+
+std::string AsString(const gp_Trsf& m)
+{
+	sprintf(buf, "[%f,%f,%f,%f], [%f,%f,%f,%f], [%f,%f,%f,%f]",
+				m.Value(1,1), m.Value(1,2), m.Value(1,3), m.Value(1,4),
+				m.Value(2,1), m.Value(2,2), m.Value(2,3), m.Value(2,4),
+				m.Value(3,1), m.Value(3,2), m.Value(3,3), m.Value(3,4));
+	std::string str(buf);
+	return str;
+}

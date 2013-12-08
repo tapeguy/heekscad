@@ -4685,3 +4685,7 @@ void HeeksCADapp::ReleaseIndex(unsigned int index)
 {
     if(m_marked_list)m_marked_list->ReleaseIndex(index);
 }
+
+void HeeksCADapp::LogDebug(std::string msg) {
+	wxLogDebug(wxString(msg.c_str(),wxConvUTF8));
+}

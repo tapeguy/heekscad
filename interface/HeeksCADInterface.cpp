@@ -402,7 +402,7 @@ bool CHeeksCADInterface::PickPosition(const wxChar* str, double* pos)
 
 bool CHeeksCADInterface::Digitize(const wxPoint &point, double* pos)
 {
-	DigitizedPoint p = wxGetApp().m_digitizing->digitize(point);
+	DigitizedPoint p = wxGetApp().m_digitizing->DigitizePoint(point);
 	if(p.m_type == DigitizeNoItemType)
 		return false;
 

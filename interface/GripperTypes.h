@@ -1,17 +1,21 @@
 // GripperTypes.h
 
-enum EnumGripperType{
-	GripperTypeTranslate,
-	GripperTypeRotate,
-	GripperTypeRotateObject,
-	GripperTypeRotateObjectXY,
-	GripperTypeRotateObjectXZ,
-	GripperTypeRotateObjectYZ,
-	GripperTypeScale,
-	GripperTypeObjectScaleX,
-	GripperTypeObjectScaleY,
-	GripperTypeObjectScaleZ,
-	GripperTypeObjectScaleXY,
-	GripperTypeAngle,
-	GripperTypeStretch,
-};
+#include "EnumFactory.h"
+
+#define ENUM_GRIPPER_TYPE(XX) \
+	XX(GripperTypeTranslate,) \
+	XX(GripperTypeRotate,) \
+	XX(GripperTypeRotateObject,) \
+	XX(GripperTypeRotateObjectXY,) \
+	XX(GripperTypeRotateObjectXZ,) \
+	XX(GripperTypeRotateObjectYZ,) \
+	XX(GripperTypeScale,) \
+	XX(GripperTypeObjectScaleX,) \
+	XX(GripperTypeObjectScaleY,) \
+	XX(GripperTypeObjectScaleZ,) \
+	XX(GripperTypeObjectScaleXY,) \
+	XX(GripperTypeAngle,) \
+	XX(GripperTypeStretch,) \
+
+
+DECLARE_ENUM(EnumGripperType, ENUM_GRIPPER_TYPE);

@@ -105,7 +105,7 @@ void DigitizeMode::OnMouse( wxMouseEvent& event ){
 
 	if(event.LeftDown()){
 		point_or_window->OnMouse(event);
-		lbutton_point = digitize(wxPoint(event.GetX(), event.GetY()));
+		lbutton_point = DigitizePoint(wxPoint(event.GetX(), event.GetY()));
 	}
 	else if(event.LeftUp()){
 		if(lbutton_point.m_type != DigitizeNoItemType){
@@ -116,7 +116,7 @@ void DigitizeMode::OnMouse( wxMouseEvent& event ){
 		}
 	}
 	else if(event.Moving()){
-		digitize(wxPoint(event.GetX(), event.GetY()));
+		DigitizePoint(wxPoint(event.GetX(), event.GetY()));
 		point_or_window->OnMouse(event);
 		if(m_doing_a_main_loop)
 		{
@@ -169,7 +169,7 @@ static const gp_Trsf& digitizing_matrix(bool calculate = false){
 bool DigitizeMode::OnModeChange(void){
 	point_or_window->reset();
 	if(!point_or_window->OnModeChange())return false;
-	digitize(wxGetApp().cur_mouse_pos);
+	DigitizePoint(wxGetApp().cur_mouse_pos);
 	return true;
 }
 
@@ -328,22 +328,22 @@ DigitizedPoint DigitizeMode::digitize1(const wxPoint &input_point){
 		point = *best_digitized_point;
 	}
 	else if(wxGetApp().digitize_coords){
-		point = Digitize(ray);
+		point = DigitizeRay(ray);
 	}
 	
 	return point;
 }
 
-DigitizedPoint DigitizeMode::Digitize(const gp_Lin &ray){
-	gp_Pln pl(gp_Pnt(0, 0, 0), gp_Vec(0, 0, 1));
-	pl.Transform(digitizing_matrix(true));
-	gp_Pnt pnt;
-	if(!intersect(ray, pl, pnt)){
-		pl = gp_Pln(gp_Pnt(0, 0, 0), gp_Dir(0, -1, 0));
-		if(!intersect(ray, pl, pnt))DigitizedPoint();
+DigitizedPoint DigitizeMode::DigitizeRay(const gp_Lin& ray, gp_Pln plane) {
 
-		pl = gp_Pln(gp_Pnt(0, 0, 0), gp_Vec(1, 0, 0));
-		if(!intersect(ray, pl, pnt))DigitizedPoint();
+	plane.Transform(digitizing_matrix(true));
+	gp_Pnt pnt;
+	if(!intersect(ray, plane, pnt)){
+		plane = gp_Pln(gp_Pnt(0, 0, 0), gp_Dir(0, -1, 0));
+		if(!intersect(ray, plane, pnt))DigitizedPoint();
+
+		plane = gp_Pln(gp_Pnt(0, 0, 0), gp_Vec(1, 0, 0));
+		if(!intersect(ray, plane, pnt))DigitizedPoint();
 	}
 
 	DigitizedPoint point(pnt, DigitizeCoordsType);
@@ -351,11 +351,12 @@ DigitizedPoint DigitizeMode::Digitize(const gp_Lin &ray){
 	if(wxGetApp().draw_to_grid){
 		gp_Vec plane_vx = gp_Vec(1, 0, 0).Transformed(digitizing_matrix());
 		gp_Vec plane_vy = gp_Vec(0, 1, 0).Transformed(digitizing_matrix());
+		gp_Vec plane_vz = gp_Vec(0, 0, 1).Transformed(digitizing_matrix());
 		gp_Pnt datum = gp_Pnt(0, 0, 0).Transformed(digitizing_matrix());
 
-		double a = gp_Vec(datum.XYZ()) * plane_vx;
-		double b = gp_Vec(point.m_point.XYZ()) * plane_vx;
-		double c = b - a;
+		double datum_dotp_x = gp_Vec(datum.XYZ()) * plane_vx;
+		double rp_dotp_x = gp_Vec(point.m_point.XYZ()) * plane_vx;
+		double c = rp_dotp_x - datum_dotp_x;
 		double extra1 = c > -0.00000001 ? 0.5:-0.5;
 		c = (int)(c / wxGetApp().digitizing_grid + extra1) * wxGetApp().digitizing_grid;
 
@@ -365,16 +366,23 @@ DigitizedPoint DigitizeMode::Digitize(const gp_Lin &ray){
 		double extra2 = d > -0.00000001 ? 0.5:-0.5;
 		d = (int)(d / wxGetApp().digitizing_grid + extra2) * wxGetApp().digitizing_grid;
 
+		double datum_dotp_z = gp_Vec(datum.XYZ()) * plane_vz;
+		double rp_dotp_z = gp_Vec(point.m_point.XYZ()) * plane_vz;
+		double e = rp_dotp_z - datum_dotp_z;
+		double extra3 = e > -0.00000001 ? 0.5:-0.5;
+		e = (int)(e / wxGetApp().digitizing_grid + extra3) * wxGetApp().digitizing_grid;
+
 		if(wxGetApp().m_sketch_mode)
 			point.m_point = gp_XYZ(1,0,0) * c + gp_XYZ(0,1,0) * d;
 		else
-			point.m_point = datum.XYZ() + plane_vx.XYZ() * c + plane_vy.XYZ() * d;
+			point.m_point = datum.XYZ() + plane_vx.XYZ() * c + plane_vy.XYZ() * d + plane_vz.XYZ() * e;
 	}
 
+	digitized_point = point;
 	return point;
 }
 
-DigitizedPoint DigitizeMode::digitize(const wxPoint &point){
+DigitizedPoint DigitizeMode::DigitizePoint(const wxPoint &point){
 	digitized_point = digitize1(point);
 	return digitized_point;
 }

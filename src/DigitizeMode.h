@@ -38,8 +38,8 @@ public:
 	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 
-	DigitizedPoint Digitize(const gp_Lin &ray);
-	DigitizedPoint digitize(const wxPoint &point);
+	DigitizedPoint DigitizePoint(const wxPoint &point);
+	DigitizedPoint DigitizeRay(const gp_Lin &ray, gp_Pln plane = gp_Pln(gp_Pnt(0, 0, 0), gp_Vec(0, 0, 1)));
 	void SetOnlyCoords(HeeksObj* object, bool onoff);
 	bool OnlyCoords(HeeksObj* object);
 };

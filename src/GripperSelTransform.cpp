@@ -5,6 +5,7 @@
 #include "stdafx.h"
 
 #include "GripperSelTransform.h"
+#include "../interface/Geom.h"
 #include "../interface/Tool.h"
 #include "MarkedList.h"
 #include "DigitizeMode.h"
@@ -142,7 +143,9 @@ void GripperSelTransform::OnGripperReleased ( const double* from, const double* 
 			gp_Trsf mat;
 			double object_m[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 			if(m_items_marked_at_grab.size() > 0)m_items_marked_at_grab.front()->GetScaleAboutMatrix(object_m);
+
 			MakeMatrix ( from, to, object_m, mat );
+
 			double m[16];
 			extract(mat, m );
 			object->ModifyByMatrix(m);
@@ -175,6 +178,9 @@ void GripperSelTransform::OnGripperReleased ( const double* from, const double* 
 void GripperSelTransform::MakeMatrix ( const double* from, const double* to, const double* object_m, gp_Trsf& mat )
 {
 	mat = gp_Trsf();
+	gp_Trsf object_mat = make_matrix(object_m);
+	gp_Pnt centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
+
 	switch ( m_data.m_type )
 	{
 	case GripperTypeTranslate:
@@ -182,24 +188,18 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 		break;
 	case GripperTypeScale:
 		{
-			gp_Trsf object_mat = make_matrix(object_m);
-			gp_Pnt scale_centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
-			double dist = make_point ( from ).Distance ( scale_centre_point );
-			if ( dist<0.00000001 )
-			{
-				return;
-			}
-			double scale = make_point ( to ).Distance ( scale_centre_point ) /dist;
-			mat.SetScale( scale_centre_point, scale );
+			double from_dist = make_point ( from ).Distance ( centre_point );
+			double to_dist = make_point ( to ).Distance ( centre_point );
+			if ( from_dist<0.00000001 || to_dist<0.00000001 )return;
+			double scale = to_dist/from_dist;
+			mat.SetScale( centre_point, scale );
 		}
 		break;
 	case GripperTypeObjectScaleX:
 		{
-			gp_Trsf object_mat = make_matrix(object_m);
 			gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
-			gp_Pnt scale_centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
-			double old_x = make_vector(from) * object_x - gp_Vec(scale_centre_point.XYZ()) * object_x;
-			double new_x = make_vector(to) * object_x - gp_Vec(scale_centre_point.XYZ()) * object_x;
+			double old_x = make_vector(from) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
+			double new_x = make_vector(to) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
 			if(fabs(old_x) < 0.000000001)return;
 			if(fabs(new_x) < 0.000000001)return;
 			double scale = new_x/old_x;
@@ -209,11 +209,9 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 		break;
 	case GripperTypeObjectScaleY:
 		{
-			gp_Trsf object_mat = make_matrix(object_m);
 			gp_Vec object_y = gp_Vec(0, 1, 0).Transformed(object_mat).Normalized();
-			gp_Pnt scale_centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
-			double old_y = make_vector(from) * object_y - gp_Vec(scale_centre_point.XYZ()) * object_y;
-			double new_y = make_vector(to) * object_y - gp_Vec(scale_centre_point.XYZ()) * object_y;
+			double old_y = make_vector(from) * object_y - gp_Vec(centre_point.XYZ()) * object_y;
+			double new_y = make_vector(to) * object_y - gp_Vec(centre_point.XYZ()) * object_y;
 			if(fabs(old_y) < 0.000000001)return;
 			if(fabs(new_y) < 0.000000001)return;
 			double scale = new_y/old_y;
@@ -223,25 +221,22 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 		break;
 	case GripperTypeObjectScaleZ:
 		{
-			gp_Trsf object_mat = make_matrix(object_m);
 			gp_Vec object_z = gp_Vec(0, 0, 1).Transformed(object_mat).Normalized();
-			gp_Pnt scale_centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
-			double old_z = make_vector(from) * object_z - gp_Vec(scale_centre_point.XYZ()) * object_z;
-			double new_z = make_vector(to) * object_z - gp_Vec(scale_centre_point.XYZ()) * object_z;
+			double old_z = make_vector(from) * object_z - gp_Vec(centre_point.XYZ()) * object_z;
+			double new_z = make_vector(to) * object_z - gp_Vec(centre_point.XYZ()) * object_z;
 			if(fabs(old_z) < 0.000000001)return;
 			if(fabs(new_z) < 0.000000001)return;
 			double scale = new_z/old_z;
+
 			double m[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, scale, 0, 0, 0, 0, 1};
 			mat = object_mat * make_matrix(m) * object_mat.Inverted();
 		}
 		break;
 	case GripperTypeObjectScaleXY:
 		{
-			gp_Trsf object_mat = make_matrix(object_m);
 			gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
-			gp_Pnt scale_centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
-			double old_x = make_vector(from) * object_x - gp_Vec(scale_centre_point.XYZ()) * object_x;
-			double new_x = make_vector(to) * object_x - gp_Vec(scale_centre_point.XYZ()) * object_x;
+			double old_x = make_vector(from) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
+			double new_x = make_vector(to) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
 			if(fabs(old_x) < 0.000000001)return;
 			double scale = new_x/old_x;
 			double m[16] = {scale, 0, 0, 0, 0, scale, 0, 0, 0, 0, scale, 0, 0, 0, 0, scale};
@@ -254,15 +249,13 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 	case GripperTypeRotateObjectXZ:
 	case GripperTypeRotateObjectYZ:
 		{
-			gp_Trsf object_mat = make_matrix(object_m);
-			gp_Pnt rotate_centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
 			gp_Vec start_to_end_vector(make_point(from), make_point(to));
 			if ( start_to_end_vector.Magnitude() <0.000001 ) return;
-			gp_Vec start_vector ( rotate_centre_point, make_point ( from ) );
-			gp_Vec end_vector ( rotate_centre_point, make_point ( to ) );
+			gp_Vec start_vector ( centre_point, make_point ( from ) );
+			gp_Vec end_vector ( centre_point, make_point ( to ) );
 			if ( start_vector.Magnitude() <0.000001 ) return;
 			if ( end_vector.Magnitude() <0.000001 ) return;
-			mat.SetTranslation ( -gp_Vec ( rotate_centre_point.XYZ() ) );
+			mat.SetTranslation ( -gp_Vec ( centre_point.XYZ() ) );
 
 			gp_Vec vx, vy;
 			wxGetApp().m_current_viewport->m_view_point.GetTwoAxes(vx, vy, false, 0);			
@@ -328,7 +321,7 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 				}
 			}
 
-			gp_Ax1 rot_axis(rotate_centre_point, rot_dir);
+			gp_Ax1 rot_axis(centre_point, rot_dir);
 			double sx = start_vector * vx;
 			double sy = start_vector * vy;
 			double ex = end_vector * vx;

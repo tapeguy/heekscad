@@ -36,7 +36,7 @@ void Drawing::RecalculateAndRedraw(const wxPoint& point)
 {
 	set_digitize_plane();
 
-	DigitizedPoint end = wxGetApp().m_digitizing->digitize(point);
+	DigitizedPoint end = wxGetApp().m_digitizing->DigitizePoint(point);
 	if(end.m_type == DigitizeNoItemType)return;
 
 	if(is_a_draw_level(GetDrawStep()))
@@ -69,7 +69,7 @@ void Drawing::AddPoint()
 			wxGetApp().Changed();
 		}
 	}
-	
+
 	clear_drawing_objects(calculated ? 1:0);
 	SetStartPosUndoable(wxGetApp().m_digitizing->digitized_point);
 	wxGetApp().m_digitizing->reference_point = wxGetApp().m_digitizing->digitized_point;
@@ -104,7 +104,7 @@ void Drawing::OnMouse( wxMouseEvent& event )
 			if(event.LeftDown()){
 				if(!m_inhibit_coordinate_change)
 				{
-					button_down_point = wxGetApp().m_digitizing->digitize(wxPoint(event.GetX(), event.GetY()));
+					button_down_point = wxGetApp().m_digitizing->DigitizePoint(wxPoint(event.GetX(), event.GetY()));
 				}
 			}
 			else if(event.LeftUp()){
