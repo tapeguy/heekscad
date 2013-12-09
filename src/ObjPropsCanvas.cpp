@@ -126,7 +126,6 @@ void CObjPropsCanvas::RefreshByRemovingAndAddingAll2(){
 		}
 
 		// add toolbar buttons
-		wxString exe_folder = wxGetApp().GetExeFolder();
 		wxGetApp().m_frame->AddToolBarTool(m_toolBar, _("Apply"), wxBitmap(ToolImage(_T("apply"))), _("Apply any changes made to the properties"), OnApply);
 		wxGetApp().m_frame->AddToolBarTool(m_toolBar, _("Cancel"), wxBitmap(ToolImage(_T("cancel"))), _("Stop editing the object"), OnCancel);
 

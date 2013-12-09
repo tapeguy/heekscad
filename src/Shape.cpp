@@ -1079,8 +1079,8 @@ static void on_set_opacity(double value, HeeksObj* object){
 }
 
 static void on_calculate_volume(bool value, HeeksObj* object){
-	((CShape*)object)->CalculateVolumeAndCentre();
-	wxGetApp().m_frame->RefreshProperties();
+//	((CShape*)object)->CalculateVolumeAndCentre();
+//	wxGetApp().m_frame->RefreshProperties();
 }
 
 void CShape::CalculateVolumeAndCentre()

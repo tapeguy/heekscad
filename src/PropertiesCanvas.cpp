@@ -162,15 +162,15 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			{
 				for(unsigned int i = 0; i<number_of_axes; i++)x[i] /= wxGetApp().m_view_units;
 			}
-			wxPGProperty* x_prop = new wxFloatProperty(_("x"),wxPG_LABEL, x[0]);
+			wxPGProperty* x_prop = new wxFloatProperty(_("x"), p->GetShortString() + _(".x"), x[0]);
 			if(!p->property_editable())x_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			Append( new_prop, x_prop, p );
-			wxPGProperty* y_prop = new wxFloatProperty(_("y"),wxPG_LABEL, x[1]);
+			wxPGProperty* y_prop = new wxFloatProperty(_("y"), p->GetShortString() + _(".y"), x[1]);
 			if(!p->property_editable())y_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			Append( new_prop, y_prop, p );
 			if(!((PropertyVertex*)p)->xyOnly())
 			{
-				wxPGProperty* z_prop = new wxFloatProperty(_("z"),wxPG_LABEL, x[2]);
+				wxPGProperty* z_prop = new wxFloatProperty(_("z"), p->GetShortString() + _(".z"), x[2]);
 				if(!p->property_editable())z_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 				Append( new_prop, z_prop, p );
