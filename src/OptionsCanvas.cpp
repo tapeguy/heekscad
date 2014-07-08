@@ -7,7 +7,6 @@
 #include "../interface/MarkedObject.h"
 #include "../interface/Property.h"
 #include "../interface/InputMode.h"
-#include "../interface/PropertyVertex.h"
 #include "wx/propgrid/propgrid.h"
 #include "HeeksFrame.h"
 
@@ -43,13 +42,13 @@ void COptionsCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 	CPropertiesCanvas::OnPropertyGridChange(event);
 }
 
-void COptionsCanvas::RefreshByRemovingAndAddingAll2(){
+void COptionsCanvas::RefreshProperties2(){
 	ClearProperties();
 
 	std::list<Property *> list;
 
 	// add the application's properties
-	wxGetApp().GetOptions(&list);
+	wxGetApp().GetProperties(&list);
 
 	// add the properties to the grid
 	std::list<Property *>::iterator It;

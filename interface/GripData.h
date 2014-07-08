@@ -10,6 +10,6 @@ public:
 	int m_alternative_icon; // 0 for standard icon, 1, 2, 3, etc. for additional icons, where available
 	bool m_move_relative; // true if dragged from the digitized position, false if dragged from the gripper
 
-	GripData(EnumGripperType type,double x, double y, double z, void* data = NULL, bool move_relative = false, int alternative_icon = 0){m_type = type; m_x = x; m_y = y; m_z = z; m_data = data; m_alternative_icon = alternative_icon; m_move_relative = move_relative;}
+	GripData(EnumGripperType type, double x, double y, double z, void* data = NULL, bool move_relative = false, int alternative_icon = 0){m_type = type; m_x = x; m_y = y; m_z = z; m_data = data; m_alternative_icon = alternative_icon; m_move_relative = move_relative;}
 };
 

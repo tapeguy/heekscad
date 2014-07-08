@@ -4,10 +4,7 @@
 #include "stdafx.h"
 
 #include "HSpline.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyChoice.h"
 #include "../tinyxml/tinyxml.h"
-#include "../interface/PropertyVertex.h"
 #include "HLine.h"
 #include "HILine.h"
 #include "HArc.h"
@@ -40,28 +37,38 @@ double CTangentialArc::radius()const
 HeeksObj* CTangentialArc::MakeHArc()const
 {
 	gp_Circ c(gp_Ax2(m_c, m_a), radius());
-	HArc* new_object = new HArc(m_p0, m_p1, c, &(wxGetApp().current_color));
+	HArc* new_object = new HArc(m_p0, m_p1, c, wxGetApp().CurrentColor());
 	return new_object;
 }
 
-HSpline::HSpline(const HSpline &s):EndedObject(&s.color){
+HSpline::HSpline(const HSpline &s):EndedObject(s.m_color){
+	InitializeProperties();
 	operator=(s);
 }
 
-HSpline::HSpline(const Geom_BSplineCurve &s, const HeeksColor* col):EndedObject(col),color(*col){
-	m_spline = Handle(Geom_BSplineCurve)::DownCast(s.Copy());	
-	m_spline->D0(m_spline->FirstParameter(), A->m_p);
-	m_spline->D0(m_spline->LastParameter() , B->m_p);
-}
-
-HSpline::HSpline(Handle_Geom_BSplineCurve s, const HeeksColor* col):EndedObject(col),color(*col){
-	m_spline = s;//Handle(Geom_BSplineCurve)::DownCast(s->Copy());
-	m_spline->D0(m_spline->FirstParameter(), A->m_p);
-	m_spline->D0(m_spline->LastParameter() , B->m_p);
-}
-
-HSpline::HSpline(const std::list<gp_Pnt> &points, const HeeksColor* col):EndedObject(col),color(*col)
+HSpline::HSpline(const Geom_BSplineCurve &s, const HeeksColor& col):EndedObject(col)
 {
+	InitializeProperties();
+	m_spline = Handle(Geom_BSplineCurve)::DownCast(s.Copy());	
+	gp_Pnt a = A->m_p;
+	gp_Pnt b = B->m_p;
+	m_spline->D0(m_spline->FirstParameter(), a);
+	m_spline->D0(m_spline->LastParameter(), b);
+}
+
+HSpline::HSpline(Handle_Geom_BSplineCurve s, const HeeksColor& col):EndedObject(col)
+{
+	InitializeProperties();
+	m_spline = s;//Handle(Geom_BSplineCurve)::DownCast(s->Copy());
+	gp_Pnt a = A->m_p;
+	gp_Pnt b = B->m_p;
+	m_spline->D0(m_spline->FirstParameter(), a);
+	m_spline->D0(m_spline->LastParameter() , b);
+}
+
+HSpline::HSpline(const std::list<gp_Pnt> &points, const HeeksColor& col):EndedObject(col)
+{
+	InitializeProperties();
 	Standard_Boolean periodicity = points.front().IsEqual(points.back(), wxGetApp().m_geom_tol);
 
 	unsigned int size = points.size();
@@ -78,8 +85,10 @@ HSpline::HSpline(const std::list<gp_Pnt> &points, const HeeksColor* col):EndedOb
 	GeomAPI_Interpolate anInterpolation(Array, periodicity, Precision::Approximation());
 	anInterpolation.Perform();
 	m_spline = anInterpolation.Curve();
-	m_spline->D0(m_spline->FirstParameter(), A->m_p);
-	m_spline->D0(m_spline->LastParameter() , B->m_p);
+	gp_Pnt a = A->m_p;
+	gp_Pnt b = B->m_p;
+	m_spline->D0(m_spline->FirstParameter(), a);
+	m_spline->D0(m_spline->LastParameter(), b);
 }
 
 HSpline::~HSpline(){
@@ -87,9 +96,14 @@ HSpline::~HSpline(){
 
 const HSpline& HSpline::operator=(const HSpline &s){
 	EndedObject::operator=(s);
-	m_spline = Handle(Geom_BSplineCurve)::DownCast((s.m_spline)->Copy());;
-	color = s.color;
+	m_spline = Handle(Geom_BSplineCurve)::DownCast((s.m_spline)->Copy());
 	return *this;
+}
+
+void HSpline::InitializeProperties()
+{
+	m_knots.Initialize(_("knots"), this);
+	m_poles.Initialize(_("poles"), this);
 }
 
 const wxBitmap &HSpline::GetIcon()
@@ -142,7 +156,7 @@ static void glVertexFunction(const double *p){glVertex3d(p[0], p[1], p[2]);}
 
 void HSpline::glCommands(bool select, bool marked, bool no_color){
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(color);
+		wxGetApp().glColorEnsuringContrast(m_color);
 //		if (wxGetApp().m_allow_opengl_stippling)
 //		{
 //			glEnable(GL_LINE_STIPPLE);
@@ -226,8 +240,12 @@ void OnSetPole(const double *v, HeeksObj* obj, int i)
 	((HSpline*)obj)->m_spline->SetPole(i,p);
 }
 
+void HSpline::OnPropertyEdit(Property* prop)
+{
+}
 
 void HSpline::GetProperties(std::list<Property *> *list){
+/*
 	wxChar str[512];
 	for(int i=1; i <= m_spline->NbKnots(); i++)
 	{
@@ -247,6 +265,7 @@ void HSpline::GetProperties(std::list<Property *> *list){
 		wxSprintf(str,_T("%s %d"), _("Weight"), i);
 		list->push_back(new PropertyDouble(str,m_spline->Weight(i),this,OnSetWeight,i));
 	}
+*/
 	EndedObject::GetProperties(list); 
 }
 
@@ -286,7 +305,7 @@ void HSpline::WriteXML(TiXmlNode *root)
 	TiXmlElement * element;
 	element = new TiXmlElement( "Spline" );
 	root->LinkEndChild( element );  
-	element->SetAttribute("col", color.COLORREF_color());
+	element->SetAttribute("col", m_color.COLORREF_color());
 	element->SetAttribute("rational", m_spline->IsRational()?1:0);
 	element->SetAttribute("periodic", m_spline->IsPeriodic()?1:0);
 	element->SetAttribute("knots", m_spline->NbKnots());
@@ -394,7 +413,7 @@ HeeksObj* HSpline::ReadFromXMLElement(TiXmlElement* pElem)
 
 	Geom_BSplineCurve spline(tkcontrol,tkweight,tkknot,tkmult,degree,periodic,rational);
 
-	HSpline* new_object = new HSpline(spline, &c);
+	HSpline* new_object = new HSpline(spline, c);
 	new_object->ReadBaseXML(pElem);
 
 	return new_object;  
@@ -531,7 +550,7 @@ void CreateArcs(const gp_Pnt &p_start, const gp_Vec &v_start, double t_start, do
 	else
 	{
 		// calculate_biarc_points failed, just add a line
-		new_spans_for_CreateArcs->push_back(new HLine(p_start, p_end, &(wxGetApp().current_color)));
+		new_spans_for_CreateArcs->push_back(new HLine(p_start, p_end, wxGetApp().CurrentColor()));
 		return;
 	}
 	

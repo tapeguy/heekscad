@@ -9,16 +9,16 @@ class HGear: public HeeksObj{
 
 public:
 	gp_Ax2 m_pos; // coordinate system defining position and orientation
-	int m_num_teeth;
-	double m_module;
-	double m_addendum_offset;
-	double m_addendum_multiplier;
-	double m_dedendum_multiplier;
-	double m_pressure_angle;
-	double m_tip_relief;
-	double m_depth;
-	double m_cone_half_angle; // 0 for a cylinder ( spur gear ), 90 for a circular rack
-	double m_angle; // draw the gear rotated anti-clockwise by this angle
+	PropertyInt m_num_teeth;
+	PropertyDouble m_module;
+	PropertyDouble m_addendum_offset;
+	PropertyDouble m_addendum_multiplier;
+	PropertyDouble m_dedendum_multiplier;
+	PropertyDouble m_pressure_angle;
+	PropertyDouble m_tip_relief;
+	PropertyDouble m_depth;
+	PropertyDouble m_cone_half_angle;  // 0 for a cylinder ( spur gear ), 90 for a circular rack
+	PropertyDouble m_angle;            // draw the gear rotated anti-clockwise by this angle
 
 	HGear();
 	HGear(const HGear &o);
@@ -27,8 +27,9 @@ public:
 	const HGear& operator=(const HGear &o);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return GearType;}
-	long GetMarkingMask()const{return MARKING_FILTER_GEAR;}
+	int GetMarkingFilter()const{return GearMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxChar* GetTypeString(void)const{return _("Gear");}
@@ -37,7 +38,6 @@ public:
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	bool GetScaleAboutMatrix(double *m);
-	void GetProperties(std::list<Property *> *list);
 	void WriteXML(TiXmlNode *root);
 	bool DescendForUndo(){return false;}
 	bool IsDifferent(HeeksObj* other);

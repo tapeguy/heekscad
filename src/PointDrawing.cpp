@@ -28,7 +28,7 @@ bool PointDrawing::calculate_item(DigitizedPoint &end)
 	}
 
 	if(!temp_object){
-		temp_object = new HPoint(end.m_point, &wxGetApp().current_color);
+		temp_object = new HPoint(end.m_point, wxGetApp().CurrentColor());
 		if(temp_object)temp_object_in_list.push_back(temp_object);
 	}
 	else{

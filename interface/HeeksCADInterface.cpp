@@ -347,14 +347,19 @@ bool CHeeksCADInterface::ObjectMarked(HeeksObj* object)
 	return wxGetApp().m_marked_list->ObjectMarked(object);
 }
 
-void CHeeksCADInterface::SetMarkingFilter(long filter)
+void CHeeksCADInterface::SetMarkingFilter(int filter)
 {
-	wxGetApp().m_marked_list->m_filter = filter;
+	wxGetApp().m_marked_list->m_filter[filter].SetValue(true);
 }
 
-long CHeeksCADInterface::GetMarkingFilter()
+void CHeeksCADInterface::UnsetMarkingFilter(int filter)
 {
-	return wxGetApp().m_marked_list->m_filter;
+	wxGetApp().m_marked_list->m_filter[filter].SetValue(false);
+}
+
+bool CHeeksCADInterface::GetMarkingFilter(int filter)
+{
+	return wxGetApp().m_marked_list->m_filter[filter].IsSet();
 }
 
 void CHeeksCADInterface::ClearMarkedList()
@@ -370,8 +375,8 @@ CInputMode* CHeeksCADInterface::GetSelectMode()
 void CHeeksCADInterface::SetLineDrawingMode()
 {
 	wxGetApp().CreateUndoPoint();
-	line_strip.drawing_mode = LineDrawingMode;
-	wxGetApp().SetInputMode(&line_strip);
+	wxGetApp().m_line_strip.drawing_mode = LineDrawingMode;
+	wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
 	wxGetApp().Changed();
 }
 
@@ -390,8 +395,11 @@ void CHeeksCADInterface::SetInputMode(CInputMode* input_mode)
 	wxGetApp().SetInputMode(input_mode);
 }
 
-int CHeeksCADInterface::PickObjects(const wxChar* str, long marking_filter, bool m_just_one)
+int CHeeksCADInterface::PickObjects(const wxChar* str, const std::set<MarkingFilter>& marking_filter, bool m_just_one)
 {
+	if (marking_filter.empty())
+		return wxGetApp().PickObjects(str, MarkedList::all_filters, m_just_one);
+
 	return wxGetApp().PickObjects(str, marking_filter, m_just_one);
 }
 
@@ -471,24 +479,24 @@ HeeksObj* CHeeksCADInterface::NewSketch()
 HeeksObj* CHeeksCADInterface::NewPoint(const double* p)
 {
     // I needed this for HeeksPython- it's just a point
-	return new HPoint(make_point(p),&wxGetApp().current_color);
+	return new HPoint(make_point(p), wxGetApp().CurrentColor());
 
 }
 
 HeeksObj* CHeeksCADInterface::NewLine(const double* s, const double* e)
 {
-	return new HLine(make_point(s), make_point(e), &wxGetApp().current_color);
+	return new HLine(make_point(s), make_point(e), wxGetApp().CurrentColor());
 }
 
 HeeksObj* CHeeksCADInterface::NewILine(const double* s, const double* e)
 {
-	return new HILine(make_point(s), make_point(e), &wxGetApp().current_color);
+	return new HILine(make_point(s), make_point(e), wxGetApp().CurrentColor());
 }
 
 HeeksObj* CHeeksCADInterface::NewCircle(const double* c, double r)
 {
 	gp_Dir up(0,0,1);
-	return new HCircle(gp_Circ(gp_Ax2(make_point(c),up),r),&wxGetApp().current_color);
+	return new HCircle(gp_Circ(gp_Ax2(make_point(c),up),r), wxGetApp().CurrentColor());
 }
 
 HeeksObj* CHeeksCADInterface::NewGroup()
@@ -499,36 +507,36 @@ HeeksObj* CHeeksCADInterface::NewGroup()
 HeeksObj* CHeeksCADInterface::NewCuboid(const double* c, double x, double y, double z)
 {
 	gp_Dir up(0,0,1);
-	return new CCuboid(gp_Ax2(make_point(c),up),x,y,z,_T("Cuboid"),wxGetApp().current_color, 1.0f);
+	return new CCuboid(gp_Ax2(make_point(c),up),x,y,z,_T("Cuboid"),wxGetApp().CurrentColor(), 1.0f);
 }
 
 HeeksObj* CHeeksCADInterface::NewCylinder(const double* c, double r, double h)
 {
 	gp_Dir up(0,0,1);
-	return new CCylinder(gp_Ax2(make_point(c),up),r,h,_T("Cylinder"),wxGetApp().current_color, 1.0f);
+	return new CCylinder(gp_Ax2(make_point(c),up),r,h,_T("Cylinder"),wxGetApp().CurrentColor(), 1.0f);
 }
 
 HeeksObj* CHeeksCADInterface::NewCylinderEx(const double* pos, const double* dir, double r, double h)
 {
 	gp_Dir up(dir[0],dir[1],dir[2]);
-	return new CCylinder(gp_Ax2(make_point(pos),up),r,h,_T("Cylinder"),wxGetApp().current_color, 1.0f);
+	return new CCylinder(gp_Ax2(make_point(pos),up),r,h,_T("Cylinder"),wxGetApp().CurrentColor(), 1.0f);
 }
 
 HeeksObj* CHeeksCADInterface::NewCone(const double* c, double r1, double r2, double h)
 {
 	gp_Dir up(0,0,1);
-	return new CCone(gp_Ax2(make_point(c),up),r1,r2,h,_T("Cone"),wxGetApp().current_color, 1.0f);
+	return new CCone(gp_Ax2(make_point(c),up),r1,r2,h,_T("Cone"),wxGetApp().CurrentColor(), 1.0f);
 }
 
 
 HeeksObj* CHeeksCADInterface::NewSphere(const double* pos , double radius)
 {
-   return new CSphere(gp_Pnt(make_point(pos)), radius,_T("Sphere"), wxGetApp().current_color, 1.0f);
+   return new CSphere(gp_Pnt(make_point(pos)), radius,_T("Sphere"), wxGetApp().CurrentColor(), 1.0f);
 }
 
 HeeksObj* CHeeksCADInterface::NewSolid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col)
 {
-	return(new CSolid( solid, title, col, 1.0f ) );
+	return(new CSolid(solid, title, col, 1.0f ));
 
 }
 
@@ -544,19 +552,19 @@ HeeksObj* CHeeksCADInterface::NewCoordinateSystem(const double* pos, const doubl
 double CHeeksCADInterface::GetDatumPosX(HeeksObj* c)
 {
 
-	return ((CoordinateSystem*)(c))->m_o.X();
+	return ((CoordinateSystem*)(c))->m_o.AsPoint().X();
 }
 
 double CHeeksCADInterface::GetDatumPosY(HeeksObj* c)
 {
 
-	return ((CoordinateSystem*)(c))->m_o.Y();
+	return ((CoordinateSystem*)(c))->m_o.AsPoint().Y();
 }
 
 double CHeeksCADInterface::GetDatumPosZ(HeeksObj* c)
 {
 
-	return ((CoordinateSystem*)(c))->m_o.Z();
+	return ((CoordinateSystem*)(c))->m_o.AsPoint().Z();
 }
 
 
@@ -620,7 +628,7 @@ HeeksObj* CHeeksCADInterface::Common(std::list<HeeksObj*> objects)
 void CHeeksCADInterface::AddText(const wxChar  *text)
 {
     gp_Trsf mat = wxGetApp().GetDrawMatrix(true);
-    HText* new_object = new HText(mat, text, &(wxGetApp().current_color), wxGetApp().m_pVectorFont );
+    HText* new_object = new HText(mat, text, wxGetApp().CurrentColor(), wxGetApp().m_pVectorFont );
     wxGetApp().CreateUndoPoint();
 	wxGetApp().Add(new_object, NULL);
 	wxGetApp().m_marked_list->Clear(true);
@@ -675,7 +683,7 @@ HeeksObj* CHeeksCADInterface::NewArc(const double* s, const double* e, const dou
 	gp_Dir dir(up[0], up[1], up[2]);
 	gp_Pnt pc = make_point(c);
 	gp_Circ circle(gp_Ax2(pc, dir), p1.Distance(pc));
-	return new HArc(p0, p1, circle, &wxGetApp().current_color);
+	return new HArc(p0, p1, circle, wxGetApp().CurrentColor());
 }
 
 HeeksObj* CHeeksCADInterface::NewArc(const double* c, const double* u, double r, double s, double e)
@@ -689,7 +697,7 @@ HeeksObj* CHeeksCADInterface::NewArc(const double* c, const double* u, double r,
 	p0.Rotate(circle.Axis(),s);
 	p1.Rotate(circle.Axis(),e);
 
-	return new HArc(p0, p1, circle, &wxGetApp().current_color);
+	return new HArc(p0, p1, circle, wxGetApp().CurrentColor());
 
 }
 
@@ -1555,12 +1563,6 @@ void CHeeksCADInterface::RemoveInputWindow()
 	wxGetApp().m_frame->m_input_canvas = NULL;
 }
 
-void CHeeksCADInterface::PropertiesOnApply2()
-{
-	// don't need to press tick to make changes
-	wxGetApp().m_frame->m_properties->OnApply2();
-}
-
 void CHeeksCADInterface::AddToAboutBox(const wxChar* str)
 {
 	wxGetApp().m_frame->m_extra_about_box_str.Append(str);
@@ -1614,7 +1616,7 @@ void CHeeksCADInterface::SetViewUnits(double units, bool write_to_config)
 	wxGetApp().OnChangeViewUnits(wxGetApp().m_view_units);
 	if(write_to_config)
 	{
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Write(_T("ViewUnits"), wxGetApp().m_view_units);
 	}
 }
@@ -1642,7 +1644,7 @@ HeeksObj* CHeeksCADInterface::NewSplineFromPoints(unsigned int num_points, const
 		points.push_back(p);
 	}
 
-	HSpline* new_object = new HSpline(points, &wxGetApp().current_color);
+	HSpline* new_object = new HSpline(points, wxGetApp().CurrentColor());
 
 	return new_object;
 }

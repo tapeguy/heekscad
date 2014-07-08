@@ -25,7 +25,7 @@ public:
 	~HVertex();
 
 	int GetType()const{return VertexType;}
-	long GetMarkingMask()const{return MARKING_FILTER_VERTEX;}
+	int GetMarkingFilter()const{return VertexMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	HeeksObj *MakeACopy(void)const{ return new HVertex(*this);}

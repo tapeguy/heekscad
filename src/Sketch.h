@@ -5,24 +5,24 @@
 #pragma once
 
 #include "../interface/ObjList.h"
-#include "../interface/HeeksColor.h"
 #include "../interface/SketchOrder.h"
 
 class CoordinateSystem;
 
 class CSketch:public ObjList
 {
-	HeeksColor color;
+private:
 	wxString m_title;
 	bool IsClockwise()const{return GetArea()>0;}
+	std::map<int, int> order_map_for_properties; // maps drop-down index to SketchOrderType
+	static std::string m_sketch_order_str[MaxSketchOrderTypes];
 
 public:
-	static std::string m_sketch_order_str[MaxSketchOrderTypes];
-	SketchOrderType m_order;
-	bool m_solidify;
+	PropertyInt m_num_children;
+	PropertyChoice m_order;
+	PropertyCheck m_solidify;
 	bool m_draw_with_transform;
 	CoordinateSystem* m_coordinate_system;
-
 
 	CSketch();
 	CSketch(const CSketch& c);
@@ -37,10 +37,12 @@ public:
 
 	std::vector<TopoDS_Face> GetFaces();
 
+	void InitializeProperties();
 	int GetType()const{return SketchType;}
-	long GetMarkingMask()const{return MARKING_FILTER_SKETCH;}
+	int GetMarkingFilter()const{return SketchMarkingFilter;}
 	const wxChar* GetTypeString(void)const{return _("Sketch");}
 	const wxBitmap &GetIcon();
+	void OnPropertyEdit(Property* prop);
 	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	HeeksObj *MakeACopy(void)const;
@@ -48,7 +50,6 @@ public:
 	void WriteXML(TiXmlNode *root);
 	bool UsesID(){return true;}
 	void SetColor(const HeeksColor &col);
-	const HeeksColor* GetColor()const;
 	const wxChar* GetShortString(void)const{return m_title.c_str();}
 	bool CanEditString(void)const{return true;}
 	void OnEditString(const wxChar* str);

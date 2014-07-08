@@ -34,7 +34,7 @@ public:
 
 	// HeeksObj's virtual functions
 	int GetType()const{return ImageType;}
-	long GetMarkingMask()const{return MARKING_FILTER_IMAGE;}
+	int GetMarkingFilter()const{return ImageMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxBitmap &GetIcon();

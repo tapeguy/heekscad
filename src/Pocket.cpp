@@ -6,18 +6,17 @@
 #include "Pocket.h"
 #include "Shape.h"
 #include "RuledSurface.h"
-#include "../interface/PropertyDouble.h"
 #include "Part.h"
 
-HPocket::HPocket(double length)
+HPocket::HPocket(double length) :
+m_length(_("Height"), length, this)
 {
-	m_length = length;
 	m_faces->m_visible=false;
 }
 
-HPocket::HPocket()
+HPocket::HPocket() :
+m_length(_("Height"), 0.0, this)
 {
-	m_length = 0;
 }
 
 bool HPocket::IsDifferent(HeeksObj* other)
@@ -89,19 +88,6 @@ void HPocket::glCommands(bool select, bool marked, bool no_color)
 	ObjList::glCommands(select,marked,no_color);
 	glPopMatrix();
 
-}
-
-void OnPocketSetHeight(double b, HeeksObj* o)
-{
-	((HPocket*)o)->m_length = b;
-	wxGetApp().Repaint();
-}
-
-void HPocket::GetProperties(std::list<Property *> *list)
-{
-	list->push_back(new PropertyDouble(_("Height"), m_length, this,OnPocketSetHeight));
-
-	ObjList::GetProperties(list);
 }
 
 void HPocket::WriteXML(TiXmlNode *root)

@@ -4,11 +4,7 @@
 
 #include "stdafx.h"
 #include "DoubleInput.h"
-#include "PropertyDouble.h"
-#include "PropertyLength.h"
-
-static double* value_for_set_value = NULL;
-static void set_value(double value, HeeksObj* object){*value_for_set_value = value;}
+#include "Property.h"
 
 class CInputApply:public Tool{
 public:
@@ -36,17 +32,32 @@ CInputCancel input_cancel;
 // static
 bool CDoubleInput::m_success = false;
 
+
+CDoubleInput::CDoubleInput()
+{
+}
+
 CDoubleInput::CDoubleInput(const wxChar* prompt, const wxChar* value_name, double initial_value)
 {
+        m_value = new PropertyDouble(value_name, initial_value, this);
 	m_title.assign(prompt);
-	m_value_title.assign(value_name);
-	m_value = initial_value;
 	m_success = false;
+}
+
+CDoubleInput::~CDoubleInput()
+{
+	delete m_value;
 }
 
 const wxChar* CDoubleInput::GetTitle()
 {
 	return m_title.c_str();
+}
+
+double CDoubleInput::GetValue()
+{
+	double rtn = *m_value;
+	return rtn;
 }
 
 void CDoubleInput::OnMouse( wxMouseEvent& event )
@@ -55,13 +66,6 @@ void CDoubleInput::OnMouse( wxMouseEvent& event )
 	if(LeftAndRightPressed(event, event_used))
 		wxGetApp().ExitMainLoop();
 }
-
-void CDoubleInput::GetProperties(std::list<Property *> *list)
-{
-	value_for_set_value = &m_value;
-	list->push_back(new PropertyDouble(m_value_title.c_str(), m_value, NULL, set_value));
-}
-
 
 void CDoubleInput::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 {
@@ -72,11 +76,8 @@ void CDoubleInput::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 
 
 CLengthInput::CLengthInput(const wxChar* prompt, const wxChar* value_name, double initial_value)
-    : CDoubleInput(prompt, value_name, initial_value) { }
-
-void CLengthInput::GetProperties(std::list<Property *> *list)
 {
-	value_for_set_value = &m_value;
-	list->push_back(new PropertyLength(m_value_title.c_str(), m_value, NULL, set_value));
+	m_title.assign(prompt);
+	m_value = new PropertyLength(value_name, initial_value, this);
+	m_success = false;
 }
-

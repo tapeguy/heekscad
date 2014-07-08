@@ -7,25 +7,28 @@
 #include "HLine.h"
 #include "HILine.h"
 #include "HCircle.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyChoice.h"
 #include "../tinyxml/tinyxml.h"
-#include "../interface/PropertyVertex.h"
 #include "../interface/Tool.h"
 #include "Gripper.h"
 #include "Sketch.h"
 #include "Drawing.h"
 #include "DigitizeMode.h"
 
-HArc::HArc(const HArc &line):EndedObject(&line.color){
+
+HArc::HArc(const HArc &line)
+ : EndedObject(line.m_color)
+{
+	InitializeProperties();
 #ifndef MULTIPLE_OWNERS
-	C = new HPoint(gp_Pnt(),&line.color);
+	C = new HPoint(gp_Pnt(), line.m_color);
 #endif
 	operator=(line);
 }
 
-HArc::HArc(const gp_Pnt &a, const gp_Pnt &b, const gp_Circ &c, const HeeksColor* col):EndedObject(col),color(*col){ //:color(*col), EndedObject(col){
+HArc::HArc(const gp_Pnt &a, const gp_Pnt &b, const gp_Circ &c, const HeeksColor& col)
+ : EndedObject(col)
+{
+	InitializeProperties();
 #ifdef MULTIPLE_OWNERS
 	A->m_p = a;
 	B->m_p = b;
@@ -43,6 +46,18 @@ HArc::HArc(const gp_Pnt &a, const gp_Pnt &b, const gp_Circ &c, const HeeksColor*
 }
 
 HArc::~HArc(){
+}
+
+void HArc::InitializeProperties()
+{
+	m_start.Initialize(_("start"), this);
+	m_end.Initialize(_("end"), this);
+	m_centre.Initialize(_("centre"), this);
+	m_axis_direction.Initialize(_("axis"), this);
+	m_length.Initialize(_("length"), this);
+	m_length.SetReadOnly(true);
+	m_radius.Initialize(_("radius"), this);
+	m_radius.SetReadOnly(true);
 }
 
 const wxBitmap &HArc::GetIcon()
@@ -66,7 +81,6 @@ const HArc& HArc::operator=(const HArc &b){
 	EndedObject::operator=(b);
 	m_radius = b.m_radius;
 	m_axis = b.m_axis;
-	color = b.color;
 #ifdef MULTIPLE_OWNERS
 	std::list<HeeksObj*>::iterator it = m_objects.begin();
 	it++;it++;
@@ -210,41 +224,41 @@ void HArc::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_m
 	int segments = (int)(fabs(pixels_per_mm * radius * d_angle / 6.28318530717958 + 1));
 	if(segments<3)segments = 3;
 
-    double theta = d_angle / (double)segments;
+	double theta = d_angle / (double)segments;
 	while(theta>1.0){segments*=2;theta = d_angle / (double)segments;}
-    double tangetial_factor = tan(theta);
-    double radial_factor = 1 - cos(theta);
+	double tangetial_factor = tan(theta);
+	double radial_factor = 1 - cos(theta);
 
-    double x = radius * cos(start_angle);
-    double y = radius * sin(start_angle);
+	double x = radius * cos(start_angle);
+	double y = radius * sin(start_angle);
 
 	double pp[3];
 
-   for(int i = 0; i < segments + 1; i++)
-    {
+	for(int i = 0; i < segments + 1; i++)
+	{
 		gp_Pnt p = centre.XYZ() + x * x_axis.XYZ() + y * y_axis.XYZ();
 		extract(p, pp);
 		(*callbackfunc)(pp);
 
-        double tx = -y;
-        double ty = x;
+		double tx = -y;
+		double ty = x;
 
-        x += tx * tangetial_factor;
-        y += ty * tangetial_factor;
+		x += tx * tangetial_factor;
+		y += ty * tangetial_factor;
 
-        double rx = - x;
-        double ry = - y;
+		double rx = - x;
+		double ry = - y;
 
-        x += rx * radial_factor;
-        y += ry * radial_factor;
-    }
+		x += rx * radial_factor;
+		y += ry * radial_factor;
+	}
 }
 
 static void glVertexFunction(const double *p){glVertex3d(p[0], p[1], p[2]);}
 
 void HArc::glCommands(bool select, bool marked, bool no_color){
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(color);
+		wxGetApp().glColorEnsuringContrast(m_color);
 	}
 	GLfloat save_depth_range[2];
 	if(marked){
@@ -266,7 +280,7 @@ void HArc::glCommands(bool select, bool marked, bool no_color){
 
 void HArc::Draw(wxDC& dc)
 {
-	wxGetApp().PlotSetColor(color);
+	wxGetApp().PlotSetColor(m_color);
 	double s[3], e[3], c[3];
 	extract(A->m_p, s);
 	extract(B->m_p, e);
@@ -330,42 +344,36 @@ void HArc::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 	list->push_back(GripData(GripperTypeStretch,C->m_p.X(),C->m_p.Y(),C->m_p.Z(),C));
 }
 
-static void on_set_start(const double *vt, HeeksObj* object){
-	((HArc*)object)->A->m_p = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-static void on_set_end(const double *vt, HeeksObj* object){
-	((HArc*)object)->B->m_p = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-static void on_set_centre(const double *vt, HeeksObj* object){
-	((HArc*)object)->C->m_p = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-static void on_set_axis(const double *vt, HeeksObj* object){
-	gp_Ax1 a = ((HArc*)object)->m_axis;
-	a.SetDirection(make_vector(vt));
-	((HArc*)object)->m_axis = a;
-	wxGetApp().Repaint();
+void HArc::OnPropertyEdit(Property *prop)
+{
+	if (prop == &m_start || prop == &m_end || prop == &m_centre)
+	{
+		const gp_Pnt& vt = *(PropertyVertex *)prop;
+		if (prop == &m_start)
+			A->m_p = vt;
+		else if (prop == &m_end)
+			B->m_p = vt;
+		else if (prop == &m_centre)
+			C->m_p = vt;
+	}
+	else if (prop == &m_axis_direction)
+	{
+		const gp_Vec& vt = *(PropertyVector *)prop;
+		gp_Ax1 a = m_axis;
+		a.SetDirection(vt);
+		m_axis = a;
+	}
+	else {
+		HeeksObj::OnPropertyEdit(prop);
+	}
 }
 
 void HArc::GetProperties(std::list<Property *> *list){
-	double a[3], b[3];
-	double c[3], ax[3];
-	extract(A->m_p, a);
-	extract(B->m_p, b);
-	extract(C->m_p, c);
-	extract(m_axis.Direction(), ax);
-	list->push_back(new PropertyVertex(_("start"), a, this, on_set_start));
-	list->push_back(new PropertyVertex(_("end"), b, this, on_set_end));
-	list->push_back(new PropertyVertex(_("centre"), c, this, on_set_centre));
-	list->push_back(new PropertyVector(_("axis"), ax, this, on_set_axis));
-	double length = A->m_p.Distance(B->m_p);
-	list->push_back(new PropertyLength(_("length"), length, NULL));
-	list->push_back(new PropertyLength(_("radius"), m_radius, this, NULL));
+	m_start = A->m_p;
+	m_end = B->m_p;
+	m_centre = C->m_p;
+	m_axis_direction = m_axis.Direction();
+	m_length = A->m_p.Distance(B->m_p);
 
 	HeeksObj::GetProperties(list);
 }
@@ -605,11 +613,10 @@ gp_Pnt HArc::GetPointAtFraction(double fraction)const
 
 	if(start_angle > end_angle)end_angle += 6.28318530717958;
 
-	double radius = m_radius;
 	double d_angle = end_angle - start_angle;
 	double angle = start_angle + d_angle * fraction;
-    double x = radius * cos(angle);
-    double y = radius * sin(angle);
+	double x = m_radius * cos(angle);
+	double y = m_radius * sin(angle);
 
 	return centre.XYZ() + x * x_axis.XYZ() + y * y_axis.XYZ();
 }
@@ -642,7 +649,7 @@ void HArc::WriteXML(TiXmlNode *root)
 {
 	TiXmlElement *element = new TiXmlElement( "Arc" );
 	root->LinkEndChild( element );
-	element->SetAttribute("col", color.COLORREF_color());
+	element->SetAttribute("col", m_color.COLORREF_color());
 	gp_Dir D = m_axis.Direction();
 	element->SetDoubleAttribute("ax", D.X());
 	element->SetDoubleAttribute("ay", D.Y());
@@ -678,7 +685,7 @@ HeeksObj* HArc::ReadFromXMLElement(TiXmlElement* pElem)
 
 	gp_Circ circle(gp_Ax2(centre, gp_Dir(make_vector(axis))), centre.Distance(p0));
 
-	HArc* new_object = new HArc(p0, p1, circle, &c);
+	HArc* new_object = new HArc(p0, p1, circle, c);
 	new_object->ReadBaseXML(pElem);
 
 	if(new_object->GetNumChildren()>3)

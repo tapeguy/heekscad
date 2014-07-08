@@ -19,7 +19,7 @@ public:
 	//virtual const DynamicSolid& operator=(const DynamicSolid& s);
 
 	int GetType()const{return SolidType;}
-	long GetMarkingMask()const{return MARKING_FILTER_SOLID;}
+	int GetMarkingFilter()const{return SolidMarkingFilter;}
 	const wxChar* GetTypeString(void)const{return _("Solid");}
 	void ReloadPointers(); 
 

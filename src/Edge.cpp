@@ -8,13 +8,13 @@
 #include "Solid.h"
 #include "Shape.h"
 #include "../interface/Tool.h"
-#include "HeeksConfig.h"
 #include "Gripper.h"
-#include "../interface/PropertyLength.h"
 #include "ConversionTools.h"
 
 
-CEdge::CEdge(const TopoDS_Edge &edge):m_topods_edge(edge), m_vertex0(NULL), m_vertex1(NULL), m_midpoint_calculated(false), m_temp_attr(0){
+CEdge::CEdge(const TopoDS_Edge &edge)
+ : m_topods_edge(edge), m_vertex0(NULL), m_vertex1(NULL), m_midpoint_calculated(false), m_temp_attr(0)
+{
 	GetCurveParams2(&m_start_u, &m_end_u, &m_isClosed, &m_isPeriodic);
 	Evaluate(m_start_u, &m_start_x, &m_start_tangent_x);
 	double t[3];
@@ -23,6 +23,11 @@ CEdge::CEdge(const TopoDS_Edge &edge):m_topods_edge(edge), m_vertex0(NULL), m_ve
 }
 
 CEdge::~CEdge(){
+}
+
+void CEdge::InitializeProperties()
+{
+	m_length.Initialize(_("length"), this);
 }
 
 const wxBitmap &CEdge::GetIcon()
@@ -154,7 +159,7 @@ public:
 	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/edgeblend.png");}
 	void Run(){
 		double rad = 2.0;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Read(_T("EdgeBlendRadius"), &rad);
 		if(wxGetApp().InputLength(_("Enter Blend Radius"), _("Radius"), rad))
 		{
@@ -174,7 +179,7 @@ public:
 	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/edgeblend.png");}
 	void Run(){
 		double rad = 2.0;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Read(_T("EdgeChamferDist"), &rad);
 		if(wxGetApp().InputLength(_("Enter Chamfer Distance"), _("Distance"), rad))
 		{
@@ -268,14 +273,14 @@ void CEdge::Blend(double radius,  bool chamfer_not_fillet){
 					chamfer.Add(radius, m_topods_edge, TopoDS::Face(face->Face()));
 				}
 				TopoDS_Shape new_shape = chamfer.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge chamfer"), *(body->GetColor()), body->GetOpacity()), NULL);
+				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge chamfer"), body->GetColor(), body->GetOpacity()), NULL);
 			}
 			else
 			{
 				BRepFilletAPI_MakeFillet fillet(body->Shape());
 				fillet.Add(radius, m_topods_edge);
 				TopoDS_Shape new_shape = fillet.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), *(body->GetColor()), body->GetOpacity()), NULL);
+				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), body->GetColor(), body->GetOpacity()), NULL);
 			}
 			wxGetApp().Remove(body);
 		}
@@ -289,13 +294,6 @@ void CEdge::Blend(double radius,  bool chamfer_not_fillet){
 		wxMessageBox(chamfer_not_fillet ? _("A fatal error happened during Chamfer"):_("A fatal error happened during Blend"));
 	}
 }// end Blend function
-
-void CEdge::GetProperties(std::list<Property *> *list)
-{
-	list->push_back(new PropertyLength(_("length"), Length(), NULL));
-
-	HeeksObj::GetProperties(list);
-}
 
 void CEdge::WriteXML(TiXmlNode *root)
 {

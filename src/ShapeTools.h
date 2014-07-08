@@ -13,7 +13,7 @@ public:
 	HeeksObj *MakeACopy(void)const{ return new CFaceList(*this);}
 	const wxBitmap &GetIcon();
 	bool DescendForUndo(){return false;}
-	long GetMarkingMask()const{return 0;}// not pickable
+	int GetMarkingFilter()const{return 0;}// not pickable
 };
 
 class CEdgeList: public ObjList{
@@ -22,7 +22,7 @@ public:
 	HeeksObj *MakeACopy(void)const{ return new CEdgeList(*this);}
 	const wxBitmap &GetIcon();
 	bool DescendForUndo(){return false;}
-	long GetMarkingMask()const{return 0;}// not pickable
+	int GetMarkingFilter()const{return 0;}// not pickable
 };
 
 class CVertexList: public ObjList{
@@ -31,7 +31,7 @@ public:
 	HeeksObj *MakeACopy(void)const{ return new CVertexList(*this);}
 	const wxBitmap &GetIcon();
 	bool DescendForUndo(){return false;}
-	long GetMarkingMask()const{return 0;}// not pickable
+	int GetMarkingFilter()const{return 0;}// not pickable
 };
 
 void CreateFacesAndEdges(TopoDS_Shape shape, CFaceList* faces, CEdgeList* edges, CVertexList* vertices);

@@ -28,27 +28,28 @@ class HeeksConfig;
 
 class HDimension: public EndedObject{
 private:
-	HeeksColor m_color;
 	gp_Pnt GetB2(); // return B, possibly flattened
 	gp_Pnt GetC2(); // return m_p2, possibly flattened
 
 public:
-	gp_Trsf m_trsf; // draw matrix at time of creation
 	HPoint* m_p2;
-	DimensionMode m_mode;
-	DimensionUnits m_units;
-	double m_scale; // to do - text, gaps, and arrow heads will be scaled by this factor
+	PropertyChoice m_units;
+	PropertyChoice m_mode;
+	PropertyTrsf m_trsf; // draw matrix at time of creation
+	PropertyDouble m_scale; // to do - text, gaps, and arrow heads will be scaled by this factor
+	PropertyString m_dimension;
 	static bool DrawFlat;
 
-	HDimension(const gp_Trsf &trsf, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, DimensionMode mode, DimensionUnits units, const HeeksColor* col);
+	HDimension(const gp_Trsf &trsf, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, DimensionMode mode, DimensionUnits units, const HeeksColor& col);
 	HDimension(const HDimension &b);
 	~HDimension(void);
 
 	const HDimension& operator=(const HDimension &b);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return DimensionType;}
-	long GetMarkingMask()const{return MARKING_FILTER_DIMENSION;}
+	int GetMarkingFilter()const{return DimensionMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	bool DrawAfterOthers(){return true;}
 	void GetBox(CBox &box);
@@ -56,8 +57,6 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
-	void SetColor(const HeeksColor &col){m_color = col;}
-	const HeeksColor* GetColor()const{return &m_color;}
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	void GetProperties(std::list<Property *> *list);
 	bool Stretch(const double *p, const double* shift, void* data);

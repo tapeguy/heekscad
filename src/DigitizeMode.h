@@ -16,6 +16,11 @@ private:
 	DigitizedPoint lbutton_point;
 	std::set<HeeksObj*> m_only_coords_set;
 
+	PropertyLength m_x;
+	PropertyLength m_y;
+	PropertyLength m_z;
+	PropertyString m_offset;
+
 	DigitizedPoint digitize1(const wxPoint &input_point);
 
 public:
@@ -29,13 +34,15 @@ public:
 	virtual ~DigitizeMode(void);
 
 	// InputMode's virtual functions
+	void InitializeProperties();
+	void OnPropertyEdit(Property * prop);
+	void GetProperties(std::list<Property *> *list);
 	const wxChar* GetTitle();
 	const wxChar* GetHelpText();
 	void OnMouse( wxMouseEvent& event );
 	void OnKeyDown(wxKeyEvent& event);
 	bool OnModeChange(void);
 	void OnFrontRender();
-	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 
 	DigitizedPoint DigitizePoint(const wxPoint &point);

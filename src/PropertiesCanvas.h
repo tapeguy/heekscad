@@ -38,19 +38,19 @@ public:
 
 protected:
     std::map<wxPGProperty*, Property*> pmap;
-    std::set<Property*> pset;
     wxPropertyGrid* m_pg;
 
     void Resize();
     void Append(wxPGProperty* parent_prop, wxPGProperty* new_prop, Property* property);
     void ClearProperties();
     void AddProperty(Property* property, wxPGProperty* parent_prop = NULL);
+    void RemoveProperty(Property* property);
     Property* GetProperty(wxPGProperty* property);
 
 public:
 	void DeselectProperties();
-	void RefreshByRemovingAndAddingAll();
-	virtual void RefreshByRemovingAndAddingAll2(){}
+	void RefreshProperties();
+	virtual void RefreshProperties2(){}
 
     DECLARE_NO_COPY_CLASS(CPropertiesCanvas)
     DECLARE_EVENT_TABLE()

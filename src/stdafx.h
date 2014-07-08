@@ -278,7 +278,6 @@ extern "C" {
 #include "../interface/Material.h"
 #include "../interface/InputMode.h"
 #include "../interface/Tool.h"
-#include "../interface/PropertyString.h"
 #include "../interface/ObjectCanvas.h"
 #include "HeeksCAD.h"
 

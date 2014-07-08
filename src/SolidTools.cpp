@@ -5,7 +5,6 @@
 #include "stdafx.h"
 #include "SolidTools.h"
 #include "MarkedList.h"
-#include "HeeksConfig.h"
 #include "HeeksFrame.h"
 
 void GetSolidMenuTools(std::list<Tool*>* t_list){
@@ -30,6 +29,7 @@ void GetSolidMenuTools(std::list<Tool*>* t_list){
 }
 
 void SaveSolids::Run(){
+	HeeksConfig& config = wxGetApp().GetConfig();
 	std::list<HeeksObj*> objects;
 
 	for(std::list<HeeksObj*>::const_iterator It = wxGetApp().m_marked_list->list().begin(); It != wxGetApp().m_marked_list->list().end(); It++){
@@ -47,12 +47,9 @@ void SaveSolids::Run(){
 
 	if(objects.size() > 0)
 	{
+		// get last used filepath
 		wxString filepath(_T(""));
-		{
-			// get last used filepath
-			HeeksConfig config;
-			config.Read(_T("SolidExportFilepath"), &filepath, _T(""));
-		}
+		config.Read(_T("SolidExportFilepath"), &filepath, _T(""));
 
 		wxFileDialog fd(wxGetApp().m_frame, _("Save solid file"), wxEmptyString, filepath, wxString(_("Solid Files")) + _T(" |*.igs;*.iges;*.stp;*.step;*.stl;*.cpp;*.py|") + _("IGES files") + _T(" (*.igs *.iges)|*.igs;*.iges|") + _("STEP files") + _T(" (*.stp *.step)|*.stp;*.step|") + _("STL files") + _T(" (*.stl)|*.stl|") + _("CPP files") + _T(" (*.cpp)|*.cpp|") + _("OpenCAMLib python files") + _T(" (*.py)|*.py"), wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 		fd.SetFilterIndex(0);
@@ -83,11 +80,8 @@ void SaveSolids::Run(){
 			return;
 		}
 
-		{
-			// save last used filepath
-			HeeksConfig config;
-			config.Write(_T("SolidExportFilepath"), filepath);
-		}
+		// save last used filepath
+		config.Write(_T("SolidExportFilepath"), filepath);
 	}
 }
 

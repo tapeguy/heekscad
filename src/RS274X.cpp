@@ -1353,14 +1353,14 @@ bool RS274X::Trace::Intersects( const Trace & rhs ) const
                 HArc *arc = new HArc(curve->Value(start_u),
                         curve->Value(end_u),
                         adaptor.Circle(),
-                        &wxGetApp().current_color );
+                        wxGetApp().CurrentColor() );
                 sketch->Add( arc, NULL );
             }
             break;
 
         case GeomAbs_Line:
             {
-                HLine *line = new HLine( curve->Value(start_u), curve->Value(end_u), &wxGetApp().current_color );
+                HLine *line = new HLine( curve->Value(start_u), curve->Value(end_u), wxGetApp().CurrentColor() );
                 sketch->Add( line, NULL );
             }
             break;
@@ -2083,7 +2083,7 @@ HeeksObj *RS274X::Trace::CentrelineGraphics() const
 			{
 				// It's a full circle.
 				gp_Circ circ(gp_Ax2(Start(),gp_Dir(0,0,-1)), (m_aperture.OutsideDiameter()/2.0));
-				return( new HCircle( circ, &wxGetApp().current_color ) );
+				return( new HCircle( circ, wxGetApp().CurrentColor() ) );
 			}
 			else
 			{

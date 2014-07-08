@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 #include "stdafx.h"
 #include "Plugins.h"
-#include "HeeksConfig.h"
 #include <fstream>
 
 enum
@@ -109,6 +108,8 @@ void CPluginItemDialog::OnButtonBrowse(wxCommandEvent& event)
 {
 #ifdef WIN32
 	wxString ext_str(_T("*.dll"));
+#elif MACOSX
+	wxString ext_str(_T("*.dylib"));
 #else
 	wxString ext_str(_T("*.so*"));
 #endif
@@ -180,7 +181,7 @@ void ReadPluginsList(std::list<PluginData> &plugins)
 {
 	plugins.clear();
 
-	HeeksConfig plugins_config;
+	HeeksConfig& plugins_config = wxGetApp().GetConfig();
 	plugins_config.SetPath(_T("/plugins"));
 
 	wxString key;
@@ -211,7 +212,7 @@ void ReadPluginsList(std::list<PluginData> &plugins)
 		pd.path = str;
 		plugins.push_back(pd);
 		if( str.Lower().Matches(_T("*heekscnc*")) )
-			hCncConfigured = true; 
+			hCncConfigured = true;
 
 		entry_found = plugins_config.GetNextEntry(key, Index);
 	}
@@ -228,6 +229,8 @@ void ReadPluginsList(std::list<PluginData> &plugins)
   	//#define S_ISREG(mode) true
     #define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
   #endif
+#elif MACOSX
+		wxString cncPlugPath = wxGetApp().GetExeFolder() + _T("/../share/plugins/heekscnc/libheekscnc.dylib");
 #else
 		const char* cncPlugPath = "/usr/local/lib/libheekscnc.so";  //this is the path that cmake installs the lib to
 #endif
@@ -241,7 +244,7 @@ void ReadPluginsList(std::list<PluginData> &plugins)
 			pd.enabled = true;
 			pd.hard_coded = false; //if this was true, the plugin wouldn't be added to the config - meaning the user couldn't disable it
 			pd.name = _T("HeeksCNC (Automatically added)");
-			pd.path = _T("/usr/local/lib/libheekscnc.so");
+			pd.path = cncPlugPath;
 			plugins.push_back(pd);
 		}
 	}
@@ -300,7 +303,7 @@ void ReadPluginsList(std::list<PluginData> &plugins)
 			plugins.push_back(pd);
 		}
 	}
-
+	plugins_config.SetPath(_T("/"));
 }
 
 void CPluginsDialog::CreateCheckListbox(long flags)
@@ -409,7 +412,7 @@ void CPluginsDialog::OnButtonOK(wxCommandEvent& event)
 {
 	::wxSetWorkingDirectory(wxGetApp().GetExeFolder());
 
-	HeeksConfig plugins_config;
+	HeeksConfig& plugins_config = wxGetApp().GetConfig();
 
 	plugins_config.DeleteGroup(_T("plugins"));
 	plugins_config.SetPath(_T("/plugins"));
@@ -422,9 +425,10 @@ void CPluginsDialog::OnButtonOK(wxCommandEvent& event)
 		pd.enabled = m_pListBox->IsChecked(ui);
 		wxString value = pd.path;
 		if(!(pd.enabled))value.Prepend(_T("#"));
-		plugins_config.Write(pd.name, value);	
+		plugins_config.Write(pd.name, value);
 	}
 
+	plugins_config.SetPath(_T("/"));
 	EndModal(wxID_OK);
 }
 

@@ -17,29 +17,32 @@
 #include "HeeksFrame.h"
 #include "MarkedList.h"
 #include "../interface/Tool.h"
-#include "HeeksConfig.h"
 #include "../interface/MarkedObject.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyVertex.h"
-#include "../interface/PropertyCheck.h"
 #include <locale.h>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 
 // static member variable
 bool CShape::m_solids_found = false;
 
-CShape::CShape():m_face_gl_list(0), m_edge_gl_list(0), m_opacity(1.0), m_title(_T("")), m_color(0, 0, 0), m_picked_face(NULL), m_volume_found(false)
+CShape::CShape()
+ : m_face_gl_list(0), m_edge_gl_list(0), m_calc_volume(false), m_opacity(1.0), m_title(_T("")), m_picked_face(NULL)
 {
+	InitializeProperties();
 	Init();
 }
 
-CShape::CShape(const TopoDS_Shape &shape, const wxChar* title, const HeeksColor& col, float opacity):m_face_gl_list(0), m_edge_gl_list(0), m_shape(shape), m_opacity(opacity), m_title(title), m_color(col), m_picked_face(NULL), m_volume_found(false)
+CShape::CShape(const TopoDS_Shape &shape, const wxChar* title, const HeeksColor& col, float opacity)
+ : m_face_gl_list(0), m_edge_gl_list(0), m_shape(shape), m_calc_volume(false), m_opacity(opacity), m_title(title), m_picked_face(NULL)
 {
+	InitializeProperties();
+	m_color = col;
 	Init();
 }
 
-CShape::CShape(const CShape& s):m_face_gl_list(0), m_edge_gl_list(0), m_picked_face(NULL), m_volume_found(false)
+CShape::CShape(const CShape& s):m_face_gl_list(0), m_edge_gl_list(0), m_calc_volume(false), m_picked_face(NULL)
 {
+	InitializeProperties();
+
 	// the faces, edges, vertices children are not copied, because we don't need them for copies in the undo engine
 	m_faces = NULL;
 	m_edges = NULL;
@@ -55,22 +58,33 @@ CShape::~CShape()
 
 const CShape& CShape::operator=(const CShape& s)
 {
-    HeeksObj::operator = (s);
+	HeeksObj::operator = (s);
 
 	// don't copy id
 	delete_faces_and_edges();
 	m_box = s.m_box;
 	m_shape = s.m_shape;
 	m_title = s.m_title;
-	m_color = s.m_color;
 	m_creation_time = s.m_creation_time;
 	m_opacity = s.m_opacity;
-	m_volume_found = s.m_volume_found;
-	if(m_volume_found)m_volume = s.m_volume;
-
+	m_calc_volume = s.m_calc_volume;
+	if(m_calc_volume) {
+		m_volume = s.m_volume;
+		m_centre_of_mass = s.m_centre_of_mass;
+	}
 	KillGLLists();
 
 	return *this;
+}
+
+void CShape::InitializeProperties()
+{
+	m_opacity.Initialize(_("opacity"), this);
+	m_calc_volume.Initialize(_("calculate volume"), this);
+	m_volume.Initialize(_("volume"), this);
+	m_volume.SetReadOnly(true);
+	m_centre_of_mass.Initialize(_("centre of gravity"), this);
+	m_centre_of_mass.SetReadOnly(true);
 }
 
 bool CShape::IsDifferent(HeeksObj* other)
@@ -261,7 +275,7 @@ public:
 	// Tool's virtual functions
 	void Run(){
 		double offset_value = 2.0;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Read(_T("OffsetShapeValue"), &offset_value);
 		if(wxGetApp().InputLength(_("Enter Offset Value, + for making bigger, - for making smaller"), _("Offset value"), offset_value))
 		{
@@ -701,7 +715,7 @@ void CShape::FilletOrChamferEdges(std::list<HeeksObj*> &list, double radius, boo
 					}
 				}
 				TopoDS_Shape new_shape = chamfer.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), *(solid->GetColor()), ((CShape*)solid)->m_opacity), NULL);
+				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), solid->GetColor(), ((CShape*)solid)->m_opacity), NULL);
 				wxGetApp().Remove(solid);
 			}
 			else
@@ -712,7 +726,7 @@ void CShape::FilletOrChamferEdges(std::list<HeeksObj*> &list, double radius, boo
 					fillet.Add(radius, TopoDS::Edge(((CEdge*)(*It2))->Edge()));
 				}
 				TopoDS_Shape new_shape = fillet.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), *(solid->GetColor()), ((CShape*)solid)->m_opacity), NULL);
+				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), solid->GetColor(), ((CShape*)solid)->m_opacity), NULL);
 				wxGetApp().Remove(solid);
 			}
 		}
@@ -1074,40 +1088,24 @@ void CShape::SetOpacity(float opacity)
 	if(m_opacity > 1.0)m_opacity = 1.0f;
 }
 
-static void on_set_opacity(double value, HeeksObj* object){
-	((CShape*)object)->SetOpacity((float)value);
-}
-
-static void on_calculate_volume(bool value, HeeksObj* object){
-//	((CShape*)object)->CalculateVolumeAndCentre();
-//	wxGetApp().m_frame->RefreshProperties();
-}
-
 void CShape::CalculateVolumeAndCentre()
 {
 	GProp_GProps System;
-    BRepGProp::VolumeProperties(m_shape, System);
-    m_volume = System.Mass();
+	BRepGProp::VolumeProperties(m_shape, System);
+	m_volume = System.Mass() / (pow(wxGetApp().m_view_units, 3)); // convert volume to cubic units
 	m_centre_of_mass = System.CentreOfMass();
-	m_volume_found = true;
 }
 
 void CShape::GetProperties(std::list<Property *> *list)
 {
-	list->push_back(new PropertyDouble(_("opacity"), m_opacity, this, on_set_opacity));
-
-	if(m_volume_found)
-	{
-		double volume = this->m_volume;
-		volume /= (pow(wxGetApp().m_view_units, 3)); // convert volume to cubic units
-		list->push_back(new PropertyDouble(_("volume"), volume, this));
-		double p[3];
-		extract(m_centre_of_mass, p);
-		list->push_back(new PropertyVertex(_("centre of gravity"), p, this));
+	if(m_calc_volume.IsSet()) {
+		CalculateVolumeAndCentre();
+		m_volume.SetVisible(true);
+		m_centre_of_mass.SetVisible(true);
 	}
-	else
-	{
-		list->push_back(new PropertyCheck(_("calculate volume"), false, this, on_calculate_volume));
+	else {
+		m_volume.SetVisible(false);
+		m_centre_of_mass.SetVisible(false);
 	}
 
 	ObjList::GetProperties(list);

@@ -3,135 +3,110 @@
 #include "stdafx.h"
 #include "OrientationModifier.h"
 #include "ConversionTools.h"
-#include "../interface/PropertyChoice.h"
-#include "../interface/PropertyInt.h"
-#include "../interface/PropertyCheck.h"
-#include "HeeksConfig.h"
 #include <BRepAdaptor_Curve.hxx>
 
+COrientationModifierParams::COrientationModifierParams(COrientationModifier * parent) : m_parent(parent)
+{
+	InitializeProperties();
+}
+
+void COrientationModifierParams::InitializeProperties()
+{
+
+	m_spacing.Initialize(_("Spacing"), this);
+	m_spacing.m_choices.push_back( wxString(_("Normally spaced")) );
+	m_number_of_rotations.Initialize(_("Number of Rotations (negative for reverse direction)"), this);
+	m_sketch_rotates_text.Initialize(_("Sketch rotates text"), this);
+	m_justification.Initialize(_("Justification"), this);
+}
 
 void COrientationModifierParams::set_initial_values()
 {
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 
-	config.Read(_T("OrientationModifier_m_spacing"), (int *) &m_spacing, int(eNormalSpacing));
-	config.Read(_T("OrientationModifier_number_of_rotations"), (int *) &m_number_of_rotations, 0);
-	config.Read(_T("OrientationModifier_sketch_rotates_text"), &m_sketch_rotates_text, false);
-	config.Read(_T("OrientationModifier_justification"), (int *) &m_justification, int(eLeftJustified));
+	config.Read(_T("OrientationModifier_m_spacing"), m_spacing, int(eNormalSpacing));
+	config.Read(_T("OrientationModifier_number_of_rotations"), m_number_of_rotations, 0);
+	config.Read(_T("OrientationModifier_sketch_rotates_text"), m_sketch_rotates_text, false);
+	config.Read(_T("OrientationModifier_justification"), m_justification, int(eLeftJustified));
 }
 
 void COrientationModifierParams::write_values_to_config()
 {
 	// We always want to store the parameters in mm and convert them back later on.
 
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 
 	// These values are in mm.
-	config.Write(_T("OrientationModifier_m_spacing"), (int)m_spacing);
+	config.Write(_T("OrientationModifier_m_spacing"), m_spacing);
 	config.Write(_T("OrientationModifier_number_of_rotations"), m_number_of_rotations);
 	config.Write(_T("OrientationModifier_sketch_rotates_text"), m_sketch_rotates_text);
-	config.Write(_T("OrientationModifier_justification"), (int)m_justification);
+	config.Write(_T("OrientationModifier_justification"), m_justification);
 }
 
-static void on_set_justification(int zero_based_choice, HeeksObj* object)
+void COrientationModifierParams::OnPropertyEdit(Property* prop)
 {
-	((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eJustification_t(zero_based_choice);
-
-
-    if (((COrientationModifier*) object)->SketchIsClosed())
-    {
-        switch (zero_based_choice)
-        {
-            case 0:
-                ((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eLeftJustified;
-                break;
-
-            case 1:
-                ((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eRightJustified;
-                break;
-
-            case 2:
-                ((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eTopJustified;
-                break;
-
-            case 3:
-                ((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eBottomJustified;
-                break;
-        }
-    }
-    else
-    {
-        switch (zero_based_choice)
-        {
-            case 0:
-                ((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eLeftJustified;
-                break;
-
-            case 1:
-                ((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eCentreJustified;
-                break;
-
-            case 2:
-                ((COrientationModifier*)object)->m_params.m_justification = COrientationModifierParams::eRightJustified;
-                break;
-        }
-    }
-
-	((COrientationModifier*)object)->m_params.write_values_to_config();
-}
-
-static void on_set_spacing(int zero_based_choice, HeeksObj* object)
-{
-	((COrientationModifier*)object)->m_params.m_spacing = COrientationModifierParams::eSpacing_t(zero_based_choice);
-	((COrientationModifier*)object)->m_params.write_values_to_config();
-}
-
-static void on_set_number_of_rotations(int number_of_rotations, HeeksObj* object)
-{
-	((COrientationModifier*)object)->m_params.m_number_of_rotations = number_of_rotations;
-	((COrientationModifier*)object)->m_params.write_values_to_config();
-}
-
-static void on_set_sketch_rotates_text(bool value, HeeksObj* object)
-{
-	((COrientationModifier*)object)->m_params.m_sketch_rotates_text = value;
-	((COrientationModifier*)object)->m_params.write_values_to_config();
-}
-
-void COrientationModifierParams::GetProperties(COrientationModifier * parent, std::list<Property *> *list)
-{
-
+	if (prop == &m_justification)
 	{
-		int choice = int(m_spacing);
-		std::list< wxString > choices;
-		choices.push_back( wxString(_("Normally spaced")) );
-
-		list->push_back(new PropertyChoice(_("Spacing"), choices, choice, parent, on_set_spacing));
-	}
-
-	list->push_back(new PropertyInt(_("Number of Rotations (negative for reverse direction)"), m_number_of_rotations, parent, on_set_number_of_rotations));
-	list->push_back(new PropertyCheck(_("Sketch rotates text"), m_sketch_rotates_text, parent,  on_set_sketch_rotates_text));
-
-
-	{
-		int choice = int(m_justification);
-		std::list< wxString > choices;
-
-		if (parent->SketchIsClosed() == false)
+		if (m_parent->SketchIsClosed() == false)
 		{
-		    choices.push_back( wxString(_("Left")) ); if (m_justification == COrientationModifierParams::eLeftJustified) choice = 0;
-		    choices.push_back( wxString(_("Centre")) ); if (m_justification == COrientationModifierParams::eCentreJustified) choice = 1;
-		    choices.push_back( wxString(_("Right")) ); if (m_justification == COrientationModifierParams::eRightJustified) choice = 2;
+			switch ((int)m_justification)
+			{
+				case 0:
+				m_justification = eLeftJustified;
+				break;
+
+				case 1:
+				m_justification = eRightJustified;
+				break;
+
+				case 2:
+				m_justification = eTopJustified;
+				break;
+
+				case 3:
+				m_justification = eBottomJustified;
+				break;
+			}
+
 		}
 		else
 		{
-            choices.push_back( wxString(_("Left")) ); if (m_justification == COrientationModifierParams::eLeftJustified) choice = 0;
-		    choices.push_back( wxString(_("Right")) ); if (m_justification == COrientationModifierParams::eRightJustified) choice = 1;
-			choices.push_back( wxString(_("Top")) ); if (m_justification == COrientationModifierParams::eTopJustified) choice = 2;
-            choices.push_back( wxString(_("Bottom")) ); if (m_justification == COrientationModifierParams::eBottomJustified) choice = 3;
-		}
+			switch ((int)m_justification)
+			{
+				case 0:
+				m_justification = eLeftJustified;
+				break;
 
-		list->push_back(new PropertyChoice(_("Justification"), choices, choice, parent, on_set_justification));
+				case 1:
+				m_justification = eCentreJustified;
+				break;
+
+				case 2:
+				m_justification = eRightJustified;
+				break;
+			}
+
+		}
+	}
+
+	write_values_to_config();
+}
+
+void COrientationModifierParams::GetProperties(std::list<Property *> *list)
+{
+	m_justification.m_choices.clear();
+	if (m_parent->SketchIsClosed() == false)
+	{
+		m_justification.m_choices.push_back( wxString(_("Left")) );
+		m_justification.m_choices.push_back( wxString(_("Centre")) );
+		m_justification.m_choices.push_back( wxString(_("Right")) );
+	}
+	else
+	{
+		m_justification.m_choices.push_back( wxString(_("Left")) );
+		m_justification.m_choices.push_back( wxString(_("Right")) );
+		m_justification.m_choices.push_back( wxString(_("Top")) );
+		m_justification.m_choices.push_back( wxString(_("Bottom")) );
 	}
 }
 
@@ -186,7 +161,7 @@ void COrientationModifierParams::ReadParametersFromXMLElement(TiXmlElement* pEle
 }
 
 
-COrientationModifier::COrientationModifier( const COrientationModifier & rhs ) : ObjList(rhs)
+COrientationModifier::COrientationModifier( const COrientationModifier & rhs ) : ObjList(rhs), m_params(this)
 {
 	m_params = rhs.m_params;
 }
@@ -195,7 +170,7 @@ COrientationModifier & COrientationModifier::operator= ( const COrientationModif
 {
 	if (this != &rhs)
 	{
-	    m_params = rhs.m_params;
+		m_params = rhs.m_params;
 		ObjList::operator=(rhs);
 	}
 
@@ -265,7 +240,7 @@ bool COrientationModifier::CanAdd(HeeksObj* object)
 
 void COrientationModifier::GetProperties(std::list<Property *> *list)
 {
-	m_params.GetProperties( this, list );
+	m_params.GetProperties(list);
 	ObjList::GetProperties(list);
 }
 

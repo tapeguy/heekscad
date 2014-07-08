@@ -51,7 +51,9 @@ bool HeeksCADapp::InputDouble(const wxChar* prompt, const wxChar* value_name, do
 
 		SetInputMode(save_mode);
 
-		if(CDoubleInput::m_success)value = double_input.m_value;
+		if(CDoubleInput::m_success) {
+			value = double_input.GetValue();
+		}
 
 		return CDoubleInput::m_success;
 	}
@@ -378,9 +380,10 @@ bool HeeksCADapp::InputAngleWithPlane(double &angle, double *axis, double *pos, 
 			// pick a line to use as rotation axis
 			bool line_found = false;
 			gp_Lin line;
-			int save_filter = wxGetApp().m_marked_list->m_filter;
-			wxGetApp().PickObjects(_("Pick line for rotation axis"), MARKING_FILTER_LINE | MARKING_FILTER_ILINE, true);
-			wxGetApp().m_marked_list->m_filter = save_filter;
+			MarkingFilter line_filters[] = { LineMarkingFilter, ILineMarkingFilter };
+			std::set<MarkingFilter> filterset (line_filters, line_filters + sizeof(line_filters) / sizeof(MarkingFilter));
+			wxGetApp().PickObjects(_("Pick line for rotation axis"), filterset, true);
+
 			for(std::list<HeeksObj *>::const_iterator It = wxGetApp().m_marked_list->list().begin(); It != wxGetApp().m_marked_list->list().end(); It++)
 			{
 				HeeksObj* object = *It;
@@ -450,7 +453,9 @@ bool HeeksCADapp::InputLength(const wxChar* prompt, const wxChar* value_name, do
 
 		SetInputMode(save_mode);
 
-		if(CLengthInput::m_success)value = length_input.m_value;
+		if(CLengthInput::m_success) {
+			value = length_input.GetValue();
+		}
 
 		return CLengthInput::m_success;
 	}
@@ -468,7 +473,7 @@ public:
 		wxBoxSizer *sizerMain = new wxBoxSizer(wxVERTICAL);
 
 		m_options_canvas = new COptionsCanvas(this);
-		m_options_canvas->RefreshByRemovingAndAddingAll2();
+		m_options_canvas->RefreshProperties2();
 		m_options_canvas->SetSize(0, 0, 400, 300);
 		sizerMain->Add( m_options_canvas, 0, wxALL, control_border );
 

@@ -7,11 +7,13 @@
 #include "Drawing.h"
 #include "HDimension.h"
 
-class DimensionDrawing: public Drawing{
+class DimensionDrawing: public Drawing {
 private:
 	std::list<HeeksObj*> temp_object_in_list;
 	std::list<HeeksObj*> prev_object_in_list;
 	HeeksObj *temp_object;
+
+	PropertyChoice m_mode;
 
 	// Drawing's virtual functions
 	bool calculate_item(DigitizedPoint &end);
@@ -22,15 +24,12 @@ private:
 	bool is_a_draw_level(int level){return level >= 1;}
 
 public:
-	DimensionMode m_mode;
-
 	DimensionDrawing(void);
 	virtual ~DimensionDrawing(void);
 
 	// InputMode's virtual functions
 	const wxChar* GetTitle(){return _("Dimension drawing");}
 	void GetTools(std::list<Tool*> *f_list, const wxPoint *p);
-	void GetProperties(std::list<Property *> *list);
 
 	// Drawing's virtual functions
 	void clear_drawing_objects(int mode);

@@ -6,17 +6,16 @@
 #include "Pad.h"
 #include "Shape.h"
 #include "RuledSurface.h"
-#include "../interface/PropertyDouble.h"
 #include "Part.h"
 
-CPad::CPad(double length)
+CPad::CPad(double length) :
+m_length(_("Height"), length, this)
 {
-	m_length = length;
 }
 
-CPad::CPad()
+CPad::CPad() :
+m_length(_("Height"), 0.0, this)
 {
-	m_length = 0;
 }
 
 bool CPad::IsDifferent(HeeksObj* other)
@@ -88,19 +87,6 @@ gp_Trsf CPad::GetTransform()
 	if(m_sketch && m_sketch->m_coordinate_system)
 		return m_sketch->m_coordinate_system->GetMatrix();
 	return gp_Trsf();
-}
-
-void OnSetHeight(double b, HeeksObj* o)
-{
-	((CPad*)o)->m_length = b;
-	wxGetApp().Repaint();
-}
-
-void CPad::GetProperties(std::list<Property *> *list)
-{
-	list->push_back(new PropertyDouble(_("Height"), m_length, this,OnSetHeight));
-
-	ObjList::GetProperties(list);
 }
 
 void CPad::WriteXML(TiXmlNode *root)

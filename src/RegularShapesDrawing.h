@@ -37,18 +37,20 @@ private:
 	void CalculateObround(const gp_Pnt& p0, const gp_Pnt& p1, const gp_Dir& xdir, const gp_Dir& zdir);
 
 public:
-	RegularShapeMode m_mode;
-	PolygonMode p_mode;
-	int m_number_of_side_for_polygon;
-	double m_rect_radius;
-	double m_obround_radius;
+	PropertyChoice m_drawing_mode;
+	PropertyChoice m_polygon_mode;
+	PropertyInt m_number_of_side_for_polygon;
+	PropertyLength m_rect_radius;
+	PropertyLength m_obround_radius;
 
 	RegularShapesDrawing(void);
 	virtual ~RegularShapesDrawing(void);
 
 	// InputMode's virtual functions
+	void InitializeProperties();
 	const wxChar* GetTitle();
 	void GetTools(std::list<Tool*> *f_list, const wxPoint *p);
+	void OnPropertyEdit(Property *prop);
 	void GetProperties(std::list<Property *> *list);
 
 	// Drawing's virtual functions
@@ -57,4 +59,3 @@ public:
 	void ClearSketch();
 };
 
-extern RegularShapesDrawing regular_shapes_drawing;

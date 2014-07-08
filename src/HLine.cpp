@@ -8,9 +8,6 @@
 #include "HCircle.h"
 #include "HArc.h"
 #include "../interface/Tool.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyVertex.h"
 #include "Gripper.h"
 #include "Sketch.h"
 #include "Cylinder.h"
@@ -18,14 +15,15 @@
 #include "DigitizeMode.h"
 #include "Drawing.h"
 
-HLine::HLine(const HLine &line):EndedObject(&line.color){
+HLine::HLine(const HLine &line):EndedObject(line.m_color){
+	InitializeProperties();
 	operator=(line);
 }
 
-HLine::HLine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor* col):EndedObject(col){
+HLine::HLine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col):EndedObject(col){
+	InitializeProperties();
 	A->m_p = a;
 	B->m_p = b;
-	color = *col;
 }
 
 HLine::~HLine(){
@@ -33,8 +31,15 @@ HLine::~HLine(){
 
 const HLine& HLine::operator=(const HLine &b){
 	EndedObject::operator=(b);
-	color = b.color;
 	return *this;
+}
+
+void HLine::InitializeProperties()
+{
+	m_start.Initialize(_("start"), this);
+	m_end.Initialize(_("end"), this);
+	m_length.Initialize(_("length"), this);
+	m_length.SetReadOnly(true);
 }
 
 HLine* line_for_tool = NULL;
@@ -149,7 +154,7 @@ void HLine::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 
 void HLine::glCommands(bool select, bool marked, bool no_color){
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(color);
+		wxGetApp().glColorEnsuringContrast(m_color);
 	}
 	GLfloat save_depth_range[2];
 	if(marked){
@@ -180,7 +185,7 @@ void HLine::glCommands(bool select, bool marked, bool no_color){
 
 void HLine::Draw(wxDC& dc)
 {
-	wxGetApp().PlotSetColor(color);
+	wxGetApp().PlotSetColor(m_color);
 	double s[3], e[3];
 	extract(A->m_p, s);
 	extract(B->m_p, e);
@@ -201,26 +206,25 @@ void HLine::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 	EndedObject::GetGripperPositions(list,just_for_endof);
 }
 
-static void on_set_start(const double *vt, HeeksObj* object){
-	((HLine*)object)->A->m_p = make_point(vt);
-	wxGetApp().Repaint();
+void HLine::OnPropertyEdit(Property *prop)
+{
+	if (prop == &m_start) {
+		A->m_p = m_start;
+	}
+	else if (prop == &m_end) {
+		B->m_p = m_end;
+	}
+	else {
+		HeeksObj::OnPropertyEdit(prop);
+	}
 }
 
-static void on_set_end(const double *vt, HeeksObj* object){
-	((HLine*)object)->B->m_p = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-void HLine::GetProperties(std::list<Property *> *list){
-	double a[3], b[3];
-	extract(A->m_p, a);
-	extract(B->m_p, b);
-	list->push_back(new PropertyVertex(_("start"), a, this, on_set_start));
-	list->push_back(new PropertyVertex(_("end"), b, this, on_set_end));
-	double length = A->m_p.Distance(B->m_p);
-	list->push_back(new PropertyLength(_("Length"), length, this, NULL));
-
-	HeeksObj::GetProperties(list);
+void HLine::GetProperties(std::list<Property *> *list)
+{
+	m_start = A->m_p;
+	m_end = B->m_p;
+	m_length = A->m_p.Distance(B->m_p);
+	EndedObject::GetProperties(list);
 }
 
 bool HLine::FindNearPoint(const double* ray_start, const double* ray_direction, double *point){
@@ -369,7 +373,7 @@ void HLine::WriteXML(TiXmlNode *root)
 	TiXmlElement * element;
 	element = new TiXmlElement( "Line" );
 	root->LinkEndChild( element );
-	element->SetAttribute("col", color.COLORREF_color());
+	element->SetAttribute("col", m_color.COLORREF_color());
 	WriteBaseXML(element);
 }
 
@@ -392,7 +396,7 @@ HeeksObj* HLine::ReadFromXMLElement(TiXmlElement* pElem)
 		else if(name == "ez"){p1.SetZ(a->DoubleValue());}
 	}
 
-	HLine* new_object = new HLine(p0, p1, &c);
+	HLine* new_object = new HLine(p0, p1, c);
 	new_object->ReadBaseXML(pElem);
 
 	if(new_object->GetNumChildren()>2)

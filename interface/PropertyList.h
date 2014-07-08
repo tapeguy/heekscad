@@ -7,22 +7,31 @@
 
 #include "Property.h"
 
-class PropertyList:public Property{
-private:
-	wxString title;
-
+class PropertyList : public PropertyTmpl<std::list< Property* > >, public MutableObject
+{
 public:
-	std::list< Property* > m_list;
+	PropertyList();
+	PropertyList(const wxChar* t, MutableObject* object);
 
-	PropertyList(const wxChar* t, void(*selectcallback)(HeeksObj*) = NULL);
-	~PropertyList();
+        const PropertyList& operator=(const PropertyList& value) { SetValue(value.m_value); return *this; }
+        const std::list<Property*>& operator=(const std::list<Property*>& value) { SetValue(value); return m_value; }
 
 	// Property's virtual functions
-	int get_property_type(){return ListOfPropertyType;}
-	bool property_editable()const{return false;}
-	Property *MakeACopy(void)const;
-	void CallSetFunction()const{ for(std::list< Property* >::const_iterator It = m_list.begin(); It != m_list.end(); It++)(*It)->CallSetFunction();}
-	const wxChar* GetShortString(void)const;
+	void SetHighlighted(bool value);
+	void SetReadOnly(bool value);
+
+	int GetPropertyType(){return ListOfPropertyType;}
+	bool PropertyEditable() const {return false;}
+	void CallSetFunction() { }
+	void CallEditFunction() { }
+	void CallSelectFunction() { }
+
+	// MutableObject virtual functions - call thru to the owner object
+	void AddProperty(Property *prop);	// Add to both the PropertyList and the Mutable list
+	void OnPropertySet(Property *prop);
+	void OnPropertyEdit(Property *prop);
+	void OnPropertySelect(Property *prop);
+	void OnPropertiesApply();
 };
 
 #endif

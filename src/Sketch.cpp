@@ -10,9 +10,6 @@
 #include "HSpline.h"
 #include "HeeksFrame.h"
 #include "ObjPropsCanvas.h"
-#include "../interface/PropertyInt.h"
-#include "../interface/PropertyChoice.h"
-#include "../interface/PropertyCheck.h"
 #include "../interface/Tool.h"
 #include "MultiPoly.h"
 #include "FaceTools.h"
@@ -39,8 +36,10 @@ std::string CSketch::m_sketch_order_str[MaxSketchOrderTypes] = {
 	std::string("has circles"),
 };
 
-CSketch::CSketch():m_order(SketchOrderTypeUnknown)
+CSketch::CSketch()
+ : m_order(SketchOrderTypeUnknown)
 {
+	InitializeProperties();
 	m_title = _("Sketch");
 	m_solidify = false;
 	m_coordinate_system = NULL;
@@ -49,6 +48,7 @@ CSketch::CSketch():m_order(SketchOrderTypeUnknown)
 
 CSketch::CSketch(const CSketch& c)
 {
+	InitializeProperties();
 	operator=(c);
 }
 
@@ -63,7 +63,6 @@ const CSketch& CSketch::operator=(const CSketch& c)
         // just copy all the lines and arcs, not the id
         ObjList::operator =(c);
 
-        color = c.color;
         m_order = c.m_order;
         m_title = c.m_title;
         m_solidify = c.m_solidify;
@@ -72,6 +71,14 @@ const CSketch& CSketch::operator=(const CSketch& c)
     }
 
 	return *this;
+}
+
+void CSketch::InitializeProperties()
+{
+	m_num_children.Initialize(_("Number of elements"), this);
+	m_num_children.SetReadOnly(true);
+	m_order.Initialize(_("order"), this);
+	m_solidify.Initialize(_("solidify"), this);
 }
 
 const wxBitmap &CSketch::GetIcon()
@@ -95,27 +102,6 @@ void CSketch::ReloadPointers()
 	}
 
 	ObjList::ReloadPointers();
-}
-
-static std::map<int, int> order_map_for_properties; // maps drop-down index to SketchOrderType
-
-static void on_set_order_type(int value, HeeksObj* object)
-{
-	std::map<int, int>::iterator FindIt = order_map_for_properties.find(value);
-	if(FindIt != order_map_for_properties.end())
-	{
-		int order = FindIt->second;
-		if(((CSketch*)object)->ReOrderSketch((SketchOrderType)order))
-		{
-			wxGetApp().m_frame->RefreshProperties();
-		}
-	}
-}
-
-static void on_set_solidify(bool value, HeeksObj* object)
-{
-	((CSketch*)object)->m_solidify = value;
-	wxGetApp().Repaint();
 }
 
 static bool SketchOrderAvailable(SketchOrderType old_order, SketchOrderType new_order)
@@ -213,30 +199,38 @@ void CSketch::glCommands(bool select, bool marked, bool no_color)
 		glPopMatrix();
 }
 
+void CSketch::OnPropertyEdit(Property *prop)
+{
+	if (prop == &m_order)
+	{
+		std::map<int, int>::iterator FindIt = order_map_for_properties.find(m_order);
+		if(FindIt != order_map_for_properties.end())
+		{
+			m_order = FindIt->second;
+			int order = m_order;
+			if(ReOrderSketch((SketchOrderType)order))
+			{
+				wxGetApp().m_frame->RefreshProperties();
+			}
+		}
+	}
+}
+
 void CSketch::GetProperties(std::list<Property *> *list)
 {
-	list->push_back(new PropertyInt(_("Number of elements"), ObjList::GetNumChildren(), this));
-
-	int initial_index = 0;
-	std::list< wxString > choices;
+	m_num_children = ObjList::GetNumChildren();
 	SketchOrderType sketch_order = GetSketchOrder();
 	order_map_for_properties.clear();
 	int j = 0;
 	for(int i = 0; i< MaxSketchOrderTypes; i++)
 	{
-		if((SketchOrderType)i == sketch_order)initial_index = j;
-
 		if(SketchOrderAvailable(sketch_order, (SketchOrderType)i))
 		{
 			order_map_for_properties.insert(std::pair<int, int>(j, i));
-			choices.push_back(Ctt(m_sketch_order_str[i].c_str()));
+			m_order.m_choices.push_back(Ctt(m_sketch_order_str[i].c_str()));
 			j++;
 		}
 	}
-
-	list->push_back ( new PropertyChoice ( _("order"), choices, initial_index, this, on_set_order_type ) );
-
-	list->push_back ( new PropertyCheck( _("solidify"), m_solidify, this, on_set_solidify) );
 
 	ObjList::GetProperties(list);
 }
@@ -595,18 +589,13 @@ HeeksObj* CSketch::ReadFromXMLElement(TiXmlElement* pElem)
 
 void CSketch::SetColor(const HeeksColor &col)
 {
+	m_color = col;
 	std::list<HeeksObj*>::iterator It;
 	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
 		HeeksObj* object = *It;
 		object->SetColor(col);
 	}
-}
-
-const HeeksColor* CSketch::GetColor()const
-{
-	if(m_objects.size() == 0)return NULL;
-	return m_objects.front()->GetColor();
 }
 
 void CSketch::OnEditString(const wxChar* str){
@@ -617,7 +606,8 @@ void CSketch::OnEditString(const wxChar* str){
 SketchOrderType CSketch::GetSketchOrder()
 {
 	if(m_order == SketchOrderTypeUnknown)CalculateSketchOrder();
-	return m_order;
+	int order = m_order;
+	return (SketchOrderType)order;
 }
 
 void CSketch::CalculateSketchOrder()
@@ -809,7 +799,7 @@ void CSketch::ExtractSeparateSketches(std::list<HeeksObj*> &new_separate_sketche
 		{
 			HeeksObj* object = *It;
 			CSketch* new_object = new CSketch();
-			new_object->color = color;
+			new_object->m_color = m_color;
 			new_object->Add(object->MakeACopy(), NULL);
 			new_separate_sketches.push_back(new_object);
 		}
@@ -833,7 +823,7 @@ void CSketch::ExtractSeparateSketches(std::list<HeeksObj*> &new_separate_sketche
 		{
 			std::list<HeeksObj*>& list = *It;
 			CSketch* new_object = new CSketch();
-			new_object->color = color;
+			new_object->m_color = m_color;
 			for(std::list<HeeksObj*>::iterator It2 = list.begin(); It2 != list.end(); It2++)
 			{
 				HeeksObj* object = *It2;
@@ -1069,7 +1059,7 @@ void CSketch::ModifyByMatrix(const double *m)
 }
 bool CSketch::operator==( const CSketch & rhs ) const
 {
-    if (color != rhs.color) return(false);
+    if ((const HeeksColor&)m_color != (const HeeksColor&)rhs.m_color) return(false);
 	if (m_title != rhs.m_title) return(false);
 	if (m_order != rhs.m_order) return(false);
 	if (m_solidify != rhs.m_solidify) return(false);

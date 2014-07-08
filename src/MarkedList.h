@@ -11,32 +11,39 @@
 class Gripper;
 class PointOrWindow;
 
-class MarkedList{
+class MarkedList : public MutableObject {
 private:
 	std::list<HeeksObj*> m_list;
 	std::set<HeeksObj*> m_set;
 	std::set<HeeksObj*> m_ignore_set;
 	Index<unsigned, HeeksObj*> m_name_index;
-
+	PropertyInt m_list_size;
 	void delete_move_grips(bool check_app_grippers = false);
 	void create_move_grips();
 	void update_move_grips();
 	void render_move_grips(bool select, bool no_color);
 	void OnChangedAdded(HeeksObj* object);
 	void OnChangedRemoved(HeeksObj* object);
+	static std::set<MarkingFilter> InitializeFilter();
 
 public:
+	static const std::set<MarkingFilter> all_filters;
+
 	PointOrWindow *point_or_window;
 	bool gripping;
 	std::list<Gripper*> move_grips;
 	bool gripper_marked_list_changed;
 	bool ignore_coords_only;
-	long m_filter;
+	PropertyCheck m_filter[MaximumMarkingFilter];	// owned by HeeksCAD object
 
 	MarkedList();
 	virtual ~MarkedList(void);
 
+	std::set<MarkingFilter> GetFilters();
+	void SetFilters(const std::set<MarkingFilter>& filters);
+
 	void create_grippers();
+	void InitializeProperties();
 	void Add(std::list<HeeksObj *> &obj_list, bool call_OnChanged);
 	void Add(HeeksObj *object, bool call_OnChanged);
 	void Remove(const std::list<HeeksObj *> &obj_list, bool call_OnChanged);

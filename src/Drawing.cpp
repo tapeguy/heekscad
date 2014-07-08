@@ -150,8 +150,10 @@ void Drawing::OnKeyDown(wxKeyEvent& event)
 }
 
 bool Drawing::IsDrawing(CInputMode* i){
-	if(i == &line_strip)return true;
-//	if(i == &arc_strip)return true;
+	if(i == &(wxGetApp().m_line_strip))
+		return true;
+//	if(i == &arc_strip)
+//		return true;
 
 	return false;
 }

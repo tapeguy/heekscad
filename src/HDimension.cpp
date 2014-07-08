@@ -3,19 +3,18 @@
 // This program is released under the BSD license. See the file COPYING for details.
 #include "stdafx.h"
 #include "HDimension.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyChoice.h"
-#include "PropertyTrsf.h"
 #include "Gripper.h"
 #include "HPoint.h"
 #include "HeeksFrame.h"
 #include "GraphicsCanvas.h"
-#include "HeeksConfig.h"
 
 bool HDimension::DrawFlat = true;
 
-HDimension::HDimension(const gp_Trsf &trsf, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, DimensionMode mode, DimensionUnits units, const HeeksColor* col): EndedObject(col), m_color(*col), m_trsf(trsf), m_mode(mode),  m_units(units),  m_scale(1.0)
+
+HDimension::HDimension(const gp_Trsf &trsf, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, DimensionMode mode, DimensionUnits units, const HeeksColor& col)
+ : EndedObject(col), m_trsf(trsf), m_mode((int)mode), m_units((int)units), m_scale(1.0)
 {
+	InitializeProperties();
 	m_p2 = new HPoint(p2,col);
 	m_p2->m_draw_unselected = false;
 	m_p2->SetSkipForUndo(true);
@@ -24,8 +23,10 @@ HDimension::HDimension(const gp_Trsf &trsf, const gp_Pnt &p0, const gp_Pnt &p1, 
 	B->m_p = p1;
 }
 
-HDimension::HDimension(const HDimension &b):EndedObject(&b.m_color)
+HDimension::HDimension(const HDimension &b)
+ : EndedObject(b.m_color)
 {
+	InitializeProperties();
 	operator=(b);
 }
 
@@ -38,7 +39,6 @@ const HDimension& HDimension::operator=(const HDimension &b)
 	EndedObject::operator=(b);
 	m_trsf = b.m_trsf;
 	m_units = b.m_units;
-	m_color = b.m_color;
 	m_mode = b.m_mode;
 	m_scale = b.m_scale;
 
@@ -49,6 +49,24 @@ const HDimension& HDimension::operator=(const HDimension &b)
 #endif
 
 	return *this;
+}
+
+void HDimension::InitializeProperties()
+{
+	m_trsf.Initialize(_("orientation"), this);
+	m_mode.Initialize(_("mode"), this);
+	m_mode.m_choices.push_back ( wxString ( _("between two points") ) );
+	m_mode.m_choices.push_back ( wxString ( _("between two points, XY only") ) );
+	m_mode.m_choices.push_back ( wxString ( _("orthogonal") ) );
+
+	m_units.Initialize(_("units"), this);
+	m_units.m_choices.push_back ( wxString ( _("use view units") ) );
+	m_units.m_choices.push_back ( wxString ( _("inches") ) );
+	m_units.m_choices.push_back ( wxString ( _("mm") ) );
+
+	m_scale.Initialize(_("scale"), this);
+	m_dimension.Initialize(_("dimension value"), this);
+	m_dimension.SetReadOnly(true);
 }
 
 const wxBitmap &HDimension::GetIcon()
@@ -84,9 +102,9 @@ wxString HDimension::MakeText()
 	case DimensionUnitsMM:
 		units_factor = 1.0;
 		break;
-    case DimensionUnitsGlobal:
-        units_factor = wxGetApp().m_view_units;
-        break;
+	case DimensionUnitsGlobal:
+		units_factor = wxGetApp().m_view_units;
+		break;
 	}
 
 	wxString units_str(_T(""));
@@ -184,7 +202,8 @@ void HDimension::glCommands(bool select, bool marked, bool no_color)
 	if(!wxGetApp().get_text_size(text, &width, &height))return;
 
 	// draw arrow line
-	draw_arrow_line(m_mode, A->m_p, b, GetC2(), xdir, ydir, width, m_scale);
+	int mode = m_mode;
+	draw_arrow_line((DimensionMode)mode, A->m_p, b, GetC2(), xdir, ydir, width, m_scale);
 
 	// draw text
 	RenderText(text, GetC2(), xdir, ydir, m_scale);
@@ -319,55 +338,9 @@ void HDimension::GetGripperPositions(std::list<GripData> *list, bool just_for_en
 	list->push_back(GripData(GripperTypeStretch,m_p2->m_p.X(),m_p2->m_p.Y(),m_p2->m_p.Z(),&m_p2));
 }
 
-static void on_set_trsf(const gp_Trsf &trsf, HeeksObj* object){
-	((HDimension*)object)->m_trsf = trsf;
-	wxGetApp().Repaint();
-}
-
-static void on_set_mode(int value, HeeksObj* object)
-{
-	HDimension* dimension = (HDimension*)object;
-	dimension->m_mode = (DimensionMode)value;
-	wxGetApp().Repaint();
-}
-
-static void on_set_units(int value, HeeksObj* object)
-{
-	HDimension* dimension = (HDimension*)object;
-	dimension->m_units = (DimensionUnits)value;
-	wxGetApp().Repaint();
-}
-
-static void on_set_scale(double value, HeeksObj* object)
-{
-	HDimension* dimension = (HDimension*)object;
-	dimension->m_scale = value;
-	wxGetApp().Repaint();
-}
-
 void HDimension::GetProperties(std::list<Property *> *list)
 {
-	list->push_back(new PropertyTrsf(_("orientation"), m_trsf, this, on_set_trsf));
-
-		std::list< wxString > choices;
-	choices.push_back ( wxString ( _("between two points") ) );
-	choices.push_back ( wxString ( _("between two points, XY only") ) );
-	choices.push_back ( wxString ( _("orthogonal") ) );
-	list->push_back ( new PropertyChoice ( _("mode"),  choices, m_mode, this, on_set_mode ) );
-
-	list->push_back ( new PropertyDouble ( _("scale"),  m_scale, this, on_set_scale ) );
-
-	{
-		std::list< wxString > choices;
-		choices.push_back ( wxString ( _("use view units") ) );
-		choices.push_back ( wxString ( _("inches") ) );
-		choices.push_back ( wxString ( _("mm") ) );
-		list->push_back ( new PropertyChoice ( _("units"),  choices, m_units, this, on_set_units ) );
-	}
-
-	wxString text = MakeText();
-	list->push_back(new PropertyString(_("dimension value"), text, this, NULL));
-
+	m_dimension.SetValue(MakeText());
 	EndedObject::GetProperties(list);
 }
 
@@ -470,7 +443,7 @@ HeeksObj* HDimension::ReadFromXMLElement(TiXmlElement* pElem)
 		}
 	}
 
-	HDimension* new_object = new HDimension(make_matrix(m), make_point(p0), make_point(p1), make_point(p2), mode, units, &c);
+	HDimension* new_object = new HDimension(make_matrix(m), make_point(p0), make_point(p1), make_point(p2), mode, units, c);
 	new_object->ReadBaseXML(pElem);
 	new_object->m_scale = scale;
 
@@ -569,7 +542,7 @@ void HDimension::draw_arrow_line(DimensionMode mode, const gp_Pnt &p0, const gp_
 	if(xm < x0)
 	{
 		// long line first
-		gp_Pnt vt4 = vt2.XYZ() + xdir_along.XYZ() * (-long_line_extra);
+		// gp_Pnt vt4 = vt2.XYZ() + xdir_along.XYZ() * (-long_line_extra);
 		glBegin(GL_LINES);
 		glVertex3d(vt2.X(), vt2.Y(), vt2.Z());
 		glVertex3d(new_vt0.X(), new_vt0.Y(), new_vt0.Z());

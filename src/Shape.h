@@ -8,17 +8,17 @@
 #include "ShapeData.h"
 #include "ShapeTools.h"
 
-class CShape:public ObjList{
+class CShape : public ObjList {
 protected:
 	int m_face_gl_list;
 	int m_edge_gl_list;
 	CBox m_box;
 	TopoDS_Shape m_shape;
 	wxLongLong m_creation_time;
-	float m_opacity;
-	bool m_volume_found;
-	double m_volume;
-	gp_Pnt m_centre_of_mass;
+	PropertyCheck m_calc_volume;
+	PropertyDouble m_opacity;
+	PropertyDouble m_volume;
+	PropertyVertex m_centre_of_mass;
 
 	void create_faces_and_edges();
 	void delete_faces_and_edges();
@@ -32,7 +32,6 @@ public:
 	CEdgeList* m_edges;
 	CVertexList* m_vertices;
 	wxString m_title;
-	HeeksColor m_color;
 	CFace* m_picked_face;
 
 	CShape();
@@ -43,6 +42,7 @@ public:
 	virtual const CShape& operator=(const CShape& s);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	bool IsDifferent(HeeksObj* obj);
 	int GetType()const{return SolidType;}
 	void glCommands(bool select, bool marked, bool no_color);

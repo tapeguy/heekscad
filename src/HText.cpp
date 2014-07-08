@@ -3,19 +3,20 @@
 // This program is released under the BSD license. See the file COPYING for details.
 #include "stdafx.h"
 #include "HText.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyChoice.h"
-#include "PropertyTrsf.h"
 #include "Gripper.h"
 #include "CxfFont.h"
 #include "OrientationModifier.h"
 
-HText::HText(const gp_Trsf &trsf, const wxString &text, const HeeksColor* col, VectorFont *pFont):m_color(*col),  m_trsf(trsf), m_text(text), m_pFont(pFont)
+HText::HText(const gp_Trsf &trsf, const wxString &text, const HeeksColor& col, VectorFont *pFont)
+ : m_trsf(trsf), m_text(text), m_pFont(pFont)
 {
+	InitializeProperties();
+	m_color = col;
 }
 
 HText::HText(const HText &b)
 {
+	InitializeProperties();
 	operator=(b);
 }
 
@@ -35,6 +36,36 @@ const HText& HText::operator=(const HText &b)
     }
 
 	return *this;
+}
+
+void HText::InitializeProperties()
+{
+	m_trsf.Initialize(_("orientation"), this);
+
+	if (wxGetApp().m_pVectorFonts.get() == NULL)
+	{
+		wxGetApp().GetAvailableFonts();
+	}
+	m_font.Initialize(_("font"), this);
+	if (wxGetApp().m_pVectorFonts.get() != NULL)
+	{
+		m_font.m_choices.push_back( wxString(_("OpenGL (default) font")) );
+		int choice = 0;
+		int option = 0;
+		std::set<VectorFont::Name_t> font_names = wxGetApp().m_pVectorFonts->FontNames();
+		for (std::set<VectorFont::Name_t>::const_iterator l_itFontName = font_names.begin();
+			l_itFontName != font_names.end(); l_itFontName++)
+		{
+			option++;
+			m_font.m_choices.push_back( *l_itFontName );
+			if ((m_pFont != NULL) && (m_pFont->Name() == *l_itFontName)) {
+				choice = option;
+			}
+		} // End for
+	}
+	else {
+		m_font.SetVisible(false);
+	}
 }
 
 const wxBitmap &HText::GetIcon()
@@ -161,59 +192,28 @@ void HText::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	list->push_back(GripData(GripperTypeScale,point[3].X(),point[3].Y(),point[3].Z(),NULL));
 }
 
-static void on_set_trsf(const gp_Trsf &trsf, HeeksObj* object){
-	((HText*)object)->m_trsf = trsf;
-	wxGetApp().Repaint();
-}
-
-static void on_set_font(int zero_based_choice, HeeksObj *obj)
+void HText::OnPropertyEdit(Property* prop)
 {
-	if (zero_based_choice == 0)
-	{
-		((HText*)obj)->m_pFont = NULL;
-		return;
-	} // End if - then
-
-	std::set<wxString> names = wxGetApp().GetAvailableFonts()->FontNames();
-	std::vector<wxString> vector_names;
-	vector_names.push_back(_T("OpenGL"));	// Keep the zero-based offset.
-	std::copy( names.begin(), names.end(), std::inserter( vector_names, vector_names.end() ) );
-	if (zero_based_choice < int(vector_names.size()))
-	{
-		((HText*)obj)->m_pFont = wxGetApp().GetAvailableFonts()->Font( VectorFont::Name_t(vector_names[zero_based_choice].c_str()) );
-	}
-	wxGetApp().Changed();
-}
-
-void HText::GetProperties(std::list<Property *> *list)
-{
-	list->push_back(new PropertyTrsf(_("orientation"), m_trsf, this, on_set_trsf));
-
-    if (wxGetApp().m_pVectorFonts.get() == NULL)
-    {
-        wxGetApp().GetAvailableFonts();
-    }
-
-    if (wxGetApp().m_pVectorFonts.get() != NULL)
-	{
-		std::list<wxString> choices;
-
-		choices.push_back( wxString(_("OpenGL (default) font")) );
-		int choice = 0;
-
-		int option = 0;
-		std::set<VectorFont::Name_t> font_names = wxGetApp().m_pVectorFonts->FontNames();
-		for (std::set<VectorFont::Name_t>::const_iterator l_itFontName = font_names.begin();
-			l_itFontName != font_names.end(); l_itFontName++)
+	if (prop == &m_font) {
+		if (m_font == 0)
 		{
-			option++;
-			choices.push_back( *l_itFontName );
-			if ((m_pFont != NULL) && (m_pFont->Name() == *l_itFontName)) choice = option;
-		} // End for
-		list->push_back ( new PropertyChoice ( _("Font"),  choices, choice, this, on_set_font ) );
-	}
+			m_pFont = NULL;
+			return;
+		} // End if - then
 
-	ObjList::GetProperties(list);
+		std::set<wxString> names = wxGetApp().GetAvailableFonts()->FontNames();
+		std::vector<wxString> vector_names;
+		vector_names.push_back(_T("OpenGL"));	// Keep the zero-based offset.
+		std::copy( names.begin(), names.end(), std::inserter( vector_names, vector_names.end() ) );
+		if (m_font < int(vector_names.size()))
+		{
+			m_pFont = wxGetApp().GetAvailableFonts()->Font( VectorFont::Name_t(vector_names[m_font].c_str()) );
+		}
+		wxGetApp().Changed();
+	}
+	else {
+		ObjList::OnPropertyEdit(prop);
+	}
 }
 
 bool HText::Stretch(const double *p, const double* shift, void* data)
@@ -297,7 +297,7 @@ HeeksObj* HText::ReadFromXMLElement(TiXmlElement* pElem)
 		pVectorFont = wxGetApp().GetAvailableFonts()->Font( font_name );
 	}
 
-	HText* new_object = new HText(make_matrix(m), text, &c, pVectorFont );
+	HText* new_object = new HText(make_matrix(m), text, c, pVectorFont );
 	new_object->ReadBaseXML(pElem);
 
 	return new_object;

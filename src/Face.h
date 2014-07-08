@@ -12,6 +12,8 @@ class CNurbSurfaceParams;
 class CFace:public HeeksObj{
 private:
 	TopoDS_Face m_topods_face;
+	PropertyString m_surface;
+
 #if _DEBUG
 	double m_pos_x;
 	double m_pos_y;
@@ -36,7 +38,7 @@ public:
 	~CFace();
 
 	int GetType()const{return FaceType;}
-	long GetMarkingMask()const{return MARKING_FILTER_FACE;}
+	int GetMarkingFilter()const{return FaceMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxBitmap &GetIcon();
@@ -86,7 +88,7 @@ public:
 	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/face2sketch.png");}
 	void Run();
 
-	static double deviation;
+	static PropertyDouble deviation;
 };
 
 

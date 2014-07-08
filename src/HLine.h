@@ -7,29 +7,30 @@
 #include "EndedObject.h"
 
 class HLine: public EndedObject{
-private:
-	HeeksColor color;
-
 public:
-	~HLine(void);
-	HLine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor* col);
+	PropertyVertex m_start;
+	PropertyVertex m_end;
+	PropertyLength m_length;
+
+	HLine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col);
 	HLine(const HLine &line);
+	~HLine(void);
 
 	const HLine& operator=(const HLine &b);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return LineType;}
-	long GetMarkingMask()const{return MARKING_FILTER_LINE;}
+	int GetMarkingFilter()const{return LineMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void Draw(wxDC& dc);
 	void GetBox(CBox &box);
 	const wxChar* GetTypeString(void)const{return _("Line");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
-	void SetColor(const HeeksColor &col){color = col;}
-	const HeeksColor* GetColor()const{return &color;}
 	bool GetMidPoint(double* pos);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
+	void OnPropertyEdit(Property *prop);
 	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);
@@ -40,7 +41,7 @@ public:
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
-    bool UsesID(){return true;} 
+	bool UsesID(){return true;} 
 	gp_Lin GetLine()const;
 	bool Intersects(const gp_Pnt &pnt)const;
 	gp_Vec GetSegmentVector(double fraction);

@@ -4,24 +4,27 @@
 
 #include "stdafx.h"
 #include "Sphere.h"
-#include "../interface/PropertyVertex.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
 #include "Gripper.h"
 #include "MarkedList.h"
 
-CSphere::CSphere(const gp_Pnt& pos, double radius, const wxChar* title, const HeeksColor& col, float opacity):CSolid(BRepPrimAPI_MakeSphere(pos, radius), title, col, opacity), m_pos(pos), m_radius(radius)
+CSphere::CSphere(const gp_Pnt& pos, double radius, const wxChar* title, const HeeksColor& col, float opacity) :
+ CSolid(BRepPrimAPI_MakeSphere(pos, radius), title, col, opacity), m_pos(pos), m_radius(radius)
 {
+	InitializeProperties();
 }
 
-CSphere::CSphere(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity):CSolid(solid, title, col, opacity), m_pos(0, 0, 0), m_radius(0.0)
+CSphere::CSphere(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity) :
+ CSolid(solid, title, col, opacity), m_pos(0, 0, 0), m_radius(0.0)
 {
+	InitializeProperties();
 }
 
-CSphere::CSphere( const CSphere & rhs ) : CSolid(rhs)
+CSphere::CSphere( const CSphere & rhs ) :
+ CSolid(rhs)
 {
-    m_pos = rhs.m_pos;
-    m_radius = rhs.m_radius;
+	InitializeProperties();
+	m_pos = rhs.m_pos;
+	m_radius = rhs.m_radius;
 }
 
 CSphere & CSphere::operator= ( const CSphere & rhs )
@@ -35,6 +38,12 @@ CSphere & CSphere::operator= ( const CSphere & rhs )
     }
 
     return(*this);
+}
+
+void CSphere::InitializeProperties()
+{
+	m_pos.Initialize(_("centre"), this);
+	m_radius.Initialize(_("radius"), this);
 }
 
 HeeksObj *CSphere::MakeACopy(void)const
@@ -57,14 +66,6 @@ bool CSphere::IsDifferent(HeeksObj *other)
 	return CShape::IsDifferent(other);
 }
 
-static void on_set_centre(const double *pos, HeeksObj* object){
-	((CSphere*)object)->m_pos = make_point(pos);
-}
-
-static void on_set_radius(double value, HeeksObj* object){
-	((CSphere*)object)->m_radius = value;
-}
-
 void CSphere::MakeTransformedShape(const gp_Trsf &mat)
 {
 	m_pos.Transform(mat);
@@ -75,15 +76,6 @@ void CSphere::MakeTransformedShape(const gp_Trsf &mat)
 
 wxString CSphere::StretchedName(){ return _("Ellipsoid");}
 
-void CSphere::GetProperties(std::list<Property *> *list)
-{
-	double pos[3];
-	extract(m_pos, pos);
-	list->push_back(new PropertyVertex(_("centre"), pos, this, on_set_centre));
-	list->push_back(new PropertyLength(_("radius"), m_radius, this, on_set_radius));
-
-	CSolid::GetProperties(list);
-}
 
 void CSphere::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 {
@@ -91,23 +83,22 @@ void CSphere::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	list->push_back(GripData(GripperTypeScale,m_pos.X() + m_radius,m_pos.Y(),m_pos.Z(),NULL));
 }
 
-void CSphere::OnApplyProperties()
+void CSphere::OnPropertyEdit(Property* prop)
 {
-	CSphere* new_object = new CSphere(m_pos, m_radius, m_title.c_str(), m_color, m_opacity);
-	new_object->CopyIDsFrom(this);
-#ifdef MULTIPLE_OWNERS
-	Owner()->Add(new_object, NULL);
-	Owner()->Remove(this);
-#else
-	m_owner->Add(new_object, NULL);
-	m_owner->Remove(this);
-#endif
-	if(wxGetApp().m_marked_list->ObjectMarked(this))
-	{
-		wxGetApp().m_marked_list->Remove(this,false);
-		wxGetApp().m_marked_list->Add(new_object, true);
+	if (prop == &m_pos || prop == &m_radius) {
+		CSphere* new_object = new CSphere(m_pos, m_radius, m_title.c_str(), m_color, m_opacity);
+		new_object->CopyIDsFrom(this);
+		Owner()->Add(new_object, NULL);
+		Owner()->Remove(this);
+		if(wxGetApp().m_marked_list->ObjectMarked(this))
+		{
+			wxGetApp().m_marked_list->Remove(this,false);
+			wxGetApp().m_marked_list->Add(new_object, true);
+		}
 	}
-	wxGetApp().Repaint();
+	else {
+		CSolid::OnPropertyEdit(prop);
+	}
 }
 
 bool CSphere::GetCentrePoint(double* pos)

@@ -590,9 +590,6 @@ bool CSelectMode::OnStart(){
 	return true;
 }
 
-void CSelectMode::GetProperties(std::list<Property *> *list){
-}
-
 class EndPicking:public Tool{
 public:
 	void Run(){
@@ -633,7 +630,7 @@ static CancelPicking cancel_picking;
 class PickAnything:public Tool{
 public:
 	void Run(){
-		wxGetApp().m_marked_list->m_filter = -1;
+		wxGetApp().m_marked_list->SetFilters(MarkedList::all_filters);
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
 	const wxChar* GetTitle(){return _("Pick Anything");}
@@ -646,7 +643,9 @@ static PickAnything pick_anything;
 class PickEdges:public Tool{
 public:
 	void Run(){
-		wxGetApp().m_marked_list->m_filter = MARKING_FILTER_EDGE;
+		MarkingFilter filters[] = { EdgeMarkingFilter };
+		std::set<MarkingFilter> filterset (filters, filters + sizeof(filters) / sizeof(MarkingFilter));
+		wxGetApp().m_marked_list->SetFilters(filterset);
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
 	const wxChar* GetTitle(){return _("Pick Edges");}
@@ -659,7 +658,9 @@ static PickEdges pick_edges;
 class PickFaces:public Tool{
 public:
 	void Run(){
-		wxGetApp().m_marked_list->m_filter = MARKING_FILTER_FACE;
+		MarkingFilter filters[] = { FaceMarkingFilter };
+		std::set<MarkingFilter> filterset (filters, filters + sizeof(filters) / sizeof(MarkingFilter));
+		wxGetApp().m_marked_list->SetFilters(filterset);
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
 	const wxChar* GetTitle(){return _("Pick Faces");}
@@ -688,8 +689,16 @@ void CSelectMode::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 		t_list->push_back(&end_picking);
 		t_list->push_back(&cancel_picking);
 	}
-	if(wxGetApp().m_marked_list->m_filter != -1)t_list->push_back(&pick_anything);
-	if(wxGetApp().m_marked_list->m_filter != MARKING_FILTER_EDGE)t_list->push_back(&pick_edges);
-	if(wxGetApp().m_marked_list->m_filter != MARKING_FILTER_FACE)t_list->push_back(&pick_faces);
-	if(wxGetApp().m_sketch_mode)t_list->push_back(&end_sketch_mode);
+	std::set<MarkingFilter> filters = wxGetApp().m_marked_list->GetFilters();
+	if(filters.size() != MaximumMarkingFilter) {
+		t_list->push_back(&pick_anything);
+	}
+	if(filters.size() != 1 || filters.find(EdgeMarkingFilter) == filters.end()) {
+		t_list->push_back(&pick_edges);
+	}
+	if(filters.size() != 1 || filters.find(FaceMarkingFilter) == filters.end()) {
+		t_list->push_back(&pick_faces);
+	}
+	if(wxGetApp().m_sketch_mode)
+		t_list->push_back(&end_sketch_mode);
 }

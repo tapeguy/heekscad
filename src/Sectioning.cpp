@@ -1,12 +1,11 @@
 #include "stdafx.h"
 
 #include "Sectioning.h"
-#include "HeeksConfig.h"
 #include "HeeksFrame.h"
 
 void SectioningData::ReadFromConfig()
 {
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	config.Read(_T("SectioningPos1X"), &m_pos1[0], 0.0);
 	config.Read(_T("SectioningPos1Y"), &m_pos1[1], 0.0);
 	config.Read(_T("SectioningPos1Z"), &m_pos1[2], 0.0);
@@ -18,7 +17,7 @@ void SectioningData::ReadFromConfig()
 
 void SectioningData::WriteConfig()
 {
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	config.Write(_T("SectioningPos1X"), m_pos1[0]);
 	config.Write(_T("SectioningPos1Y"), m_pos1[1]);
 	config.Write(_T("SectioningPos1Z"), m_pos1[2]);

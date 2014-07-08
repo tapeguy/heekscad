@@ -11,11 +11,6 @@
 #include "ConversionTools.h"
 #include "../interface/HeeksCADInterface.h"
 #include "../interface/PropertyList.h"
-#include "../interface/PropertyCheck.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyInt.h"
-#include "../interface/PropertyChoice.h"
-#include "HeeksConfig.h"
 #include "SketchTools.h"
 #include "HSpline.h"
 
@@ -24,87 +19,133 @@ extern CHeeksCADInterface heekscad_interface;
 /**
 	These settings relate to the fixes available in the ShapeFix_Wire class.
  */
-class SketchToolOptions
+class SketchToolOptions : public MutableObject
 {
 public:
-	SketchToolOptions(){}
+	SketchToolOptions()
+	{
+		InitializeProperties();
+	}
 
-	void LoadSetttings()
-    {
-        HeeksConfig config;
-        config.Read(_T("SketchToolOptions_reorder"), &m_reorder, true);
-        config.Read(_T("SketchToolOptions_max_gap"), &m_max_gap, 0.001);
-        config.Read(_T("SketchToolOptions_fix_small"), &m_fix_small, true);
-        config.Read(_T("SketchToolOptions_fix_small_precision"), &m_fix_small_precision, 0.0254);
-        config.Read(_T("SketchToolOptions_fix_self_intersection"), &m_fix_self_intersection, true);
-        config.Read(_T("SketchToolOptions_fix_lacking"), &m_fix_lacking, true);
-        config.Read(_T("SketchToolOptions_fix_degenerated"), &m_fix_degenerated, true);
+	void LoadSettings()
+	{
+		HeeksConfig& config = wxGetApp().GetConfig();
+		config.Read(_T("SketchToolOptions_reorder"), m_reorder, true);
+		config.Read(_T("SketchToolOptions_max_gap"), m_max_gap, 0.001);
+		config.Read(_T("SketchToolOptions_fix_small"), m_fix_small, true);
+		config.Read(_T("SketchToolOptions_fix_small_precision"), m_fix_small_precision, 0.0254);
+		config.Read(_T("SketchToolOptions_fix_self_intersection"), m_fix_self_intersection, true);
+		config.Read(_T("SketchToolOptions_fix_lacking"), m_fix_lacking, true);
+		config.Read(_T("SketchToolOptions_fix_degenerated"), m_fix_degenerated, true);
+		config.Read(_T("SketchToolOptions_modify_topology"), m_modify_topology, true);
+		config.Read(_T("SketchToolOptions_modify_geometry"), m_modify_geometry, true);
+		config.Read(_T("SketchToolOptions_closed_wire"), m_closed_wire, true);
+		config.Read(_T("SketchToolOptions_preference_pcurve"), m_preference_pcurve, true);
+		config.Read(_T("SketchToolOptions_fix_gaps_by_ranges"), m_fix_gaps_by_ranges, true);
+		config.Read(_T("SketchToolOptions_max_deviation"), m_max_deviation, 0.001);
+		config.Read(_T("SketchToolOptions_cleanup_tolerance"), m_cleanup_tolerance, 0.000001);
+		config.Read(_T("SketchToolOptions_degree_min"), m_degree_min, 3);
+		config.Read(_T("SketchToolOptions_degree_max"), m_degree_max, 8);
+		config.Read(_T("SketchToolOptions_continuity"), m_continuity, 4);
+		config.Read(_T("SketchToolOptions_sort_points"), m_sort_points, false);
+		config.Read(_T("SketchToolOptions_force_closed_shape"), m_force_closed_shape, false);
+	}
 
-        config.Read(_T("SketchToolOptions_modify_topology"), &m_modify_topology, true);
-        config.Read(_T("SketchToolOptions_modify_geometry"), &m_modify_geometry, true);
-        config.Read(_T("SketchToolOptions_closed_wire"), &m_closed_wire, true);
-        config.Read(_T("SketchToolOptions_preference_pcurve"), &m_preference_pcurve, true);
-        config.Read(_T("SketchToolOptions_fix_gaps_by_ranges"), &m_fix_gaps_by_ranges, true);
-        config.Read(_T("SketchToolOptions_max_deviation"), &m_max_deviation, 0.001);
-        config.Read(_T("SketchToolOptions_cleanup_tolerance"), &m_cleanup_tolerance, 0.000001);
-        config.Read(_T("SketchToolOptions_degree_min"), &m_degree_min, 3);
-        config.Read(_T("SketchToolOptions_degree_max"), &m_degree_max, 8);
-        config.Read(_T("SketchToolOptions_continuity"), &m_continuity, 4);
-		config.Read(_T("SketchToolOptions_sort_points"), &m_sort_points, false);
-		config.Read(_T("SketchToolOptions_force_closed_shape"), &m_force_closed_shape, false);
-    }
-
-    void SaveSettings()
-    {
-        HeeksConfig config;
-        config.Write(_T("SketchToolOptions_reorder"), m_reorder);
-        config.Write(_T("SketchToolOptions_max_gap"), m_max_gap);
-        config.Write(_T("SketchToolOptions_fix_small"), m_fix_small);
-        config.Write(_T("SketchToolOptions_fix_small_precision"), m_fix_small_precision);
-        config.Write(_T("SketchToolOptions_fix_self_intersection"), m_fix_self_intersection);
-        config.Write(_T("SketchToolOptions_fix_lacking"), m_fix_lacking);
-        config.Write(_T("SketchToolOptions_fix_degenerated"), m_fix_degenerated);
-        config.Write(_T("SketchToolOptions_modify_topology"), m_modify_topology);
-        config.Write(_T("SketchToolOptions_modify_geometry"), m_modify_geometry);
-        config.Write(_T("SketchToolOptions_closed_wire"), m_closed_wire);
-        config.Write(_T("SketchToolOptions_preference_pcurve"), m_preference_pcurve);
-        config.Write(_T("SketchToolOptions_fix_gaps_by_ranges"), m_fix_gaps_by_ranges);
-        config.Write(_T("SketchToolOptions_max_deviation"), m_max_deviation);
-        config.Write(_T("SketchToolOptions_cleanup_tolerance"), m_cleanup_tolerance);
-        config.Write(_T("SketchToolOptions_degree_min"), m_degree_min);
-        config.Write(_T("SketchToolOptions_degree_max"), m_degree_max);
-        config.Write(_T("SketchToolOptions_continuity"), m_continuity);
+	void SaveSettings()
+	{
+		HeeksConfig& config = wxGetApp().GetConfig();
+		config.Write(_T("SketchToolOptions_reorder"), m_reorder);
+		config.Write(_T("SketchToolOptions_max_gap"), m_max_gap);
+		config.Write(_T("SketchToolOptions_fix_small"), m_fix_small);
+		config.Write(_T("SketchToolOptions_fix_small_precision"), m_fix_small_precision);
+		config.Write(_T("SketchToolOptions_fix_self_intersection"), m_fix_self_intersection);
+		config.Write(_T("SketchToolOptions_fix_lacking"), m_fix_lacking);
+		config.Write(_T("SketchToolOptions_fix_degenerated"), m_fix_degenerated);
+		config.Write(_T("SketchToolOptions_modify_topology"), m_modify_topology);
+		config.Write(_T("SketchToolOptions_modify_geometry"), m_modify_geometry);
+		config.Write(_T("SketchToolOptions_closed_wire"), m_closed_wire);
+		config.Write(_T("SketchToolOptions_preference_pcurve"), m_preference_pcurve);
+		config.Write(_T("SketchToolOptions_fix_gaps_by_ranges"), m_fix_gaps_by_ranges);
+		config.Write(_T("SketchToolOptions_max_deviation"), m_max_deviation);
+		config.Write(_T("SketchToolOptions_cleanup_tolerance"), m_cleanup_tolerance);
+		config.Write(_T("SketchToolOptions_degree_min"), m_degree_min);
+		config.Write(_T("SketchToolOptions_degree_max"), m_degree_max);
+		config.Write(_T("SketchToolOptions_continuity"), m_continuity);
 		config.Write(_T("SketchToolOptions_sort_points"), m_sort_points);
-		config.Read(_T("SketchToolOptions_force_closed_shape"), m_force_closed_shape);
-    }
+		config.Write(_T("SketchToolOptions_force_closed_shape"), m_force_closed_shape);
+	}
+
+	void InitializeProperties()
+	{
+		sketch_simplify_tools.Initialize(_("simplify sketch options"), this);
+		m_max_deviation.Initialize(_("max deviation"), &sketch_simplify_tools);
+		m_cleanup_tolerance.Initialize(_("cleanup tolerance (temporary)"), &sketch_simplify_tools);
+		m_degree_min.Initialize(_("bspline min degree (eg: 3)"), &sketch_simplify_tools);
+		m_degree_max.Initialize(_("bspline max degree (eg: 8)"), &sketch_simplify_tools);
+		m_continuity.Initialize(_("bspline continuity (eg: GeomAbs_C2)"), &sketch_simplify_tools);
+		m_continuity.m_choices.push_back(_T("GeomAbs_C0"));
+		m_continuity.m_choices.push_back(_T("GeomAbs_G1"));
+		m_continuity.m_choices.push_back(_T("GeomAbs_C1"));
+		m_continuity.m_choices.push_back(_T("GeomAbs_G2"));
+		m_continuity.m_choices.push_back(_T("GeomAbs_C2"));
+		m_continuity.m_choices.push_back(_T("GeomAbs_C3"));
+		m_continuity.m_choices.push_back(_T("GeomAbs_CN"));
+		m_sort_points.Initialize(_("Sort Points"), &sketch_simplify_tools);
+		m_force_closed_shape.Initialize(_("Force closed shape"), &sketch_simplify_tools);
+
+		return; // The rest of this is not ready yet.
+/*
+		PropertyList* sketchtools = new PropertyList(_("fix wire options"));
+		sketchtools->m_list.push_back(new PropertyCheck(_("reorder"), sketch_tool_options.m_reorder, (HeeksObj *) (&sketch_tool_options.m_reorder), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("fix small"), sketch_tool_options.m_fix_small, (HeeksObj *) (&sketch_tool_options.m_fix_small), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyLength(_("fix small precision"), sketch_tool_options.m_fix_small_precision, (HeeksObj *) (&sketch_tool_options.m_fix_small_precision), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("fix self intersection"), sketch_tool_options.m_fix_self_intersection, (HeeksObj *) (&sketch_tool_options.m_fix_self_intersection), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("fix lacking"), sketch_tool_options.m_fix_lacking, (HeeksObj *) (&sketch_tool_options.m_fix_lacking), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("fix degenerated"), sketch_tool_options.m_fix_degenerated, (HeeksObj *) (&sketch_tool_options.m_fix_degenerated), on_set_sketchtool_option));
+
+		sketchtools->m_list.push_back(new PropertyCheck(_("modify topology"), sketch_tool_options.m_modify_topology, (HeeksObj *) (&sketch_tool_options.m_modify_topology), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("modify geometry"), sketch_tool_options.m_modify_geometry, (HeeksObj *) (&sketch_tool_options.m_modify_geometry), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("closed wire"), sketch_tool_options.m_closed_wire, (HeeksObj *) (&sketch_tool_options.m_closed_wire), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("preference pcurve"), sketch_tool_options.m_preference_pcurve, (HeeksObj *) (&sketch_tool_options.m_preference_pcurve), on_set_sketchtool_option));
+		sketchtools->m_list.push_back(new PropertyCheck(_("fix gaps by ranges"), sketch_tool_options.m_fix_gaps_by_ranges, (HeeksObj *) (&sketch_tool_options.m_fix_gaps_by_ranges), on_set_sketchtool_option));
+
+		list->push_back(sketchtools);
+*/
+	}
+
+	void OnPropertyEdit()
+	{
+		SaveSettings();
+	}
 
 public:
-    bool m_reorder;
-    double m_max_gap;
-    bool m_fix_small;
-    double m_fix_small_precision;
-    bool m_fix_self_intersection;
-    bool m_fix_lacking;
-    bool m_fix_degenerated;
-    bool m_modify_topology;
-    bool m_modify_geometry;
-    bool m_closed_wire;
-    bool m_preference_pcurve;
-    bool m_fix_gaps_by_ranges;
-    double m_max_deviation;
-    double m_cleanup_tolerance;
-    int m_degree_min;
-    int m_degree_max;
-    int m_continuity;
-	bool m_sort_points;
-	bool m_force_closed_shape;
+	PropertyList sketch_simplify_tools;
+	PropertyCheck m_reorder;
+	PropertyDouble m_max_gap;
+	PropertyCheck m_fix_small;
+	PropertyLength m_fix_small_precision;
+	PropertyCheck m_fix_self_intersection;
+	PropertyCheck m_fix_lacking;
+	PropertyCheck m_fix_degenerated;
+	PropertyCheck m_modify_topology;
+	PropertyCheck m_modify_geometry;
+	PropertyCheck m_closed_wire;
+	PropertyCheck m_preference_pcurve;
+	PropertyCheck m_fix_gaps_by_ranges;
+	PropertyLength m_max_deviation;
+	PropertyLength m_cleanup_tolerance;
+	PropertyInt m_degree_min;
+	PropertyInt m_degree_max;
+	PropertyChoice m_continuity;
+	PropertyCheck m_sort_points;
+	PropertyCheck m_force_closed_shape;
 };
 
 static SketchToolOptions sketch_tool_options;
 
 void LoadSketchToolsSettings()
 {
-	sketch_tool_options.LoadSetttings();
+	sketch_tool_options.LoadSettings();
 }
 
 
@@ -276,17 +317,26 @@ public:
 
 
 
-static PadSketch pad_sketch;
-static MakeToPart make_to_part;
-static AddToPart add_to_part;
-static PocketSketch pocket_sketch;
-static FixWire fix_wire;
-static SimplifySketchTool simplify_sketch_tool;
-static SimplifySketchToBSplines simplify_sketch_to_bsplines_tool;
+static PadSketch * pad_sketch = NULL;
+static MakeToPart * make_to_part = NULL;
+static AddToPart * add_to_part = NULL;
+static PocketSketch * pocket_sketch = NULL;
+static FixWire * fix_wire = NULL;
+static SimplifySketchTool * simplify_sketch_tool = NULL;
+static SimplifySketchToBSplines * simplify_sketch_to_bsplines_tool = NULL;
 
 
 
 void GetSketchMenuTools(std::list<Tool*>* t_list){
+
+	if ( pad_sketch == NULL ) pad_sketch = new PadSketch();
+	if ( make_to_part == NULL ) make_to_part = new MakeToPart();
+	if ( add_to_part == NULL ) add_to_part = new AddToPart();
+	if ( pocket_sketch == NULL ) pocket_sketch = new PocketSketch();
+	if ( fix_wire == NULL ) fix_wire = new FixWire();
+	if ( simplify_sketch_tool == NULL ) simplify_sketch_tool = new SimplifySketchTool();
+	if ( simplify_sketch_to_bsplines_tool == NULL ) simplify_sketch_to_bsplines_tool = new SimplifySketchToBSplines();
+
 	int count=0;
 	bool gotsketch=false;
 	bool gotpart=false;
@@ -303,107 +353,26 @@ void GetSketchMenuTools(std::list<Tool*>* t_list){
 
     if (gotsketch)
     {
-        t_list->push_back(&simplify_sketch_tool);
-        t_list->push_back(&simplify_sketch_to_bsplines_tool);
+        t_list->push_back(simplify_sketch_tool);
+        t_list->push_back(simplify_sketch_to_bsplines_tool);
 
         // t_list->push_back(&fix_wire);    /* This is not ready yet */
     }
 
 	if(count == 2 && gotsketch && gotpart)
-		t_list->push_back(&add_to_part);
+		t_list->push_back(add_to_part);
 
 	if(count!=1 || !gotsketch)
 		return;
 
-	t_list->push_back(&pad_sketch);
-	t_list->push_back(&pocket_sketch);
-	t_list->push_back(&make_to_part);
+	t_list->push_back(pad_sketch);
+	t_list->push_back(pocket_sketch);
+	t_list->push_back(make_to_part);
 }
 
-void on_set_sketchtool_option(bool value, HeeksObj* object){
-	*((bool *) object) = value;
-	sketch_tool_options.SaveSettings();
-}
-
-void on_set_sketchtool_option(double value, HeeksObj* object){
-	*((double *) object) = value;
-	sketch_tool_options.SaveSettings();
-}
-
-void on_set_sketchtool_option(int value, HeeksObj* object){
-	*((int *) object) = value;
-	sketch_tool_options.SaveSettings();
-}
-
-void on_set_sketchtool_bool_option(int value, HeeksObj* object){
-	*((bool *) object) = (value!=0);
-	sketch_tool_options.SaveSettings();
-}
-
-void SketchTools_GetOptions(std::list<Property *> *list)
+void SketchTools_GetProperties(std::list<Property *> *list)
 {
-    PropertyList* sketch_simplify_tools = new PropertyList(_("simplify sketch options"));
-    sketch_simplify_tools->m_list.push_back(new PropertyLength(_("max deviation"), sketch_tool_options.m_max_deviation, (HeeksObj *) (&sketch_tool_options.m_max_deviation), on_set_sketchtool_option));
-    sketch_simplify_tools->m_list.push_back(new PropertyLength(_("cleanup tolerance (temporary)"), sketch_tool_options.m_cleanup_tolerance, (HeeksObj *) (&sketch_tool_options.m_cleanup_tolerance), on_set_sketchtool_option));
-    sketch_simplify_tools->m_list.push_back(new PropertyInt(_("bspline min degree (eg: 3)"), sketch_tool_options.m_degree_min, (HeeksObj *) (&sketch_tool_options.m_degree_min), on_set_sketchtool_option));
-    sketch_simplify_tools->m_list.push_back(new PropertyInt(_("bspline max degree (eg: 8)"), sketch_tool_options.m_degree_max, (HeeksObj *) (&sketch_tool_options.m_degree_max), on_set_sketchtool_option));
-
-    { // Begin choice scope
-		std::list< wxString > choices;
-
-		choices.push_back(_T("GeomAbs_C0"));
-		choices.push_back(_T("GeomAbs_G1"));
-		choices.push_back(_T("GeomAbs_C1"));
-		choices.push_back(_T("GeomAbs_G2"));
-		choices.push_back(_T("GeomAbs_C2"));
-		choices.push_back(_T("GeomAbs_C3"));
-		choices.push_back(_T("GeomAbs_CN"));
-
-		int choice = sketch_tool_options.m_continuity;
-		sketch_simplify_tools->m_list.push_back(new PropertyChoice(_("bspline continuity (eg: GeomAbs_C2)"), choices, choice, (HeeksObj *) (&sketch_tool_options.m_continuity), on_set_sketchtool_option));
-	} // End choice scope
-
-	{ // Begin choice scope
-		std::list< wxString > choices;
-
-		choices.push_back(_T("False"));
-		choices.push_back(_T("True"));
-
-		int choice = sketch_tool_options.m_sort_points?1:0;
-		sketch_simplify_tools->m_list.push_back(new PropertyChoice(_("Sort Points"), choices, choice, (HeeksObj *) (&sketch_tool_options.m_sort_points), on_set_sketchtool_bool_option));
-	} // End choice scope
-
-	{ // Begin choice scope
-		std::list< wxString > choices;
-
-		choices.push_back(_T("False"));
-		choices.push_back(_T("True"));
-
-		int choice = sketch_tool_options.m_force_closed_shape?1:0;
-		sketch_simplify_tools->m_list.push_back(new PropertyChoice(_("Force closed shape"), choices, choice, (HeeksObj *) (&sketch_tool_options.m_force_closed_shape), on_set_sketchtool_bool_option));
-	} // End choice scope
-
-	list->push_back(sketch_simplify_tools);
-
-
-
-    return; // The rest of this is not ready yet.
-
-    PropertyList* sketchtools = new PropertyList(_("fix wire options"));
-	sketchtools->m_list.push_back(new PropertyCheck(_("reorder"), sketch_tool_options.m_reorder, (HeeksObj *) (&sketch_tool_options.m_reorder), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("fix small"), sketch_tool_options.m_fix_small, (HeeksObj *) (&sketch_tool_options.m_fix_small), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyLength(_("fix small precision"), sketch_tool_options.m_fix_small_precision, (HeeksObj *) (&sketch_tool_options.m_fix_small_precision), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("fix self intersection"), sketch_tool_options.m_fix_self_intersection, (HeeksObj *) (&sketch_tool_options.m_fix_self_intersection), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("fix lacking"), sketch_tool_options.m_fix_lacking, (HeeksObj *) (&sketch_tool_options.m_fix_lacking), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("fix degenerated"), sketch_tool_options.m_fix_degenerated, (HeeksObj *) (&sketch_tool_options.m_fix_degenerated), on_set_sketchtool_option));
-
-	sketchtools->m_list.push_back(new PropertyCheck(_("modify topology"), sketch_tool_options.m_modify_topology, (HeeksObj *) (&sketch_tool_options.m_modify_topology), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("modify geometry"), sketch_tool_options.m_modify_geometry, (HeeksObj *) (&sketch_tool_options.m_modify_geometry), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("closed wire"), sketch_tool_options.m_closed_wire, (HeeksObj *) (&sketch_tool_options.m_closed_wire), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("preference pcurve"), sketch_tool_options.m_preference_pcurve, (HeeksObj *) (&sketch_tool_options.m_preference_pcurve), on_set_sketchtool_option));
-	sketchtools->m_list.push_back(new PropertyCheck(_("fix gaps by ranges"), sketch_tool_options.m_fix_gaps_by_ranges, (HeeksObj *) (&sketch_tool_options.m_fix_gaps_by_ranges), on_set_sketchtool_option));
-
-	list->push_back(sketchtools);
+	sketch_tool_options.GetProperties(list);
 }
 
 
@@ -698,7 +667,7 @@ std::list<SimplifySketchTool::SortPoint> SimplifySketchTool::GetPoints( TopoDS_W
 						// point to start this off.
 
 						// We need to move to the start BEFORE machining this line.
-						SortPoint start(last_position);
+						// SortPoint start(last_position);
 						SortPoint end(*interpolated_points.begin());
 
 						points.push_back(end);
@@ -876,16 +845,16 @@ static void SimplifySketch(const double deviation, bool make_bspline )
                             }
 
                             // GeomAPI_PointsToBSpline bspline(Points);
-
+			    int continuity_ordinal = sketch_tool_options.m_continuity;
                             GeomAPI_PointsToBSpline bspline(Points,
                                                             sketch_tool_options.m_degree_min,
                                                             sketch_tool_options.m_degree_max,
-                                                            GeomAbs_Shape(sketch_tool_options.m_continuity),
+                                                            GeomAbs_Shape(continuity_ordinal),
                                                             sketch_tool_options.m_cleanup_tolerance);
 
                             // Standard_EXPORT GeomAPI_PointsToBSpline(const TColgp_Array1OfPnt& Points,const Standard_Integer DegMin = 3,const Standard_Integer DegMax = 8,const GeomAbs_Shape Continuity = GeomAbs_C2,const Standard_Real Tol3D = 1.0e-3);
 
-                            HSpline *hspline = new HSpline(bspline.Curve(), &(wxGetApp().current_color));
+                            HSpline *hspline = new HSpline(bspline.Curve(), wxGetApp().CurrentColor());
                             heekscad_interface.Add( hspline, NULL );
 				        }
 				        catch (Standard_Failure) {

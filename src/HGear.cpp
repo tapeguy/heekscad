@@ -4,26 +4,24 @@
 #include "stdafx.h"
 
 #include "HGear.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyInt.h"
-#include "../interface/PropertyCheck.h"
-#include "../interface/PropertyLength.h"
 #include "Gripper.h"
 #include "HLine.h"
 #include "HArc.h"
 #include "HSpline.h"
 
 HGear::HGear(const HGear &o){
+	InitializeProperties();
 	operator=(o);
 }
 
 HGear::HGear(){
+	InitializeProperties();
 	m_num_teeth = 12;
 	m_module = 1.0;
 	m_addendum_offset = 0.0;
 	m_addendum_multiplier = 1.0;
 	m_dedendum_multiplier = 1.0;
-	m_pressure_angle = 0.34906585039886; // 20 degrees
+	m_pressure_angle = 20;
 	m_tip_relief = 0.05;
 	m_depth = 0.0;
 	m_cone_half_angle = 0.0;
@@ -36,6 +34,17 @@ HGear::~HGear(){
 const HGear& HGear::operator=(const HGear &o){
 	HeeksObj::operator=(o);
 	return *this;
+}
+
+void HGear::InitializeProperties()
+{
+	m_num_teeth.Initialize(_("num teeth"), this);
+	m_module.Initialize(_("module"), this);
+	m_pressure_angle.Initialize(_("pressure angle"), this);
+	m_tip_relief.Initialize(_("tip relief"), this);
+	m_depth.Initialize(_("depth"), this);
+	m_cone_half_angle.Initialize(_("cone half angle"), this);
+	m_angle.Initialize(_("drawn angle"), this);
 }
 
 const wxBitmap &HGear::GetIcon()
@@ -154,9 +163,9 @@ void add_spline()
 	if(spline_points_for_gear.size() < 2)return;
 
 	if(spline_points_for_gear.size() == 2)
-		sketch_for_gear->Add(new HLine(spline_points_for_gear.front(), spline_points_for_gear.back(), &wxGetApp().current_color), NULL);
+		sketch_for_gear->Add(new HLine(spline_points_for_gear.front(), spline_points_for_gear.back(), wxGetApp().CurrentColor()), NULL);
 	else
-		sketch_for_gear->Add(new HSpline(spline_points_for_gear, &wxGetApp().current_color), NULL);
+		sketch_for_gear->Add(new HSpline(spline_points_for_gear, wxGetApp().CurrentColor()), NULL);
 
 	// clear points, retaining last one
 	gp_Pnt back = spline_points_for_gear.back();
@@ -303,7 +312,7 @@ void line_arc_line(double tooth_angle)
 	gp_Circ c(gp_Ax2(pm, gp_Dir(0, 0, -1)), radius);
 
 	if(line_length >= wxGetApp().m_geom_tol)
-		sketch_for_gear->Add(new HLine(p1, p1B, &wxGetApp().current_color), NULL);
+		sketch_for_gear->Add(new HLine(p1, p1B, wxGetApp().CurrentColor()), NULL);
 
 	double mid_span_line_length = gap - 2*radius;
 	if(mid_span_line_length >= wxGetApp().m_geom_tol)
@@ -318,17 +327,17 @@ void line_arc_line(double tooth_angle)
 		gp_Pnt pm2 = gp_Pnt(pm1.XYZ() + v.XYZ() * mid_span_line_length);
 		gp_Circ c1(gp_Ax2(pm1, gp_Dir(0, 0, -1)), radius);
 		gp_Circ c2(gp_Ax2(pm2, gp_Dir(0, 0, -1)), radius);
-		sketch_for_gear->Add(new HArc(p1B, two_arc_p1, c1, &wxGetApp().current_color), NULL);
-		sketch_for_gear->Add(new HLine(two_arc_p1, two_arc_p2, &wxGetApp().current_color), NULL);
-		sketch_for_gear->Add(new HArc(two_arc_p2, p2B, c2, &wxGetApp().current_color), NULL);
+		sketch_for_gear->Add(new HArc(p1B, two_arc_p1, c1, wxGetApp().CurrentColor()), NULL);
+		sketch_for_gear->Add(new HLine(two_arc_p1, two_arc_p2, wxGetApp().CurrentColor()), NULL);
+		sketch_for_gear->Add(new HArc(two_arc_p2, p2B, c2, wxGetApp().CurrentColor()), NULL);
 	}
 	else
 	{
-		sketch_for_gear->Add(new HArc(p1B, p2B, c, &wxGetApp().current_color), NULL);
+		sketch_for_gear->Add(new HArc(p1B, p2B, c, wxGetApp().CurrentColor()), NULL);
 	}
 
 	if(line_length >= wxGetApp().m_geom_tol)
-		sketch_for_gear->Add(new HLine(p2B, p2, &wxGetApp().current_color), NULL);
+		sketch_for_gear->Add(new HLine(p2B, p2, wxGetApp().CurrentColor()), NULL);
 
 	spline_points_for_gear.clear();
 	spline_points_for_gear.push_back(p2);
@@ -390,13 +399,13 @@ void HGear::SetSegmentsVariables(void(*callbackfunc)(const double *p))const
 	rotation.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1)), m_angle * M_PI/180);
 	mat_for_point = make_matrix(m_pos.Location(), m_pos.XDirection(), m_pos.YDirection());
 	mat_for_point = rotation.Multiplied(mat_for_point);
-	cone_sin_for_point = sin(m_cone_half_angle);
-	cone_cos_for_point = cos(m_cone_half_angle);
+	cone_sin_for_point = sin(m_cone_half_angle * M_PI/180);
+	cone_cos_for_point = cos(m_cone_half_angle * M_PI/180);
 
 	pitch_radius = (double)(m_module * m_num_teeth)/2;
 	inside_radius = pitch_radius - m_dedendum_multiplier*m_module;
 	outside_radius = pitch_radius + (m_addendum_multiplier*m_module + m_addendum_offset);
-	base_radius = pitch_radius * cos(gear_for_point->m_pressure_angle) / cos(gear_for_point->m_cone_half_angle);
+	base_radius = pitch_radius * cos(gear_for_point->m_pressure_angle * M_PI/180) / cos(gear_for_point->m_cone_half_angle * M_PI/180);
 
 	if(inside_radius < base_radius)inside_radius = base_radius;
 
@@ -518,45 +527,6 @@ void HGear::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 	list->push_back(GripData(GripperTypeScale,pxyz.X(),pxyz.Y(),pxyz.Z(),NULL));
 }
 
-static void on_set_num_teeth(int value, HeeksObj* object){
-	((HGear*)object)->m_num_teeth = value;
-}
-
-static void on_set_module(double value, HeeksObj* object){
-	((HGear*)object)->m_module = value;
-}
-
-static void on_set_pressure_angle(double value, HeeksObj* object){
-	((HGear*)object)->m_pressure_angle = value * M_PI/180;
-}
-
-static void on_set_tip_relief(double value, HeeksObj* object){
-	((HGear*)object)->m_tip_relief = value;
-}
-
-static void on_set_depth(double value, HeeksObj* object){
-	((HGear*)object)->m_depth = value;
-}
-
-static void on_set_cone_half_angle(double value, HeeksObj* object){
-	((HGear*)object)->m_cone_half_angle = value * M_PI/180;
-}
-
-static void on_set_angle(double value, HeeksObj* object){
-	((HGear*)object)->m_angle = value;
-}
-void HGear::GetProperties(std::list<Property *> *list){
-	list->push_back(new PropertyInt(_("num teeth"), m_num_teeth, this, on_set_num_teeth));
-	list->push_back(new PropertyDouble(_("module"), m_module, this, on_set_module));
-	list->push_back(new PropertyDouble(_("pressure angle"), m_pressure_angle * 180/M_PI, this, on_set_pressure_angle));
-	list->push_back(new PropertyDouble(_("tip relief"), m_tip_relief, this, on_set_tip_relief));
-	list->push_back(new PropertyDouble(_("depth"), m_depth, this, on_set_depth));
-	list->push_back(new PropertyDouble(_("cone half angle"), m_cone_half_angle * 180/M_PI, this, on_set_cone_half_angle));
-	list->push_back(new PropertyDouble(_("drawn angle"), m_angle, this, on_set_angle));
-
-	HeeksObj::GetProperties(list);
-}
-
 bool HGear::GetScaleAboutMatrix(double *m)
 {
 	gp_Trsf mat = make_matrix(m_pos.Location(), m_pos.XDirection(), m_pos.YDirection());
@@ -575,7 +545,7 @@ static void lineAddFunction(const double *p)
 
 	if(lines_started)
 	{
-		HLine* new_object = new HLine(prev_point, pnt, &wxGetApp().current_color);
+		HLine* new_object = new HLine(prev_point, pnt, wxGetApp().CurrentColor());
 		sketch_for_make->Add(new_object, NULL);
 	}
 
@@ -681,17 +651,39 @@ void HGear::WriteXML(TiXmlNode *root)
 HeeksObj* HGear::ReadFromXMLElement(TiXmlElement* element)
 {
 	HGear* new_object = new HGear();
+	
+	int iv;
+	double dv;
 
-	element->Attribute("num_teeth", &new_object->m_num_teeth);
-	element->Attribute("module", &new_object->m_module);
-	element->Attribute("addendum_offset", &new_object->m_addendum_offset);
-	element->Attribute("addendum_multiplier", &new_object->m_addendum_multiplier);
-	element->Attribute("dedendum_multiplier", &new_object->m_dedendum_multiplier);
-	element->Attribute("pressure_angle", &new_object->m_pressure_angle);
-	element->Attribute("tip_relief", &new_object->m_tip_relief);
-	element->Attribute("depth", &new_object->m_depth);
-	element->Attribute("cone_half_angle", &new_object->m_cone_half_angle);
-	element->Attribute("drawn_angle", &new_object->m_angle);
+	element->Attribute("num_teeth", &iv);
+	new_object->m_num_teeth = iv;
+
+	element->Attribute("module", &dv);
+	new_object->m_module = dv;
+
+	element->Attribute("addendum_offset", &dv);
+	new_object->m_addendum_offset = dv;
+
+	element->Attribute("addendum_multiplier", &dv);
+	new_object->m_addendum_multiplier = dv;
+
+	element->Attribute("dedendum_multiplier", &dv);
+	new_object->m_dedendum_multiplier =dv;
+
+	element->Attribute("pressure_angle", &dv);
+	new_object->m_pressure_angle = dv;
+
+	element->Attribute("tip_relief", &dv);
+	new_object->m_tip_relief = dv;
+
+	element->Attribute("depth", &dv);
+	new_object->m_depth = dv;
+
+	element->Attribute("cone_half_angle", &dv);
+	new_object->m_cone_half_angle = dv;
+
+	element->Attribute("drawn_angle", &dv);
+	new_object->m_angle = dv;
 
 	double l[3] = {0.0, 0.0, 0.0};
 	double d[3] = {0.0, 0.0, 1.0};

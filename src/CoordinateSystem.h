@@ -8,14 +8,20 @@
 
 class CoordinateSystem: public HeeksObj
 {
+private:
+	PropertyDouble m_vert_angle;
+	PropertyDouble m_horiz_angle;
+	PropertyDouble m_twist_angle;
+
 public:
-	gp_Pnt m_o;
-	gp_Dir m_x;
-	gp_Dir m_y;
+	PropertyVertex m_o;
+	PropertyVector m_x;
+	PropertyVector m_y;
+
 	wxString m_title;
 
-	static double size;
-	static bool size_is_pixels; // false for mm
+	static PropertyDouble size;
+	static PropertyCheck size_is_pixels; // false for mm
 	static bool rendering_current;
 
 	CoordinateSystem(const wxString& str, const gp_Pnt &o, const gp_Dir &x, const gp_Dir &y);
@@ -25,8 +31,10 @@ public:
 	const CoordinateSystem& operator=(const CoordinateSystem &c);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
+	void OnPropertyEdit(Property* prop);
 	int GetType()const{return CoordinateSystemType;}
-	long GetMarkingMask()const{return MARKING_FILTER_COORDINATE_SYSTEM;}
+	int GetMarkingFilter()const{return CoordinateSystemMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxChar* GetTypeString(void)const{return _("Coordinate System");}
@@ -36,7 +44,6 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
-	void GetProperties(std::list<Property *> *list);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	bool GetScaleAboutMatrix(double *m);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
@@ -50,7 +57,6 @@ public:
 	static void RenderDatum(bool bright, bool solid); // render a coordinate system at 0, 0, 0
 	static void AxesToAngles(const gp_Dir &x, const gp_Dir &y, double &v_angle, double &h_angle, double &t_angle);
 	static void AnglesToAxes(const double &v_angle, const double &h_angle, const double &t_angle, gp_Dir &x, gp_Dir &y);
-	static void GetAx2Properties(std::list<Property *> *list, gp_Ax2& a);
 	void PickFrom3Points();
 	void PickFrom1Point();
 };

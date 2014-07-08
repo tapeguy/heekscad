@@ -11,41 +11,40 @@
 #include "HSpline.h"
 #include "Sketch.h"
 #include "HText.h"
-#include "HeeksConfig.h"
 
 
 // static
-bool HeeksDxfRead::m_make_as_sketch = false;
-bool HeeksDxfRead::m_ignore_errors = false;
-wxString HeeksDxfRead::m_layer_name_suffixes_to_discard = _T("_DOT,_DOTSMALL,_DOTBLANK,_OBLIQUE,_CLOSEDBLANK");
+PropertyCheck HeeksDxfRead::m_make_as_sketch = PropertyCheck(false);
+PropertyCheck HeeksDxfRead::m_ignore_errors = PropertyCheck(false);
+PropertyString HeeksDxfRead::m_layer_name_suffixes_to_discard = PropertyString ( _T("_DOT,_DOTSMALL,_DOTBLANK,_OBLIQUE,_CLOSEDBLANK") );
+
 
 HeeksDxfRead::HeeksDxfRead(const wxChar* filepath) : CDxfRead(Ttc(filepath))
 {
-    HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 
-	config.Read(_T("ImportDxfAsSketches"), &m_make_as_sketch);
-	config.Read(_T("IgnoreDxfReadErrors"), &m_ignore_errors);
+	config.Read(_T("ImportDxfAsSketches"), m_make_as_sketch);
+	config.Read(_T("IgnoreDxfReadErrors"), m_ignore_errors);
 	config.Read(_T("LayerNameSuffixesToDiscard"), m_layer_name_suffixes_to_discard);
 }
 
-HeeksColor *HeeksDxfRead::ActiveColorPtr(Aci_t & aci)
+HeeksColor& HeeksDxfRead::ActiveColor(Aci_t & aci)
 {
-    static HeeksColor color;
-    color = HeeksColor(aci);
-    return(&color);
+	m_active_color = HeeksColor(aci);
+	return(m_active_color);
 }
 
 HeeksColor hidden_color(128, 128, 128);
 
 void HeeksDxfRead::OnReadLine(const double* s, const double* e, bool hidden)
 {
-	HLine* new_object = new HLine(make_point(s), make_point(e), hidden ? (&hidden_color) : ActiveColorPtr(m_aci));
-    AddObject(new_object);
+	HLine* new_object = new HLine(make_point(s), make_point(e), hidden ? hidden_color : ActiveColor(m_aci));
+	AddObject(new_object);
 }
 
 void HeeksDxfRead::OnReadPoint(const double* s)
 {
-    HPoint* new_object = new HPoint(make_point(s), ActiveColorPtr(m_aci));
+    HPoint* new_object = new HPoint(make_point(s), ActiveColor(m_aci));
     AddObject(new_object);
 }
 
@@ -57,7 +56,7 @@ void HeeksDxfRead::OnReadArc(const double* s, const double* e, const double* c, 
 	if(!dir)up = -up;
 	gp_Pnt pc = make_point(c);
 	gp_Circ circle(gp_Ax2(pc, up), p1.Distance(pc));
-	HArc* new_object = new HArc(p0, p1, circle, hidden ? (&hidden_color) : ActiveColorPtr(m_aci));
+	HArc* new_object = new HArc(p0, p1, circle, hidden ? hidden_color : ActiveColor(m_aci));
 	AddObject(new_object);
 }
 
@@ -69,7 +68,7 @@ void HeeksDxfRead::OnReadCircle(const double* s, const double* c, bool dir, bool
 	if(!dir)up = -up;
 	gp_Pnt pc = make_point(c);
 	gp_Circ circle(gp_Ax2(pc, up), p0.Distance(pc));
-	HCircle* new_object = new HCircle(circle, hidden ? (&hidden_color) : ActiveColorPtr(m_aci));
+	HCircle* new_object = new HCircle(circle, hidden ? hidden_color : ActiveColor(m_aci));
 	AddObject(new_object);
 }
 
@@ -77,7 +76,7 @@ void HeeksDxfRead::OnReadSpline(TColgp_Array1OfPnt &control, TColStd_Array1OfRea
 {
 	try{
 		Geom_BSplineCurve spline(control,weight,knot,mult,degree,periodic,rational);
-		HSpline* new_object = new HSpline(spline, ActiveColorPtr(m_aci));
+		HSpline* new_object = new HSpline(spline, ActiveColor(m_aci));
 		AddObject(new_object);
 	}
 	catch(Standard_Failure)
@@ -176,7 +175,7 @@ void HeeksDxfRead::OnReadEllipse(const double* c, double major_radius, double mi
 	gp_Pnt pc = make_point(c);
 	gp_Elips ellipse(gp_Ax2(pc, up), major_radius, minor_radius);
 	ellipse.Rotate(gp_Ax1(pc,up),rotation);
-	HEllipse* new_object = new HEllipse(ellipse, ActiveColorPtr(m_aci));
+	HEllipse* new_object = new HEllipse(ellipse, ActiveColor(m_aci));
 	AddObject(new_object);
 }
 
@@ -195,7 +194,7 @@ void HeeksDxfRead::OnReadText(const double *point, const double height, const wx
         txt.Remove(0, offset+1);
     }
 
-    HText *new_object = new HText(trsf, txt, ActiveColorPtr(m_aci), NULL);
+    HText *new_object = new HText(trsf, txt, ActiveColor(m_aci), NULL);
     AddObject(new_object);
 }
 

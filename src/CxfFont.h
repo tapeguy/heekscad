@@ -50,6 +50,7 @@ protected:
 		class Graphics
 		{
 		public:
+			virtual ~Graphics() { }
 			virtual HeeksObj *Sketch( const gp_Pnt & location, const gp_Trsf & transformation_matrix, const float width, COrientationModifier *pOrientationModifier ) const = 0;
 			virtual void glCommands( const gp_Pnt & starting_point,
 									 const bool select,
@@ -208,6 +209,10 @@ public:
 	{
 		m_word_space_percentage = word_space_percentage;
 		m_character_space_percentage = character_space_percentage;
+	}
+
+	virtual ~VectorFont()
+	{
 	}
 
 	unsigned int NumGlyphs() const { return((unsigned int) m_glyphs.size()); }

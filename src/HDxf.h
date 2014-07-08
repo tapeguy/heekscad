@@ -19,14 +19,15 @@ private:
 	bool IsValidLayerName( const wxString layer_name ) const;
 
 protected:
-	HeeksColor *ActiveColorPtr(Aci_t & aci);
+	HeeksColor m_active_color;
+	HeeksColor& ActiveColor(Aci_t & aci);
 
 public:
 	HeeksDxfRead(const wxChar* filepath);
 
-	static bool m_make_as_sketch;
-	static bool m_ignore_errors;
-	static wxString m_layer_name_suffixes_to_discard;
+	static PropertyCheck m_make_as_sketch;
+	static PropertyCheck m_ignore_errors;
+	static PropertyString m_layer_name_suffixes_to_discard;
 
 	// CDxfRead's virtual functions
 	void OnReadLine(const double* s, const double* e, bool hidden);

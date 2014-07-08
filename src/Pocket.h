@@ -8,7 +8,7 @@
 
 class HPocket: public DynamicSolid{
 public:
-	double m_length;
+	PropertyDouble m_length;
 	CSketch* m_sketch;
 
 	HPocket(double length);
@@ -16,12 +16,11 @@ public:
 
 	const wxChar* GetTypeString(void)const{return _("Pocket");}
 	int GetType()const{return PocketSolidType;}
+	int GetMarkingFilter()const{return PocketSolidMarkingFilter;}
 	HeeksObj *MakeACopy(void)const{ return new HPocket(*this);}
 	void glCommands(bool select, bool marked, bool no_color);
-	void GetProperties(std::list<Property *> *list);
 	void WriteXML(TiXmlNode *root);
 	bool UsesID(){return true;}
-	long GetMarkingMask()const{return MARKING_FILTER_POCKETSOLID;}
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
 	static void PocketSketch(CSketch*,double length);
 	bool IsDifferent(HeeksObj* other);

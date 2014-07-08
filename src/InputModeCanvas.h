@@ -19,7 +19,7 @@ public:
 
 public:
 	// CPropertiesCanvas's virtual functions
-	void RefreshByRemovingAndAddingAll2();
+	void RefreshProperties2();
 
 	void AddToolBar();
 

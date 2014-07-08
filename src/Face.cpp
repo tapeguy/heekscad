@@ -12,11 +12,14 @@
 #include "ConversionTools.h"
 
 
-CFace::CFace():m_temp_attr(0)
+CFace::CFace()
+ : m_surface(_("surface type"), _(""), NULL), m_temp_attr(0)
 {
 }
 
-CFace::CFace(const TopoDS_Face &face):m_topods_face(face), m_temp_attr(0){
+CFace::CFace(const TopoDS_Face &face)
+ : m_topods_face(face), m_surface(_("surface type"), GetSurfaceTypeStr(), NULL), m_temp_attr(0)
+{
 #if _DEBUG
 	gp_Pnt pos;
 	gp_Dir norm = GetMiddleNormal(&pos);
@@ -198,8 +201,8 @@ void CFace::WriteXML(TiXmlNode *root)
 
 void CFace::GetProperties(std::list<Property *> *list)
 {
-	list->push_back(new PropertyString(_("surface type"), GetSurfaceTypeStr(), NULL));
-
+	m_surface.SetValue(this->GetSurfaceTypeStr());
+	list->push_back(&m_surface);
 	HeeksObj::GetProperties(list);
 }
 
@@ -211,7 +214,7 @@ void FaceToSketchTool::Run(){
 	wxGetApp().Add(new_object, NULL);
 }
 
-double FaceToSketchTool::deviation = 0.1;
+PropertyDouble FaceToSketchTool::deviation = 0.1;
 
 static FaceToSketchTool make_sketch_tool;
 

@@ -8,16 +8,20 @@
 
 class HArc: public EndedObject{
 private:
-	HeeksColor color;
+	PropertyVertex m_start;
+	PropertyVertex m_end;
+	PropertyVertex m_centre;
+	PropertyVector m_axis_direction;
+	PropertyLength m_length;
 
 public:
-	gp_Ax1 m_axis;
 
+	PropertyLength m_radius;
+	gp_Ax1 m_axis;
 	HPoint* C;
-	double m_radius;
 
 	~HArc(void);
-	HArc(const gp_Pnt &a, const gp_Pnt &b, const gp_Circ &c, const HeeksColor* col);
+	HArc(const gp_Pnt &a, const gp_Pnt &b, const gp_Circ &c, const HeeksColor& col);
 	HArc(const HArc &arc);
 
 	const HArc& operator=(const HArc &b);
@@ -27,8 +31,9 @@ public:
 	bool IsIncluded(gp_Pnt pnt);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return ArcType;}
-	long GetMarkingMask()const{return MARKING_FILTER_ARC;}
+	int GetMarkingFilter()const{return ArcMarkingFilter;}
 	int GetIDGroupType()const{return LineType;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void Draw(wxDC& dc);
@@ -37,9 +42,8 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
-	void SetColor(const HeeksColor &col){color = col;}
-	const HeeksColor* GetColor()const{return &color;}
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
+	void OnPropertyEdit(Property *prop);
 	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);

@@ -6,17 +6,16 @@
 
 class COrientationModifier;
 
-class COrientationModifierParams
+class COrientationModifierParams : public MutableObject
 {
+private:
+	COrientationModifier * m_parent;
+
 public:
 	typedef enum
 	{
 	    eNormalSpacing = 0
 	} eSpacing_t;
-
-	eSpacing_t m_spacing;
-	int m_number_of_rotations;  // Number of quarter circle rotations.
-	bool m_sketch_rotates_text;
 
 	typedef enum
 	{
@@ -27,11 +26,18 @@ public:
 		eBottomJustified    // Valid only for closed sketches
 	} eJustification_t;
 
-	eJustification_t	m_justification;
+	PropertyChoice m_spacing;
+	PropertyInt m_number_of_rotations;  // Number of quarter circle rotations.
+	PropertyCheck m_sketch_rotates_text;
+	PropertyChoice m_justification;
 
+	COrientationModifierParams(COrientationModifier * parent);
+
+	void InitializeProperties();
+	void OnPropertyEdit(Property *prop);
+	void GetProperties(std::list<Property *> *list);
 	void set_initial_values();
 	void write_values_to_config();
-	void GetProperties(COrientationModifier * parent, std::list<Property *> *list);
 	void WriteXMLAttributes(TiXmlNode* pElem);
 	void ReadParametersFromXMLElement(TiXmlElement* pElem);
 
@@ -57,7 +63,7 @@ class COrientationModifier : public ObjList
 public:
     COrientationModifierParams m_params;
 
-    COrientationModifier() { m_params.set_initial_values(); }
+    COrientationModifier() : m_params(this)  { m_params.set_initial_values(); }
 	~COrientationModifier() { }
     COrientationModifier & operator= ( const COrientationModifier & rhs );
     COrientationModifier(const COrientationModifier & rhs );
@@ -89,7 +95,6 @@ private:
     // NOTE: These three variables are relatively transient.  They are only held here to reduce re-work
     // during a single rendering session.
 
-    HeeksObj *m_last_child;
     Edges_t m_edges;
     double m_total_edge_length;
 

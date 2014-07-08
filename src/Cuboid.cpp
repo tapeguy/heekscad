@@ -4,20 +4,31 @@
 
 #include "stdafx.h"
 #include "Cuboid.h"
-#include "../interface/PropertyVertex.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
 #include "Gripper.h"
 #include "MarkedList.h"
 
+
 CCuboid::CCuboid(const gp_Ax2& pos, double x, double y, double z, const wxChar* title, const HeeksColor& col, float opacity)
-:CSolid(BRepPrimAPI_MakeBox(gp_Ax2(pos.Location().XYZ() + gp_XYZ((x < 0) ? x:0.0, (y < 0) ? y:0.0, (z < 0) ? z:0.0), pos.Direction(), pos.XDirection()), fabs(x), fabs(y), fabs(z)), title, col, opacity)
-, m_pos(pos), m_x(x), m_y(y), m_z(z)
+ : CSolid(BRepPrimAPI_MakeBox(gp_Ax2(pos.Location().XYZ() + gp_XYZ((x < 0) ? x:0.0, (y < 0) ? y:0.0, (z < 0) ? z:0.0), pos.Direction(), pos.XDirection()), fabs(x), fabs(y), fabs(z)), title, col, opacity),
+ m_pos(pos), m_x(x), m_y(y), m_z(z)
 {
+	InitializeProperties();
+}
+ 
+CCuboid::CCuboid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity)
+ : CSolid(solid, title, col, opacity),
+ m_pos(gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)))
+{
+	InitializeProperties();
 }
 
-CCuboid::CCuboid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity):CSolid(solid, title, col, opacity), m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)), m_x(0.0), m_y(0.0), m_z(0.0)
+CCuboid::CCuboid( const CCuboid & rhs )
+ : CSolid(rhs)
 {
+    m_pos = rhs.m_pos;
+    m_x = rhs.m_x;
+    m_y = rhs.m_y;
+    m_z = rhs.m_z;
 }
 
 const wxBitmap &CCuboid::GetIcon()
@@ -30,14 +41,6 @@ const wxBitmap &CCuboid::GetIcon()
 HeeksObj *CCuboid::MakeACopy(void)const
 {
 	return new CCuboid(*this);
-}
-
-CCuboid::CCuboid( const CCuboid & rhs ) : CSolid(rhs)
-{
-    m_pos = rhs.m_pos;
-    m_x = rhs.m_x;
-    m_y = rhs.m_y;
-    m_z = rhs.m_z;
 }
 
 CCuboid & CCuboid::operator= ( const CCuboid & rhs )
@@ -55,6 +58,13 @@ CCuboid & CCuboid::operator= ( const CCuboid & rhs )
     return(*this);
 }
 
+void CCuboid::InitializeProperties()
+{
+	m_x.Initialize(_("width ( x )"), this);
+	m_y.Initialize(_("height ( y )"), this);
+	m_z.Initialize(_("depth ( z )"), this);
+}
+
 bool CCuboid::IsDifferent(HeeksObj* other)
 {
 	CCuboid* cube = (CCuboid*)other;
@@ -67,17 +77,6 @@ bool CCuboid::IsDifferent(HeeksObj* other)
 	return CShape::IsDifferent(other);
 }
 
-static void on_set_x(double value, HeeksObj* object){
-	((CCuboid*)object)->m_x = value;
-}
-
-static void on_set_y(double value, HeeksObj* object){
-	((CCuboid*)object)->m_y = value;
-}
-
-static void on_set_z(double value, HeeksObj* object){
-	((CCuboid*)object)->m_z = value;
-}
 
 void CCuboid::MakeTransformedShape(const gp_Trsf &mat)
 {
@@ -93,11 +92,7 @@ wxString CCuboid::StretchedName(){ return _("Stretched Cuboid");}
 
 void CCuboid::GetProperties(std::list<Property *> *list)
 {
-	CoordinateSystem::GetAx2Properties(list, m_pos);
-	list->push_back(new PropertyLength(_("width ( x )"), m_x, this, on_set_x));
-	list->push_back(new PropertyLength(_("height( y )"), m_y, this, on_set_y));
-	list->push_back(new PropertyLength(_("depth ( z )"), m_z, this, on_set_z));
-
+//	CoordinateSystem::GetAx2Properties(list, m_pos);
 	CSolid::GetProperties(list);
 }
 
@@ -128,18 +123,22 @@ void CCuboid::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	list->push_back(GripData(GripperTypeObjectScaleZ,m8.X(),m8.Y(),m8.Z(),NULL));
 }
 
-void CCuboid::OnApplyProperties()
+void CCuboid::OnPropertyEdit(Property *prop)
 {
-	CCuboid* new_object = new CCuboid(m_pos, m_x, m_y, m_z, m_title.c_str(), m_color, m_opacity);
-	new_object->CopyIDsFrom(this);
-	Owner()->Add(new_object, NULL);
-	Owner()->Remove(this);
-	if(wxGetApp().m_marked_list->ObjectMarked(this))
-	{
-		wxGetApp().m_marked_list->Remove(this, false);
-		wxGetApp().m_marked_list->Add(new_object, true);
+	if (prop == &m_x || prop == &m_y || prop == &m_z) {
+		CCuboid* new_object = new CCuboid(m_pos, m_x, m_y, m_z, m_title.c_str(), m_color, m_opacity);
+		new_object->CopyIDsFrom(this);
+		Owner()->Add(new_object, NULL);
+		Owner()->Remove(this);
+		if(wxGetApp().m_marked_list->ObjectMarked(this))
+		{
+			wxGetApp().m_marked_list->Remove(this, false);
+			wxGetApp().m_marked_list->Add(new_object, true);
+		}
 	}
-	wxGetApp().Repaint();
+	else {
+		CSolid::OnPropertyEdit(prop);
+	}
 }
 
 

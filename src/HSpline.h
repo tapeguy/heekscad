@@ -5,6 +5,7 @@
 #pragma once
 
 #include "EndedObject.h"
+#include "../interface/PropertyList.h"
 
 // CTangentialArc is used to calculate an arc given desired start ( p0 ), end ( p1 ) and start direction ( v0 )
 class CTangentialArc
@@ -23,32 +24,31 @@ public:
 };
 
 class HSpline: public EndedObject{
-private:
-	HeeksColor color;
-
 public:
 	Handle(Geom_BSplineCurve) m_spline;
+	PropertyList m_knots;
+	PropertyList m_poles;
 
 	~HSpline(void);
-	HSpline(const Geom_BSplineCurve &s, const HeeksColor* col);
-	HSpline(const Handle_Geom_BSplineCurve s, const HeeksColor* col);
-	HSpline(const std::list<gp_Pnt> &points, const HeeksColor* col);
+	HSpline(const Geom_BSplineCurve &s, const HeeksColor& col);
+	HSpline(const Handle_Geom_BSplineCurve s, const HeeksColor& col);
+	HSpline(const std::list<gp_Pnt> &points, const HeeksColor& col);
 	HSpline(const HSpline &c);
 
 	const HSpline& operator=(const HSpline &c);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return SplineType;}
-	long GetMarkingMask()const{return MARKING_FILTER_CIRCLE;}
+	int GetMarkingFilter()const{return ArcMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxChar* GetTypeString(void)const{return _("Spline");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
-	void SetColor(const HeeksColor &col){color = col;}
-	const HeeksColor* GetColor()const{return &color;}
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
+	void OnPropertyEdit(Property* prop);
 	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);

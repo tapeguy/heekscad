@@ -6,12 +6,8 @@
 #include "Ruler.h"
 #include "Gripper.h"
 #include "../interface/Tool.h"
-#include "../interface/PropertyCheck.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyChoice.h"
 #include "HeeksFrame.h"
 #include "ObjPropsCanvas.h"
-#include "HeeksConfig.h"
 
 void RulerMark::glCommands(double units)
 {
@@ -81,11 +77,41 @@ void RulerMark::glCommands(double units)
 
 HRuler::HRuler(): m_gl_list(0)
 {
+	InitializeProperties();
 	m_use_view_units = true;
 	m_units = 1.0;
 	m_width = 25;
 	m_length = 312; // long enough for 12 inches
 	m_empty_length = 3;
+}
+
+HRuler::HRuler(const HRuler& copy) : m_gl_list(0)
+{
+	InitializeProperties();
+	operator=(copy);
+}
+
+HRuler& HRuler::operator= ( const HRuler &copy )
+{
+	m_trsf = copy.m_trsf;
+	m_use_view_units = copy.m_use_view_units;
+	m_units_choice = copy.m_units_choice;
+	m_units = copy.m_units;
+	m_width = copy.m_width;
+	m_length = copy.m_length;
+	m_empty_length = copy.m_empty_length;
+	return *this;
+}
+
+void HRuler::InitializeProperties()
+{
+	m_use_view_units.Initialize(_("use view units"), this);
+	m_units_choice.Initialize(_("units"), this);
+	m_units_choice.m_choices.push_back ( wxString ( _("mm") ) );
+	m_units_choice.m_choices.push_back ( wxString ( _("inch") ) );
+	m_width.Initialize(_("width"), this);
+	m_length.Initialize(_("length"), this);
+	m_empty_length.Initialize(_("empty_length"), this);
 }
 
 void HRuler::GetFourCorners(gp_Pnt *point)
@@ -284,54 +310,19 @@ public:
 
 static ResetRulerTool reset_ruler_tool;
 
-static void on_set_width(double value, HeeksObj* object){
-	((HRuler*)object)->m_width = value;
-	((HRuler*)object)->KillGLLists();
-	wxGetApp().Repaint();
-}
-
-static void on_set_length(double value, HeeksObj* object){
-	((HRuler*)object)->m_length = value;
-	((HRuler*)object)->KillGLLists();
-	wxGetApp().Repaint();
-}
-
-static void on_set_empty_length(double value, HeeksObj* object){
-	((HRuler*)object)->m_empty_length = value;
-	((HRuler*)object)->KillGLLists();
-	wxGetApp().Repaint();
-}
-
-static void on_set_use_view_units(bool value, HeeksObj* object)
+void HRuler::OnPropertyEdit(Property* prop)
 {
-	((HRuler*)object)->m_use_view_units = value;
-	wxGetApp().m_frame->RefreshProperties();
-	((HRuler*)object)->KillGLLists();
-	wxGetApp().Repaint();
-}
-
-static void on_set_units(int value, HeeksObj* object)
-{
-	((HRuler*)object)->m_units = (value == 0) ? 1.0:25.4;
-	((HRuler*)object)->KillGLLists();
-	wxGetApp().Repaint();
+	if (prop == &m_units_choice) {
+		m_units = (m_units_choice == 0) ? 1.0 : 25.4;
+	}
+	KillGLLists();
 }
 
 void HRuler::GetProperties(std::list<Property *> *list)
 {
-	list->push_back( new PropertyCheck(_("use view units"), m_use_view_units, this, on_set_use_view_units));
 	if(!m_use_view_units){
-		std::list< wxString > choices;
-		choices.push_back ( wxString ( _("mm") ) );
-		choices.push_back ( wxString ( _("inch") ) );
-		int choice = 0;
-		if(m_units > 25.0)choice = 1;
-		list->push_back ( new PropertyChoice ( _("units"),  choices, choice, this, on_set_units ) );
+		m_units_choice = (m_units > 25.0) ? 1 : 0;
 	}
-	list->push_back( new PropertyLength(_("width"), m_width, this, on_set_width));
-	list->push_back( new PropertyLength(_("length"), m_length, this, on_set_length));
-	list->push_back( new PropertyLength(_("empty_length"), m_empty_length, this, on_set_empty_length));
-
 	HeeksObj::GetProperties(list);
 }
 
@@ -385,9 +376,9 @@ void HRuler::ReadFromConfig(HeeksConfig& config)
 	config.Read(_T("RulerTrsf34"), &m34, 0.0);
 	m_trsf.SetValues(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, 0.0001, 0.00000001);
 
-	config.Read(_T("RulerUseViewUnits"), &m_use_view_units);
+	config.Read(_T("RulerUseViewUnits"), m_use_view_units);
 	config.Read(_T("RulerUnits"), &m_units);
-	config.Read(_T("RulerWidth"), &m_width);
-	config.Read(_T("RulerLength"), &m_length);
-	config.Read(_T("RulerEmptyLength"), &m_empty_length);
+	config.Read(_T("RulerWidth"), m_width);
+	config.Read(_T("RulerLength"), m_length);
+	config.Read(_T("RulerEmptyLength"), m_empty_length);
 }

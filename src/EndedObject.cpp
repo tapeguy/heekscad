@@ -4,13 +4,11 @@
 #include "stdafx.h"
 
 #include "EndedObject.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyVertex.h"
 #include "HPoint.h"
 #include "MarkedList.h"
 
-EndedObject::EndedObject(const HeeksColor* color){
+EndedObject::EndedObject(const HeeksColor& color){
+	m_color = color;
 	A = new HPoint(gp_Pnt(),color);
 	B = new HPoint(gp_Pnt(),color);
 #ifdef MULTIPLE_OWNERS
@@ -53,6 +51,7 @@ const EndedObject& EndedObject::operator=(const EndedObject &b){
 	*A = *b.A;
 	*B = *b.B;
 #endif
+	m_color = b.m_color;
 	return *this;
 }
 
@@ -65,6 +64,7 @@ HeeksObj* EndedObject::MakeACopyWithID()
 #else
 	EndedObject* pnew = (EndedObject*)HeeksObj::MakeACopyWithID();
 #endif
+	pnew->m_color = m_color;
 	return pnew;
 }
 

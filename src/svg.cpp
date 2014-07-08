@@ -787,7 +787,7 @@ void HeeksSvgRead::OnReadCubic(gp_Pnt s, gp_Pnt c1, gp_Pnt c2, gp_Pnt e)
 
 	Handle_Geom_BSplineCurve spline = convert.BSplineCurve();
 //	Geom_BSplineCurve pspline = *((Geom_BSplineCurve*)spline.Access());
-	HSpline* new_object = new HSpline(spline, &wxGetApp().current_color);
+	HSpline* new_object = new HSpline(spline, wxGetApp().CurrentColor());
 	ModifyByMatrix(new_object);
 	AddSketchIfNeeded();
 	m_sketch->Add(new_object, NULL);
@@ -802,14 +802,14 @@ void HeeksSvgRead::OnReadQuadratic(gp_Pnt s, gp_Pnt c, gp_Pnt e)
 
 	Handle_Geom_BSplineCurve spline = convert.BSplineCurve();
 //	Geom_BSplineCurve pspline = *((Geom_BSplineCurve*)spline.Access());
-	HSpline* new_object = new HSpline(spline, &wxGetApp().current_color);
+	HSpline* new_object = new HSpline(spline, wxGetApp().CurrentColor());
 	ModifyByMatrix(new_object);
 	AddSketchIfNeeded();
 	m_sketch->Add(new_object, NULL);}
 
 void HeeksSvgRead::OnReadLine(gp_Pnt p1, gp_Pnt p2)
 {
-	HLine *line = new HLine(p1,p2,&wxGetApp().current_color);
+	HLine *line = new HLine(p1,p2,wxGetApp().CurrentColor());
 	ModifyByMatrix(line);
 	AddSketchIfNeeded();
 	m_sketch->Add(line, NULL);
@@ -820,7 +820,7 @@ void HeeksSvgRead::OnReadEllipse(gp_Pnt c, double maj_r, double min_r, double ro
 	gp_Dir up(0,0,1);
 	gp_Elips elip(gp_Ax2(c,gp_Dir(0,0,1)),maj_r,min_r);
 	elip.Rotate(gp_Ax1(c,up),rot);
-	HEllipse *new_object = new HEllipse(elip,start,end,&wxGetApp().current_color);
+	HEllipse *new_object = new HEllipse(elip,start,end,wxGetApp().CurrentColor());
 	ModifyByMatrix(new_object);
 	AddSketchIfNeeded();
 	m_sketch->Add(new_object, NULL);
@@ -830,7 +830,7 @@ void HeeksSvgRead::OnReadCircle(gp_Pnt c, double r)
 {
 	gp_Dir up(0,0,1);
 	gp_Circ cir(gp_Ax2(c,up),r);
-	HCircle *new_object = new HCircle(cir,&wxGetApp().current_color);
+	HCircle *new_object = new HCircle(cir,wxGetApp().CurrentColor());
 	ModifyByMatrix(new_object);
 	AddSketchIfNeeded();
 	m_sketch->Add(new_object, NULL);

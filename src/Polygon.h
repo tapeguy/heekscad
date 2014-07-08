@@ -456,14 +456,14 @@ public:
 		{
 			if(!oldp.IsEqual(*ilp, wxGetApp().m_geom_tol))
 			{
-				HLine *line = new HLine(oldp, *ilp, &(wxGetApp().current_color));
+				HLine *line = new HLine(oldp, *ilp, wxGetApp().CurrentColor());
 				sketch->Add(line, NULL);
 			}
 			oldp = *ilp;
 		}
 		if(!oldp.IsEqual(*(points.begin()), wxGetApp().m_geom_tol))
 		{
-			sketch->Add(new HLine(oldp, *(points.begin()), &(wxGetApp().current_color)), NULL);
+			sketch->Add(new HLine(oldp, *(points.begin()), wxGetApp().CurrentColor()), NULL);
 		}
 		return sketch;
 	}

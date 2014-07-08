@@ -15,6 +15,9 @@ class HArea: public HeeksObj{
 	static void ReadCurve(CCurve& curve, TiXmlElement *root);
 	static void ReadArea(CArea& area, TiXmlElement *root);
 
+private:
+	PropertyInt m_number_curves;
+
 public:
 	CArea m_area;
 	CCurve* m_selected_curve;
@@ -26,8 +29,9 @@ public:
 	const HArea& operator=(const HArea &b);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return AreaType;}
-	long GetMarkingMask()const{return MARKING_FILTER_AREA;}
+	int GetMarkingFilter()const{return AreaMarkingFilter;}
 	int GetIDGroupType()const{return SketchType;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void Draw(wxDC& dc);

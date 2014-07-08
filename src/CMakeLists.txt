@@ -7,7 +7,7 @@ if( NOT DEFINED BUILD_STARTED_IN_RIGHT_DIR )
 endif( NOT DEFINED BUILD_STARTED_IN_RIGHT_DIR )
 
 set ( CMAKE_BUILD_TYPE Debug )
-add_definitions ( -Wall -DUSE_GENERIC_TREECTRL -DHEEKSCAD -DUNICODE -DTIXML_USE_STL )
+add_definitions ( -Wall -Wno-overloaded-virtual -DUSE_GENERIC_TREECTRL -DHEEKSCAD -DUNICODE -DTIXML_USE_STL )
 
 #find OCE or OpenCASCADE
 set( CASCADE_LIBS TKVRML TKSTL TKBRep TKIGES TKShHealing TKSTEP TKSTEP209 TKSTEPAttr TKSTEPBase TKXSBase TKShapeSchema FWOSPlugin TKBool TKCAF TKCDF TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo TKGeomBase TKHLR TKMath TKOffset TKPrim TKPShape TKService TKTopAlgo TKV3d TKMesh TKAdvTools TKBO TKXDESTEP TKXCAF TKXCAFSchema TKLCAF TKPLCAF )
@@ -84,7 +84,6 @@ set( heekscad_HDRS
     HeeksCAD.h
     ../interface/HeeksCADInterface.h
     ../interface/HeeksColor.h
-    HeeksConfig.h
     HeeksFrame.h
     ../interface/HeeksObj.h
     HeeksPrintout.h
@@ -127,16 +126,7 @@ set( heekscad_HDRS
     PointOrWindow.h
     PropertiesCanvas.h
     ../interface/Property.h
-    ../interface/PropertyCheck.h
-    ../interface/PropertyChoice.h
-    ../interface/PropertyColor.h
-    ../interface/PropertyDouble.h
-    ../interface/PropertyInt.h
-    ../interface/PropertyLength.h
     ../interface/PropertyList.h
-    ../interface/PropertyString.h
-    PropertyTrsf.h
-    ../interface/PropertyVertex.h
     RegularShapesDrawing.h
     RuledSurface.h
     Ruler.h
@@ -258,7 +248,6 @@ set( heekscad_SRCS
     PointOrWindow.cpp
     Polygon.cpp
     PropertiesCanvas.cpp
-    PropertyTrsf.cpp
     RegularShapesDrawing.cpp
     RS274X.cpp
     RuledSurface.cpp

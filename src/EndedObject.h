@@ -5,7 +5,6 @@
 #pragma once
 
 #include "../interface/HeeksObj.h"
-#include "../interface/HeeksColor.h"
 #include "HPoint.h"
 #ifdef MULTIPLE_OWNERS
 #include "../interface/ObjList.h"
@@ -18,7 +17,7 @@ public:
 	HPoint* A, *B;
 
 	~EndedObject(void);
-	EndedObject(const HeeksColor* color);
+	EndedObject(const HeeksColor& color);
 #ifndef MULTIPLE_OWNERS
 	EndedObject(const EndedObject& e);
 #endif

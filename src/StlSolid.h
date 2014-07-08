@@ -36,7 +36,7 @@ public:
 	virtual const CStlSolid& operator=(const CStlSolid& s);
 
 	int GetType()const{return StlSolidType;}
-	long GetMarkingMask()const{return MARKING_FILTER_STL_SOLID;}
+	int GetMarkingFilter()const{return StlSolidMarkingFilter;}
 	int GetIDGroupType()const{return SolidType;}
 	const wxChar* GetTypeString(void)const{return _("STL Solid");}
 	const wxBitmap &GetIcon();

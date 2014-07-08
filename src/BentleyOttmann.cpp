@@ -110,7 +110,6 @@ std::map<FastCurve*, std::vector<Intersection> > BentleyOttmann::Intersect(std::
 				double newloc = MyRound(currentY);
 				if(newloc!=baseloc)
 				{
-					std::set<FastLine*>::iterator it5 = it4;
 					++it4;
 					double oldx = currentX;
 					currentX = tline->addedAt;

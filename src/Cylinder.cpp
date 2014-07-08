@@ -4,13 +4,11 @@
 
 #include "stdafx.h"
 #include "Cylinder.h"
-#include "../interface/PropertyVertex.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
 #include "Gripper.h"
 #include "MarkedList.h"
 
-static TopoDS_Solid MakeCylinder(const gp_Ax2& pos, double radius, double height)
+
+static TopoDS_Solid MakeCylinder(const gp_Ax2& pos, double diameter, double height)
 {
 	gp_Ax2 pos2 = pos;
 	if(height<0)
@@ -19,15 +17,27 @@ static TopoDS_Solid MakeCylinder(const gp_Ax2& pos, double radius, double height
 		height = fabs(height);
 	}
 
-	return BRepPrimAPI_MakeCylinder(pos2, radius, height);
+	return BRepPrimAPI_MakeCylinder(pos2, diameter/2, height);
 }
 
-CCylinder::CCylinder(const gp_Ax2& pos, double radius, double height, const wxChar* title, const HeeksColor& col, float opacity):CSolid(MakeCylinder(pos, radius, height), title, col, opacity), m_pos(pos), m_radius(radius), m_height(height)
+CCylinder::CCylinder(const gp_Ax2& pos, double diameter, double height, const wxChar* title, const HeeksColor& col, float opacity)
+ : CSolid(MakeCylinder(pos, diameter, height), title, col, opacity),
+ m_pos(pos), m_diameter(diameter), m_height(height)
 {
+	InitializeProperties();
 }
 
-CCylinder::CCylinder(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity):CSolid(solid, title, col, opacity), m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)), m_radius(0.0), m_height(0.0)
+CCylinder::CCylinder(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity)
+ : CSolid(solid, title, col, opacity),
+ m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)), m_diameter(0.0), m_height(0.0)
 {
+	InitializeProperties();
+}
+
+void CCylinder::InitializeProperties()
+{
+	m_diameter.Initialize(_("diameter"), this);
+	m_height.Initialize(_("height"), this);
 }
 
 const wxBitmap &CCylinder::GetIcon()
@@ -45,7 +55,7 @@ HeeksObj *CCylinder::MakeACopy(void)const
 bool CCylinder::IsDifferent(HeeksObj* other)
 {
 	CCylinder* cyl = (CCylinder*)other;
-	if(cyl->m_radius != m_radius || cyl->m_height != m_height)
+	if(cyl->m_diameter != m_diameter || cyl->m_height != m_height)
 		return true;
 
 	if(!IsEqual(cyl->m_pos,m_pos))
@@ -54,42 +64,30 @@ bool CCylinder::IsDifferent(HeeksObj* other)
 	return CShape::IsDifferent(other);
 }
 
-static void on_set_diameter(double value, HeeksObj* object){
-	((CCylinder*)object)->m_radius = value*0.5;
-}
-
-static void on_set_height(double value, HeeksObj* object){
-	((CCylinder*)object)->m_height = value;
-}
-
-
 void CCylinder::MakeTransformedShape(const gp_Trsf &mat)
 {
 	m_pos.Transform(mat);
 	double scale = gp_Vec(1, 0, 0).Transformed(mat).Magnitude();
-	m_radius = fabs(m_radius * scale);
+	m_diameter = fabs(m_diameter * scale);
 	m_height = fabs(m_height * scale);
-	m_shape = MakeCylinder(m_pos, m_radius, m_height);
+	m_shape = MakeCylinder(m_pos, m_diameter, m_height);
 }
 
 wxString CCylinder::StretchedName(){ return _("Stretched Cylinder");}
 
 void CCylinder::GetProperties(std::list<Property *> *list)
 {
-	CoordinateSystem::GetAx2Properties(list, m_pos);
-	list->push_back(new PropertyLength(_("diameter"), m_radius*2, this, on_set_diameter));
-	list->push_back(new PropertyLength(_("height"), m_height, this, on_set_height));
-
+//      CoordinateSystem::GetAx2Properties(list, m_pos);
 	CSolid::GetProperties(list);
 }
 
 void CCylinder::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 {
 	gp_Pnt o = m_pos.Location();
-	gp_Pnt px(o.XYZ() + m_pos.XDirection().XYZ() * m_radius);
+	gp_Pnt px(o.XYZ() + m_pos.XDirection().XYZ() * (m_diameter/2));
 	gp_Dir z_dir = m_pos.XDirection() ^ m_pos.YDirection();
-	gp_Pnt pyz(o.XYZ() + m_pos.YDirection().XYZ() * m_radius + z_dir.XYZ() * m_height);
-	gp_Pnt pmxz(o.XYZ() + m_pos.XDirection().XYZ() * (-m_radius) + z_dir.XYZ() * m_height);
+	gp_Pnt pyz(o.XYZ() + m_pos.YDirection().XYZ() * (m_diameter/2) + z_dir.XYZ() * m_height);
+	gp_Pnt pmxz(o.XYZ() + m_pos.XDirection().XYZ() * (-m_diameter/2) + z_dir.XYZ() * m_height);
 	gp_Pnt pz(o.XYZ() + z_dir.XYZ() * m_height);
 	list->push_back(GripData(GripperTypeTranslate,o.X(),o.Y(),o.Z(),NULL));
 	list->push_back(GripData(GripperTypeObjectScaleXY,px.X(),px.Y(),px.Z(),NULL));
@@ -98,18 +96,22 @@ void CCylinder::GetGripperPositions(std::list<GripData> *list, bool just_for_end
 	list->push_back(GripData(GripperTypeObjectScaleZ,pz.X(),pz.Y(),pz.Z(),NULL));
 }
 
-void CCylinder::OnApplyProperties()
+void CCylinder::OnPropertyEdit(Property* prop)
 {
-	CCylinder* new_object = new CCylinder(m_pos, m_radius, m_height, m_title.c_str(), m_color, m_opacity);
-	new_object->CopyIDsFrom(this);
-	Owner()->Add(new_object, NULL);
-	Owner()->Remove(this);
-	if(wxGetApp().m_marked_list->ObjectMarked(this))
-	{
-		wxGetApp().m_marked_list->Remove(this,false);
-		wxGetApp().m_marked_list->Add(new_object, true);
+	if (prop == &m_diameter || prop == &m_height) {
+		CCylinder* new_object = new CCylinder(m_pos, m_diameter, m_height, m_title.c_str(), m_color, m_opacity);
+		new_object->CopyIDsFrom(this);
+		Owner()->Add(new_object, NULL);
+		Owner()->Remove(this);
+		if(wxGetApp().m_marked_list->ObjectMarked(this))
+		{
+			wxGetApp().m_marked_list->Remove(this,false);
+			wxGetApp().m_marked_list->Add(new_object, true);
+		}
 	}
-	wxGetApp().Repaint();
+	else {
+		CSolid::OnPropertyEdit(prop);
+	}
 }
 
 int CCylinder::GetCentrePoints(double* pos, double* pos2)
@@ -135,7 +137,7 @@ bool CCylinder::Stretch(const double *p, const double* shift, void* data)
 	gp_Vec vshift = make_vector(shift);
 
 	gp_Pnt o = m_pos.Location();
-	gp_Pnt px(o.XYZ() + m_pos.XDirection().XYZ() * m_radius);
+	gp_Pnt px(o.XYZ() + m_pos.XDirection().XYZ() * (m_diameter/2));
 	gp_Dir z_dir = m_pos.XDirection() ^ m_pos.YDirection();
 	gp_Pnt pz(o.XYZ() + z_dir.XYZ() * m_height);
 
@@ -146,7 +148,7 @@ bool CCylinder::Stretch(const double *p, const double* shift, void* data)
 		double new_x = gp_Vec(px.XYZ()) * gp_Vec(m_pos.XDirection()) - gp_Vec(o.XYZ()) * gp_Vec(m_pos.XDirection());
 		double new_y = gp_Vec(px.XYZ()) * gp_Vec(m_pos.YDirection()) - gp_Vec(o.XYZ()) * gp_Vec(m_pos.YDirection());
 		make_a_new_cylinder = true;
-		m_radius = sqrt(new_x * new_x + new_y * new_y);
+		m_diameter = sqrt(new_x * new_x + new_y * new_y) * 2;
 	}
 	else if(pz.IsEqual(vp, wxGetApp().m_geom_tol)){
 		pz = pz.XYZ() + vshift.XYZ();
@@ -159,7 +161,7 @@ bool CCylinder::Stretch(const double *p, const double* shift, void* data)
 
 	if(make_a_new_cylinder)
 	{
-		CCylinder* new_object = new CCylinder(m_pos, m_radius, m_height, m_title.c_str(), m_color, m_opacity);
+		CCylinder* new_object = new CCylinder(m_pos, m_diameter, m_height, m_title.c_str(), m_color, m_opacity);
 		new_object->CopyIDsFrom(this);
 		Owner()->Add(new_object, NULL);
 		Owner()->Remove(this);
@@ -187,7 +189,7 @@ void CCylinder::SetXMLElement(TiXmlElement* element)
 	element->SetDoubleAttribute("xy", x.Y());
 	element->SetDoubleAttribute("xz", x.Z());
 
-	element->SetDoubleAttribute("r", m_radius);
+	element->SetDoubleAttribute("d", m_diameter);
 	element->SetDoubleAttribute("h", m_height);
 
 	CSolid::SetXMLElement(element);
@@ -215,7 +217,7 @@ void CCylinder::SetFromXMLElement(TiXmlElement* pElem)
 		else if(name == "xy"){x[1] = a->DoubleValue();}
 		else if(name == "xz"){x[2] = a->DoubleValue();}
 
-		else if(name == "r"){m_radius = a->DoubleValue();}
+		else if(name == "d"){m_diameter = a->DoubleValue();}
 		else if(name == "h"){m_height = a->DoubleValue();}
 	}
 

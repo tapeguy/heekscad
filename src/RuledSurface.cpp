@@ -8,18 +8,22 @@
 #include "Face.h"
 #include "ConversionTools.h"
 #include "MarkedList.h"
-#include "HeeksConfig.h"
 #include "HeeksFrame.h"
 #include "../interface/DoubleInput.h"
-#include "../interface/PropertyCheck.h"
 #include "../interface/HDialogs.h"
 #include "../interface/NiceTextCtrl.h"
+
+static MarkingFilter operation_filters[] = { CircleMarkingFilter, SketchMarkingFilter, FaceMarkingFilter };
+static std::set<MarkingFilter> operation_filterset (operation_filters, operation_filters + sizeof(operation_filters) / sizeof(MarkingFilter));
+
+static MarkingFilter sketch_filters[] = { SketchMarkingFilter };
+static std::set<MarkingFilter> sketch_filterset (sketch_filters, sketch_filters + sizeof(sketch_filters) / sizeof(MarkingFilter));
 
 void PickCreateRuledSurface()
 {
 	if(wxGetApp().m_marked_list->size() == 0)
 	{
-		wxGetApp().PickObjects(_("pick some sketches"));
+		wxGetApp().PickObjects(_("pick some sketches"), sketch_filterset);
 	}
 
 	if(wxGetApp().m_marked_list->size() > 0)
@@ -59,18 +63,13 @@ void PickCreateRuledSurface()
 
 #if 0
 MakeHelix
+	HeeksConfig& config = wxGetApp().GetConfig();
 	double angle;
-	{
-		HeeksConfig config;
-		config.Read(_T("RevolutionAngle"), &angle, 360.0);
-	}
+	config.Read(_T("RevolutionAngle"), &angle, 360.0);
 
-	if(InputRevolutionAngle(angle, &wxGetApp().m_extrude_to_solid))
+	if(InputRevolutionAngle(angle, wxGetApp().m_extrude_to_solid))
 	{
-		{
-			HeeksConfig config;
-			config.Write(_T("RevolutionAngle"), angle);
-		}
+		config.Write(_T("RevolutionAngle"), angle);
 		if(wxGetApp().m_marked_list->size() > 0)
 		{
 			CreateExtrusionOrRevolution(wxGetApp().m_marked_list->list(), angle, wxGetApp().m_extrude_to_solid, true, 0.0, true);
@@ -212,12 +211,13 @@ void PickCreateSweep()
 {
 	if(wxGetApp().m_marked_list->size() == 0)
 	{
-		wxGetApp().PickObjects(_("pick sketches, faces or circles"), MARKING_FILTER_CIRCLE | MARKING_FILTER_SKETCH | MARKING_FILTER_FACE);
+		wxGetApp().PickObjects(_("pick sketches, faces or circles"), operation_filterset);
 	}
 
 	std::list<HeeksObj*> sweep_objects = wxGetApp().m_marked_list->list();
 	wxGetApp().m_marked_list->Clear(true);
-	if(!wxGetApp().PickObjects(_("Pick a Sketch to sweep along"), MARKING_FILTER_SKETCH, true))return;
+	if(!wxGetApp().PickObjects(_("Pick a Sketch to sweep along"), sketch_filterset, true))
+		return;
 	if(wxGetApp().m_marked_list->list().size() == 0)return;
 
 	HeeksObj* sweep_profile = wxGetApp().m_marked_list->list().front();
@@ -251,7 +251,7 @@ HeeksObj* CreateRuledFromSketches(std::list<HeeksObj*> list, bool make_solid)
 	return NULL;
 }
 
-bool InputExtrusionHeight(double &value, bool *extrude_makes_a_solid, double *taper_angle)
+bool InputExtrusionHeight(double &value, PropertyCheck& extrude_makes_a_solid, double *taper_angle)
 {
 		HDialog dlg(wxGetApp().m_frame);
 		wxBoxSizer *sizerMain = new wxBoxSizer(wxVERTICAL);
@@ -266,7 +266,7 @@ bool InputExtrusionHeight(double &value, bool *extrude_makes_a_solid, double *ta
 		if(extrude_makes_a_solid)
 		{
 			solid_check_box = new wxCheckBox(&dlg, wxID_ANY, _("Extrude makes a solid"));
-			solid_check_box->SetValue(*extrude_makes_a_solid);
+			solid_check_box->SetValue(extrude_makes_a_solid);
 			sizerMain->Add( solid_check_box, 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, dlg.control_border );
 		}
 
@@ -286,7 +286,7 @@ bool InputExtrusionHeight(double &value, bool *extrude_makes_a_solid, double *ta
 		if(dlg.ShowModal() == wxID_OK)
 		{
 			value = value_control->GetValue();
-			if(extrude_makes_a_solid)*extrude_makes_a_solid = solid_check_box->GetValue();
+			extrude_makes_a_solid = solid_check_box->GetValue();
 			if(taper_angle)*taper_angle = taper_angle_control->GetValue();
 			return true;
 		}
@@ -295,27 +295,22 @@ bool InputExtrusionHeight(double &value, bool *extrude_makes_a_solid, double *ta
 
 void PickCreateExtrusion()
 {
+	HeeksConfig& config = wxGetApp().GetConfig();
 	if(wxGetApp().m_marked_list->size() == 0)
 	{
-		wxGetApp().PickObjects(_("pick sketches, faces or circles"), MARKING_FILTER_CIRCLE | MARKING_FILTER_SKETCH | MARKING_FILTER_FACE);
+		wxGetApp().PickObjects(_("pick sketches, faces or circles"), operation_filterset);
 	}
 
 	double height;
 	double taper_angle;
-	{
-		HeeksConfig config;
-		config.Read(_T("ExtrusionHeight"), &height, 10.0);
-		config.Read(_T("ExtrusionTaperAngle"), &taper_angle, 0.0);
-	}
+	config.Read(_T("ExtrusionHeight"), &height, 10.0);
+	config.Read(_T("ExtrusionTaperAngle"), &taper_angle, 0.0);
 
-	if(InputExtrusionHeight(height, &(wxGetApp().m_extrude_to_solid), &taper_angle))
+	if(InputExtrusionHeight(height, wxGetApp().m_extrude_to_solid, &taper_angle))
 	{
-		{
-			HeeksConfig config;
-			config.Write(_T("ExtrusionHeight"), height);
-			config.Write(_T("ExtrusionTaperAngle"), taper_angle);
-			config.Write(_T("ExtrudeToSolid"), wxGetApp().m_extrude_to_solid);
-		}
+		config.Write(_T("ExtrusionHeight"), height);
+		config.Write(_T("ExtrusionTaperAngle"), taper_angle);
+		config.Write(_T("ExtrudeToSolid"), (bool)wxGetApp().m_extrude_to_solid);
 
 		if(wxGetApp().m_marked_list->size() > 0)
 		{
@@ -324,7 +319,7 @@ void PickCreateExtrusion()
 	}
 }
 
-bool InputRevolutionAngle(double &angle, bool *extrude_makes_a_solid)
+bool InputRevolutionAngle(double &angle, PropertyCheck& extrude_makes_a_solid)
 {
 		HDialog dlg(wxGetApp().m_frame);
 		wxBoxSizer *sizerMain = new wxBoxSizer(wxVERTICAL);
@@ -336,12 +331,9 @@ bool InputRevolutionAngle(double &angle, bool *extrude_makes_a_solid)
 		dlg.AddLabelAndControl(sizerMain, _("angle"), value_control);
 
 		wxCheckBox* solid_check_box = NULL;
-		if(extrude_makes_a_solid)
-		{
-			solid_check_box = new wxCheckBox(&dlg, wxID_ANY, _("Makes a solid"));
-			solid_check_box->SetValue(*extrude_makes_a_solid);
-			sizerMain->Add( solid_check_box, 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, dlg.control_border );
-		}
+		solid_check_box = new wxCheckBox(&dlg, wxID_ANY, _("Makes a solid"));
+		solid_check_box->SetValue(extrude_makes_a_solid);
+		sizerMain->Add( solid_check_box, 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, dlg.control_border );
 
 		sizerMain->Add( dlg.MakeOkAndCancel(wxHORIZONTAL), 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, dlg.control_border );
 		dlg.SetSizer( sizerMain );
@@ -351,7 +343,8 @@ bool InputRevolutionAngle(double &angle, bool *extrude_makes_a_solid)
 		if(dlg.ShowModal() == wxID_OK)
 		{
 			angle = value_control->GetValue();
-			if(extrude_makes_a_solid)*extrude_makes_a_solid = solid_check_box->GetValue();
+			if(extrude_makes_a_solid)
+				extrude_makes_a_solid = solid_check_box->GetValue();
 			return true;
 		}
 		return false;
@@ -359,23 +352,18 @@ bool InputRevolutionAngle(double &angle, bool *extrude_makes_a_solid)
 
 void PickCreateRevolution()
 {
+	HeeksConfig& config = wxGetApp().GetConfig();
 	if(wxGetApp().m_marked_list->size() == 0)
 	{
-		wxGetApp().PickObjects(_("pick sketches, faces or circles"), MARKING_FILTER_CIRCLE | MARKING_FILTER_SKETCH | MARKING_FILTER_FACE);
+		wxGetApp().PickObjects(_("pick sketches, faces or circles"), operation_filterset);
 	}
 
 	double angle;
-	{
-		HeeksConfig config;
-		config.Read(_T("RevolutionAngle"), &angle, 360.0);
-	}
+	config.Read(_T("RevolutionAngle"), &angle, 360.0);
 
-	if(InputRevolutionAngle(angle, &wxGetApp().m_extrude_to_solid))
+	if(InputRevolutionAngle(angle, wxGetApp().m_extrude_to_solid))
 	{
-		{
-			HeeksConfig config;
-			config.Write(_T("RevolutionAngle"), angle);
-		}
+		config.Write(_T("RevolutionAngle"), angle);
 		if(wxGetApp().m_marked_list->size() > 0)
 		{
 			CreateExtrusionOrRevolution(wxGetApp().m_marked_list->list(), angle, wxGetApp().m_extrude_to_solid, true, 0.0, true);

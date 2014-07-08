@@ -36,6 +36,8 @@ public:
 
 class CFlyOutItem{
 public:
+	virtual ~CFlyOutItem() { }
+
 	wxString m_title;
 	wxBitmap m_bitmap;
 	wxString m_tooltip;
@@ -71,9 +73,9 @@ private:
 
 public:
 	wxLogWindow* m_logger;
-	static int m_loglevel; 			// for wxLog::SetLogLevel((wxLogLevel)m_loglevel)
-	static bool m_logrepeatcounts; 	// for wxLog::SetRepetitionCounting(m_logrepeatcounts)
-	static bool m_logtimestamps; 	// for wxLog::SetLogTimestamps(m_logtimestamps)
+	static PropertyChoice m_loglevel; 		// for wxLog::SetLogLevel((wxLogLevel)m_loglevel)
+	static PropertyCheck m_logrepeatcounts; 	// for wxLog::SetRepetitionCounting(m_logrepeatcounts)
+	static PropertyCheck m_logtimestamps; 		// for wxLog::SetLogTimestamps(m_logtimestamps)
 
 	CTreeCanvas *m_tree_canvas;
 	CGraphicsCanvas* m_graphics;

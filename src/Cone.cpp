@@ -4,18 +4,29 @@
 
 #include "stdafx.h"
 #include "Cone.h"
-#include "../interface/PropertyVertex.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
 #include "Gripper.h"
 #include "MarkedList.h"
 
-CCone::CCone(const gp_Ax2& pos, double r1, double r2, double height, const wxChar* title, const HeeksColor& col, float opacity):CSolid(BRepPrimAPI_MakeCone(pos, r1, r2, height), title, col, opacity), m_render_without_OpenCASCADE(false), m_pos(pos), m_r1(r1), m_r2(r2), m_height(height)
+
+CCone::CCone(const gp_Ax2& pos, double r1, double r2, double height, const wxChar* title, const HeeksColor& col, float opacity)
+ : CSolid(BRepPrimAPI_MakeCone(pos, r1, r2, height), title, col, opacity), m_render_without_OpenCASCADE(false),
+ m_pos(pos), m_r1(r1), m_r2(r2), m_height(height)
 {
+	InitializeProperties();
 }
 
-CCone::CCone(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity):CSolid(solid, title, col, opacity), m_render_without_OpenCASCADE(false), m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)), m_r1(0.0), m_r2(0.0), m_height(0.0)
+CCone::CCone(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity)
+ : CSolid(solid, title, col, opacity), m_render_without_OpenCASCADE(false),
+ m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0))
 {
+	InitializeProperties();
+}
+
+void CCone::InitializeProperties()
+{
+	m_r1.Initialize(_("r1"), this);
+	m_r2.Initialize(_("r2"), this);
+	m_height.Initialize(_("height"), this);
 }
 
 const wxBitmap &CCone::GetIcon()
@@ -145,18 +156,6 @@ bool CCone::IsDifferent(HeeksObj* o)
 	return HeeksObj::IsDifferent(o);
 }
 
-static void on_set_r1(double value, HeeksObj* object){
-	((CCone*)object)->m_r1 = value;
-}
-
-static void on_set_r2(double value, HeeksObj* object){
-	((CCone*)object)->m_r2 = value;
-}
-
-static void on_set_height(double value, HeeksObj* object){
-	((CCone*)object)->m_height = value;
-}
-
 void CCone::MakeTransformedShape(const gp_Trsf &mat)
 {
 	m_pos.Transform(mat);
@@ -171,11 +170,7 @@ wxString CCone::StretchedName(){ return _("Stretched Cone");}
 
 void CCone::GetProperties(std::list<Property *> *list)
 {
-	CoordinateSystem::GetAx2Properties(list, m_pos);
-	list->push_back(new PropertyLength(_("r1"), m_r1, this, on_set_r1));
-	list->push_back(new PropertyLength(_("r2"), m_r2, this, on_set_r2));
-	list->push_back(new PropertyLength(_("height"), m_height, this, on_set_height));
-
+	// CoordinateSystem::GetAx2Properties(list, m_pos);
 	CSolid::GetProperties(list);
 }
 
@@ -197,15 +192,22 @@ void CCone::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	list->push_back(GripData(GripperTypeRotateObject,pmx.X(),pmx.Y(),pmx.Z(),NULL));
 }
 
-void CCone::OnApplyProperties()
+void CCone::OnPropertyEdit(Property *prop)
 {
-	CCone* new_object = new CCone(m_pos, m_r1, m_r2, m_height, m_title.c_str(), m_color, m_opacity);
-	new_object->CopyIDsFrom(this);
-	Owner()->Add(new_object, NULL);
-	Owner()->Remove(this);
-	wxGetApp().m_marked_list->Clear(true);
-	if(wxGetApp().m_marked_list->ObjectMarked(this))wxGetApp().m_marked_list->Add(new_object, true);
-	wxGetApp().Repaint();
+	if (prop == &m_r1 || prop == &m_r2 || prop == &m_height) {
+		CCone* new_object = new CCone(m_pos, m_r1, m_r2, m_height, m_title.c_str(), m_color, m_opacity);
+		new_object->CopyIDsFrom(this);
+		Owner()->Add(new_object, NULL);
+		Owner()->Remove(this);
+		if(wxGetApp().m_marked_list->ObjectMarked(this))
+		{
+			wxGetApp().m_marked_list->Remove(this,false);
+			wxGetApp().m_marked_list->Add(new_object, true);
+		}
+	}
+	else {
+		CSolid::OnPropertyEdit(prop);
+	}
 }
 
 bool CCone::ValidateProperties()

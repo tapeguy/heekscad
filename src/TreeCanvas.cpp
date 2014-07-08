@@ -27,8 +27,8 @@ static wxBitmap* bmp_minus = NULL;
 static wxBitmap* bmp_branch_trunk = NULL;
 
 CTreeCanvas::CTreeCanvas(wxWindow* parent)
-        : wxScrolledWindow(parent),m_frozen(false), m_refresh_wanted_on_thaw(false),
-		width(0), height(0), textureWidth(0), textureHeight(0), m_dragging(false), m_waiting_until_left_up(false), m_xpos(0), m_ypos(0), m_max_xpos(0)
+ : wxScrolledWindow(parent),m_frozen(false), m_refresh_wanted_on_thaw(false),
+   m_dragging(false), m_waiting_until_left_up(false), m_xpos(0), m_ypos(0), m_max_xpos(0)
 {
 	wxGetApp().RegisterObserver(this);
 
@@ -794,7 +794,7 @@ void CTreeCanvas::Render(bool just_for_calculation)
 	m_max_xpos = 0;
 
 	HeeksObj* prev_object = NULL;
-	bool prev_object_expanded = NULL;
+	bool prev_object_expanded = false;
 	HeeksObj* object = wxGetApp().GetFirstChild();
 
 	while(object)

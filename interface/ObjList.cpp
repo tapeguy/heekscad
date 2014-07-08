@@ -458,7 +458,7 @@ void ObjList::GetTriangles(void(*callbackfunc)(const double* x, const double* n)
  */
 HeeksObj *ObjList::Find( const int type, const unsigned int id )
 {
-	if ((type == this->GetType()) && (this->m_id == id)) return(this);
+	if ((type == this->GetType()) && (id == this->GetID())) return(this);
 	for(std::list<HeeksObj*>::const_iterator It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
 		HeeksObj *object = (*It)->Find( type, id );

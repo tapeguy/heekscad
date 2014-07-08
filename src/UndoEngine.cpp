@@ -392,6 +392,7 @@ void debugprint(std::string s)
 
 void UndoEngine::PrintTrees()
 {
+/*
 	std::stringstream cstr;
     cstr << "OldTree: " << endl;
 	PrintTree(m_oldtree.m_tree,cstr,0);
@@ -399,6 +400,7 @@ void UndoEngine::PrintTrees()
 	PrintTree(m_tree.m_tree,cstr,0);
     debugprint(cstr.str());
     cstr.clear();
+*/
 }
 
 void tab(std::stringstream &cstr, int tabs)
@@ -409,6 +411,7 @@ void tab(std::stringstream &cstr, int tabs)
 
 void UndoEngine::PrintTree(HeeksObj *tree, std::stringstream &cstr,int level)
 {
+/*
 	tab(cstr,level);
     cstr << "ID: " << tree->m_id << endl;
 	tab(cstr,level);
@@ -429,6 +432,7 @@ void UndoEngine::PrintTree(HeeksObj *tree, std::stringstream &cstr,int level)
 			}
 		}
 	}
+*/
 }
 
 #endif

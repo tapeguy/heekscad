@@ -22,13 +22,10 @@ public:
 	virtual const CSolid& operator=(const CSolid& s){ CShape::operator =(s); return *this;}
 
 	int GetType()const{return SolidType;}
-	long GetMarkingMask()const{return MARKING_FILTER_SOLID;}
+	int GetMarkingFilter()const{return SolidMarkingFilter;}
 	const wxChar* GetTypeString(void)const{return _("Solid");}
 	const wxBitmap &GetIcon();
 	HeeksObj *MakeACopy(void)const;
-	void SetColor(const HeeksColor &col){m_color = col;}
-	const HeeksColor* GetColor()const{return &m_color;}
-	void OnApplyProperties();
 
 	// CShape's virtual functions
 	void SetXMLElement(TiXmlElement* element);

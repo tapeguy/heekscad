@@ -6,7 +6,6 @@
 #include "InputModeCanvas.h"
 #include "../interface/InputMode.h"
 #include "../interface/Property.h"
-#include "../interface/PropertyString.h"
 #include "../interface/ToolImage.h"
 #include "wx/propgrid/propgrid.h"
 #include "HeeksFrame.h"
@@ -48,7 +47,7 @@ void CInputModeCanvas::OnSize(wxSizeEvent& event)
 
 	wxSize size = GetClientSize();
 	if(m_toolBar->GetToolCount() > 0){
-		wxSize toolbar_size = m_toolBar->GetClientSize();
+//		wxSize toolbar_size = m_toolBar->GetClientSize();
 		int toolbar_height = ToolImage::GetBitmapSize() + EXTRA_TOOLBAR_HEIGHT;
 		m_pg->SetSize(0, 0, size.x, size.y - toolbar_height );
 		m_toolBar->SetSize(0, size.y - toolbar_height , size.x, toolbar_height );
@@ -66,14 +65,15 @@ void CInputModeCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 	CPropertiesCanvas::OnPropertyGridChange(event);
 }
 
-void CInputModeCanvas::RefreshByRemovingAndAddingAll2(){
+void CInputModeCanvas::RefreshProperties2(){
 	ClearProperties();
 
 	std::list<Property *> list;
 
 	// add the input_mode mode's properties
 	PropertyString* title = new PropertyString(_("Input Mode"), wxGetApp().input_mode_object->GetTitle(), NULL);
-	if(wxGetApp().input_mode_object->TitleHighlighted())title->m_highlighted = true;
+	if(wxGetApp().input_mode_object->TitleHighlighted())
+			title->SetHighlighted(true);
 	list.push_back(title);
 	wxGetApp().input_mode_object->GetProperties(&list);
 
@@ -82,6 +82,7 @@ void CInputModeCanvas::RefreshByRemovingAndAddingAll2(){
 	for(It = list.begin(); It != list.end(); It++)
 	{
 		Property* property = *It;
+		printf ("CInputModeCanvas::RefreshProperties2(): property - %ls\n", property->GetShortString());
 		AddProperty(property);
 	}
 
@@ -120,7 +121,6 @@ void CInputModeCanvas::RefreshByRemovingAndAddingAll2(){
 
 		wxSize size = GetClientSize();
 		if(m_toolBar->GetToolCount() > 0){
-			wxSize toolbar_size = m_toolBar->GetClientSize();
 			int toolbar_height = ToolImage::GetBitmapSize() + EXTRA_TOOLBAR_HEIGHT;
 			m_pg->SetSize(0, 0, size.x, size.y - toolbar_height );
 			m_toolBar->SetSize(0, size.y - toolbar_height , size.x, toolbar_height );

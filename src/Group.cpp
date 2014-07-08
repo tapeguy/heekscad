@@ -5,15 +5,36 @@
 #include "stdafx.h"
 #include "Group.h"
 #include "Shape.h"
-#include "../interface/PropertyCheck.h"
-#include "../interface/PropertyVertex.h"
 
-CGroup::CGroup()
+CGroup::CGroup() : m_custom_grippers(false), m_custom_grippers_just_one_axis(true)
 {
+	InitializeProperties();
 	m_title = _("Group");
 	m_gripper_datum_set = false;
-	m_custom_grippers = false;
-	m_custom_grippers_just_one_axis = true;
+}
+
+void CGroup::InitializeProperties()
+{
+	m_custom_grippers.Initialize( _("custom grippers"), this);
+	m_custom_grippers_just_one_axis.Initialize( _("custom grippers just one axis"), this);
+	m_o.Initialize(_("datum"), this);
+	m_px.Initialize(_("x"), this);
+	m_py.Initialize(_("y"), this);
+	m_pz.Initialize(_("z"), this);
+}
+
+void CGroup::OnPropertyEdit(Property *prop)
+{
+	if(prop == &m_custom_grippers_just_one_axis) {
+		bool enabled = ((PropertyCheck *)prop)->IsSet();
+		m_o.SetVisible(enabled);
+		m_px.SetVisible(enabled);
+		m_py.SetVisible(enabled);
+		m_pz.SetVisible(enabled);
+	}
+	else {
+		ObjList::OnPropertyEdit(prop);
+	}
 }
 
 void CGroup::WriteXML(TiXmlNode *root)
@@ -66,8 +87,8 @@ HeeksObj* CGroup::ReadFromXMLElement(TiXmlElement* element)
 
 	if(element->Attribute("title"))new_object->m_title = Ctt(element->Attribute("title"));
 	int int_for_bool;
-	if(element->Attribute("custom_grippers", &int_for_bool))new_object->m_custom_grippers = (int_for_bool != 0);
-	if(element->Attribute("custom_grippers_one_axis", &int_for_bool))new_object->m_custom_grippers_just_one_axis = (int_for_bool != 0);
+	if(element->Attribute("custom_grippers", &int_for_bool))new_object->m_custom_grippers.SetValue(int_for_bool != 0);
+	if(element->Attribute("custom_grippers_one_axis", &int_for_bool))new_object->m_custom_grippers_just_one_axis.SetValue(int_for_bool != 0);
 	if(element->Attribute("gripper_datum_set", &int_for_bool))new_object->m_gripper_datum_set = (int_for_bool != 0);
 	if(new_object->m_gripper_datum_set)
 	{
@@ -75,19 +96,19 @@ HeeksObj* CGroup::ReadFromXMLElement(TiXmlElement* element)
 		element->Attribute("ox", &o[0]);
 		element->Attribute("oy", &o[1]);
 		element->Attribute("oz", &o[2]);
-		new_object->m_o = make_point(o);
+		new_object->m_o.SetValue(make_point(o));
 		element->Attribute("pxx", &px[0]);
 		element->Attribute("pxy", &px[1]);
 		element->Attribute("pxz", &px[2]);
-		new_object->m_px = make_point(px);
+		new_object->m_px.SetValue(make_point(px));
 		element->Attribute("pyx", &py[0]);
 		element->Attribute("pyy", &py[1]);
 		element->Attribute("pyz", &py[2]);
-		new_object->m_py = make_point(py);
+		new_object->m_py.SetValue(make_point(py));
 		element->Attribute("pzx", &pz[0]);
 		element->Attribute("pzy", &pz[1]);
 		element->Attribute("pzz", &pz[2]);
-		new_object->m_pz = make_point(pz);
+		new_object->m_pz.SetValue(make_point(pz));
 	}
 
 	// loop through all the objects
@@ -203,61 +224,8 @@ void CGroup::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	}
 }
 
-static void on_set_custom_grippers(bool value, HeeksObj* object)
-{
-	((CGroup*)object)->m_custom_grippers = value;
-	wxGetApp().Repaint();
-}
-
-static void on_set_custom_grippers_one_axis(bool value, HeeksObj* object)
-{
-	((CGroup*)object)->m_custom_grippers_just_one_axis = value;
-	wxGetApp().Repaint();
-}
-
-static void on_set_o(const double *vt, HeeksObj* object){
-	((CGroup*)object)->m_o = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-static void on_set_px(const double *vt, HeeksObj* object){
-	((CGroup*)object)->m_px = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-static void on_set_py(const double *vt, HeeksObj* object){
-	((CGroup*)object)->m_py = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-static void on_set_pz(const double *vt, HeeksObj* object){
-	((CGroup*)object)->m_pz = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-void CGroup::GetProperties(std::list<Property *> *list)
-{
-	list->push_back ( new PropertyCheck( _("custom grippers"), m_custom_grippers, this, on_set_custom_grippers) );
-
-	if(m_custom_grippers)
-	{
-		list->push_back ( new PropertyCheck( _("custom grippers just one axis"), m_custom_grippers_just_one_axis, this, on_set_custom_grippers_one_axis) );
-		double p[3];
-		extract(m_o, p);
-		list->push_back(new PropertyVertex(_("datum"), p, this, on_set_o));
-		extract(m_px, p);
-		list->push_back(new PropertyVertex(_("x"), p, this, on_set_px));
-		extract(m_py, p);
-		list->push_back(new PropertyVertex(_("y"), p, this, on_set_py));
-		extract(m_pz, p);
-		list->push_back(new PropertyVertex(_("z"), p, this, on_set_pz));
-	}
-
-	ObjList::GetProperties(list);
-}
-
 static CGroup* object_for_tools = NULL;
-static gp_Pnt* vertex_for_pick_pos = NULL;
+static PropertyVertex* vertex_for_pick_pos = NULL;
 static void(*callback_for_pick_pos)(const double*) = NULL;
 
 static void on_set_o(const double* pos)
@@ -272,7 +240,7 @@ static void on_set_o(const double* pos)
 
 static void on_set_pos(const double* pos)
 {
-	*vertex_for_pick_pos = make_point(pos);
+	vertex_for_pick_pos->SetValue(make_point(pos));
 	wxGetApp().Repaint();
 }
 

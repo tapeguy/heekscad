@@ -4,16 +4,18 @@
 #include "stdafx.h"
 #include "HAngularDimension.h"
 #include "HDimension.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyChoice.h"
-#include "PropertyTrsf.h"
 #include "Gripper.h"
 #include "HPoint.h"
 #include "HeeksFrame.h"
 #include "GraphicsCanvas.h"
 
-HAngularDimension::HAngularDimension(const wxString &text, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, const gp_Pnt &p3, const gp_Pnt &p4, AngularDimensionTextMode text_mode, const HeeksColor* col):m_color(*col), m_text(text), m_text_mode(text_mode),  m_scale(1.0)
+
+HAngularDimension::HAngularDimension(const wxString &text, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, const gp_Pnt &p3, const gp_Pnt &p4, AngularDimensionTextMode text_mode, const HeeksColor& col)
+: m_text(text), m_text_mode(text_mode), m_scale(1.0)
 {
+	InitializeProperties();
+	m_color = col;
+
 	m_p0 = new HPoint(p0,col);
 	m_p1 = new HPoint(p1,col);
 	m_p2 = new HPoint(p2,col);
@@ -40,13 +42,16 @@ HAngularDimension::HAngularDimension(const wxString &text, const gp_Pnt &p0, con
 }
 
 //Points loaded via objlist constructor
-HAngularDimension::HAngularDimension(const wxString &text, AngularDimensionTextMode text_mode, const HeeksColor* col):m_color(*col), m_text(text), m_text_mode(text_mode),  m_scale(1.0)
+HAngularDimension::HAngularDimension(const wxString &text, AngularDimensionTextMode text_mode, const HeeksColor& col)
+: m_text(text), m_text_mode(text_mode), m_scale(1.0)
 {
-
+	InitializeProperties();
+	m_color = col;
 }
 
 HAngularDimension::HAngularDimension(const HAngularDimension &b)
 {
+	InitializeProperties();
 	operator=(b);
 }
 
@@ -68,6 +73,16 @@ const HAngularDimension& HAngularDimension::operator=(const HAngularDimension &b
 
 	ReloadPointers();
 	return *this;
+}
+
+void HAngularDimension::InitializeProperties()
+{
+	m_scale.Initialize(_("scale"), this);
+	m_text_mode.Initialize(_("text mode"), this);
+	m_text_mode.m_choices.push_back ( wxString ( _("string") ) );
+	m_text_mode.m_choices.push_back ( wxString ( _("pythagorean") ) );
+	m_text_mode.m_choices.push_back ( wxString ( _("horizontal") ) );
+	m_text_mode.m_choices.push_back ( wxString ( _("vertical") ) );
 }
 
 const wxBitmap &HAngularDimension::GetIcon()
@@ -305,7 +320,7 @@ HeeksObj *HAngularDimension::MakeACopy(void)const
 
 void HAngularDimension::ModifyByMatrix(const double *m)
 {
-	gp_Trsf mat = make_matrix(m);
+//	gp_Trsf mat = make_matrix(m);
 }
 
 void HAngularDimension::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
@@ -327,41 +342,6 @@ void HAngularDimension::GetGripperPositions(std::list<GripData> *list, bool just
 
 	HeeksObj::GetGripperPositions(list,just_for_endof);
 	list->push_back(GripData(GripperTypeStretch,m_p4->m_p.X(),m_p4->m_p.Y(),m_p4->m_p.Z(),&m_p4));
-}
-
-static void on_set_text_mode(int value, HeeksObj* object)
-{
-	HAngularDimension* dimension = (HAngularDimension*)object;
-	dimension->m_text_mode = (AngularDimensionTextMode)value;
-	wxGetApp().Repaint();
-}
-
-static void on_set_scale(double value, HeeksObj* object)
-{
-	HAngularDimension* dimension = (HAngularDimension*)object;
-	dimension->m_scale = value;
-	wxGetApp().Repaint();
-}
-
-
-void HAngularDimension::GetProperties(std::list<Property *> *list)
-{
-	std::list< wxString > choices;
-
-	choices.clear();
-	choices.push_back ( wxString ( _("string") ) );
-	choices.push_back ( wxString ( _("pythagorean") ) );
-	choices.push_back ( wxString ( _("horizontal") ) );
-	choices.push_back ( wxString ( _("vertical") ) );
-	list->push_back ( new PropertyChoice ( _("text mode"),  choices, m_text_mode, this, on_set_text_mode ) );
-
-	list->push_back ( new PropertyDouble ( _("scale"),  m_scale, this, on_set_scale ) );
-
-#ifdef MULTIPLE_OWNERS
-	ObjList::GetProperties(list);
-#else
-	HeeksObj::GetProperties(list);
-#endif
 }
 
 bool HAngularDimension::Stretch(const double *p, const double* shift, void* data)
@@ -418,7 +398,7 @@ HeeksObj* HAngularDimension::ReadFromXMLElement(TiXmlElement* pElem)
 		else if(name == "textmode"){text_mode = (AngularDimensionTextMode)(a->IntValue());}
 	}
 
-	HAngularDimension* new_object = new HAngularDimension(text, text_mode, &c);
+	HAngularDimension* new_object = new HAngularDimension(text, text_mode, c);
 	new_object->ReadBaseXML(pElem);
 	new_object->m_scale = scale;
 	new_object->ReloadPointers();

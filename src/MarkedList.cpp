@@ -6,7 +6,6 @@
 #include "MarkedList.h"
 #include "../interface/HeeksObj.h"
 #include "../interface/MarkedObject.h"
-#include "../interface/PropertyInt.h"
 #include "DigitizeMode.h"
 #include "SelectMode.h"
 #include "PointOrWindow.h"
@@ -19,12 +18,24 @@
 #include "MenuSeparator.h"
 using namespace std;
 
-MarkedList::MarkedList(){
+/* static */
+std::set<MarkingFilter> MarkedList::InitializeFilter() {
+	std::set<MarkingFilter> rtn;
+	for (MarkingFilter i = (MarkingFilter) 0; i < MaximumMarkingFilter; i++) {
+		rtn.insert(i);
+	}
+	return rtn;
+}
+
+/* static */
+const std::set<MarkingFilter> MarkedList::all_filters = MarkedList::InitializeFilter();
+
+
+MarkedList::MarkedList() {
 	gripping = false;
 	point_or_window = new PointOrWindow(true);
 	gripper_marked_list_changed = false;
 	ignore_coords_only = false;
-	m_filter = -1;
 }
 
 MarkedList::~MarkedList(void){
@@ -35,6 +46,34 @@ MarkedList::~MarkedList(void){
 		gripper->m_index = 0;
 	}
 	delete_move_grips(false);
+}
+
+void MarkedList::InitializeProperties()
+{
+	m_list_size.Initialize(_("Number of items selected"), this);
+	m_list_size.SetReadOnly(true);
+}
+
+std::set<MarkingFilter> MarkedList::GetFilters()
+{
+	std::set<MarkingFilter> rtn;
+	for (MarkingFilter i = (MarkingFilter) 0; i < MaximumMarkingFilter; i++) {
+		if (m_filter[i].IsSet()) {
+			rtn.insert(i);
+		}
+	}
+	return rtn;
+}
+
+void MarkedList::SetFilters(const std::set<MarkingFilter>& filters)
+{
+	for (MarkingFilter i = (MarkingFilter) 0; i < MaximumMarkingFilter; i++) {
+		m_filter[i].SetValue(false);
+	}
+	std::set<MarkingFilter>::iterator It;
+	for (It = filters.begin(); It != filters.end(); It++) {
+		m_filter[*It].SetValue(true);
+	}
 }
 
 void MarkedList::delete_move_grips(bool check_app_grippers){
@@ -174,7 +213,7 @@ void MarkedList::ObjectsInWindow( wxRect window, MarkedObject* marked_object, bo
 						ignore_coords_only_found = true;
 					}
 					else{
-						if((object->GetType() == GripperType) || ((object->GetMarkingMask() & m_filter) && (object->GetMarkingMask() != 0))){
+						if((object->GetType() == GripperType) || ((object->GetMarkingFilter() != 0) && (m_filter[object->GetMarkingFilter()].IsSet()))){
 							int window_size = window.width;
 							current_found_object = current_found_object->Add(object, min_depth, window_size, custom_names ? (names - 1 - j) : 0, custom_names ? (&data[pos+1]):NULL);
 							added = true;
@@ -279,14 +318,16 @@ bool MarkedList::get_ignore(HeeksObj* object){
 }
 
 void MarkedList::GetProperties(std::list<Property *> *list){
-	if(m_list.size() == 1)
+	m_list_size = m_list.size();
+	if(m_list_size == 1)
 	{
 		m_list.front()->GetProperties(list);
+		m_list_size.SetVisible(false);
 	}
 	else
 	{
 		// multiple selection
-		list->push_back(new PropertyInt(_("Number of items selected"), m_list.size(), NULL));
+		m_list_size.SetVisible(true);
 	}
 }
 

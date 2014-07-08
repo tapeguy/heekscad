@@ -4,33 +4,48 @@
 
 #include "stdafx.h"
 #include "CoordinateSystem.h"
-#include "../interface/PropertyVertex.h"
-#include "../interface/PropertyDouble.h"
 #include "../interface/Tool.h"
 #include "HeeksFrame.h"
 #include "ObjPropsCanvas.h"
 
-double CoordinateSystem::size = 30;
-bool CoordinateSystem::size_is_pixels = true;
+PropertyDouble CoordinateSystem::size = 30.0;
+PropertyCheck CoordinateSystem::size_is_pixels = true;
 bool CoordinateSystem::rendering_current = false;
 
 static unsigned char bitmapX[11] = {0x41, 0x41, 0x22, 0x14, 0x14, 0x08, 0x14, 0x14, 0x22, 0x41, 0x41};
 static unsigned char bitmapY[11] = {0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x14, 0x14, 0x22, 0x22, 0x41};
 static unsigned char bitmapZ[11] = {0x3f, 0x10, 0x10, 0x08, 0x08, 0x08, 0x04, 0x04, 0x02, 0x02, 0x3f};
 
-CoordinateSystem::CoordinateSystem(const wxString& str, const gp_Pnt &o, const gp_Dir &x, const gp_Dir &y)
-{
-	m_title = str;
-	m_o = o;
-	m_x = x;
-	m_y = y;
-}
+static double vertical_angle_for_property;
+static double horizontal_angle_for_property;
+static double twist_angle_for_property;
 
+CoordinateSystem::CoordinateSystem(const wxString& str, const gp_Pnt &o, const gp_Dir &x, const gp_Dir &y) :
+	m_o(o), m_x(x), m_y(y)
+{
+	InitializeProperties();
+	m_title = str;
+	AxesToAngles(m_x.Normalize(), m_y.Normalize(), vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property);
+	m_vert_angle = vertical_angle_for_property * 180/M_PI;
+	m_horiz_angle = horizontal_angle_for_property * 180/M_PI;
+	m_twist_angle = twist_angle_for_property * 180/M_PI;
+}
 
 
 CoordinateSystem::CoordinateSystem(const CoordinateSystem &c)
 {
+	InitializeProperties();
 	operator=(c);
+}
+
+void CoordinateSystem::InitializeProperties()
+{
+	m_o.Initialize(_("position"), this);
+	m_x.Initialize(_("x axis"), this);
+	m_y.Initialize(_("y axis"), this);
+	m_vert_angle.Initialize(_("Vertical Angle"), this);
+	m_horiz_angle.Initialize(_("Horizontal Angle"), this);
+	m_twist_angle.Initialize(_("Twist Angle"), this);
 }
 
 const CoordinateSystem& CoordinateSystem::operator=(const CoordinateSystem &c)
@@ -39,6 +54,10 @@ const CoordinateSystem& CoordinateSystem::operator=(const CoordinateSystem &c)
 	m_o = c.m_o;
 	m_x = c.m_x;
 	m_y = c.m_y;
+	AxesToAngles(m_x.Normalize(), m_y.Normalize(), vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property);
+	m_vert_angle = vertical_angle_for_property * 180/M_PI;
+	m_horiz_angle = horizontal_angle_for_property * 180/M_PI;
+	m_twist_angle = twist_angle_for_property * 180/M_PI;
 	return *this;
 }
 
@@ -1104,7 +1123,9 @@ void CoordinateSystem::RenderArrow()
 void CoordinateSystem::RenderDatum(bool bright, bool solid)
 {
 	double s = size;
-	if(size_is_pixels)s /= wxGetApp().GetPixelScale();
+	if(size_is_pixels.IsSet()) {
+		s /= wxGetApp().GetPixelScale();
+	}
 
 	if(solid)
 	{
@@ -1215,38 +1236,31 @@ void CoordinateSystem::ModifyByMatrix(const double *m)
 	m_y.Transform(mat);
 }
 
-static double vertical_angle_for_property;
-static double horizontal_angle_for_property;
-static double twist_angle_for_property;
+void CoordinateSystem::OnPropertyEdit(Property *prop) {
 
-static void on_set_pos(const double *pos, HeeksObj* object)
-{
-	((CoordinateSystem*)object)->m_o = make_point(pos);
-	wxGetApp().Repaint();
-}
-
-static void on_set_vertical_angle(double value, HeeksObj* object)
-{
-	CoordinateSystem* co = ((CoordinateSystem*)object);
-	vertical_angle_for_property = value * M_PI/180;
-	CoordinateSystem::AnglesToAxes(vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property, co->m_x, co->m_y);
-	wxGetApp().Repaint();
-}
-
-static void on_set_horizontal_angle(double value, HeeksObj* object)
-{
-	CoordinateSystem* co = ((CoordinateSystem*)object);
-	horizontal_angle_for_property = value * M_PI/180;
-	CoordinateSystem::AnglesToAxes(vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property, co->m_x, co->m_y);
-	wxGetApp().Repaint();
-}
-
-static void on_set_twist_angle(double value, HeeksObj* object)
-{
-	CoordinateSystem* co = ((CoordinateSystem*)object);
-	twist_angle_for_property = value * M_PI/180;
-	CoordinateSystem::AnglesToAxes(vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property, co->m_x, co->m_y);
-	wxGetApp().Repaint();
+	if (prop == &m_x || prop == &m_y) {
+		AxesToAngles(m_x.Normalize(), m_y.Normalize(), vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property);
+		m_vert_angle = vertical_angle_for_property * 180/M_PI;
+		m_horiz_angle = horizontal_angle_for_property * 180/M_PI;
+		m_twist_angle = twist_angle_for_property * 180/M_PI;
+	}
+	else if (prop == &m_vert_angle || prop == &m_horiz_angle || prop == &m_twist_angle) {
+		gp_Dir x = m_x.Normalize();
+		gp_Dir y = m_y.Normalize();
+		double value = *(PropertyDouble *)prop;
+	
+		if (prop == &m_vert_angle)
+			vertical_angle_for_property = value * M_PI/180;
+		else if (prop == &m_horiz_angle)
+			horizontal_angle_for_property = value * M_PI/180;
+		else if (prop == &m_twist_angle)
+			twist_angle_for_property = value * M_PI/180;
+		CoordinateSystem::AnglesToAxes(vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property, x, y);
+		m_x = x;
+		m_y = y;
+	}
+	else
+		HeeksObj::OnPropertyEdit(prop);
 }
 
 static CoordinateSystem* coord_system_for_Tool = NULL;
@@ -1309,29 +1323,13 @@ void CoordinateSystem::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 	if(wxGetApp().m_marked_list->list().size() > 0)t_list->push_back(&transform_to_world);
 }
 
-void CoordinateSystem::GetProperties(std::list<Property *> *list)
-{
-	double o[3], x[3], y[3];
-	extract(m_o, o);
-	extract(m_x, x);
-	extract(m_y, y);
-	list->push_back(new PropertyVertex(_("position"), o, this, on_set_pos));
-	list->push_back(new PropertyVector(_("x axis"), x, NULL));
-	list->push_back(new PropertyVector(_("y axis"), y, NULL));
-	AxesToAngles(m_x, m_y, vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property);
-	list->push_back(new PropertyDouble(_("Vertical Angle"), vertical_angle_for_property * 180/M_PI, this, on_set_vertical_angle));
-	list->push_back(new PropertyDouble(_("Horizontal Angle"), horizontal_angle_for_property * 180/M_PI, this, on_set_horizontal_angle));
-	list->push_back(new PropertyDouble(_("Twist Angle"), twist_angle_for_property * 180/M_PI, this, on_set_twist_angle));
-
-	HeeksObj::GetProperties(list);
-}
-
 void CoordinateSystem::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 {
 	gp_Trsf mat = GetMatrix();
 	double s = size;
-	if(size_is_pixels)s /= wxGetApp().GetPixelScale();
-
+	if(size_is_pixels.IsSet()) {
+		s /= wxGetApp().GetPixelScale();
+	}
 	gp_Pnt px(m_o.XYZ() + m_x.XYZ() * s);
 	gp_Pnt py(m_o.XYZ() + m_y.XYZ() * s);
 	gp_Dir vz = gp_Dir(0, 0, 1).Transformed(mat);
@@ -1446,8 +1444,7 @@ void CoordinateSystem::AxesToAngles(const gp_Dir &x, const gp_Dir &y, double &v_
 }
 
 //static
-void CoordinateSystem::AnglesToAxes(const double &v_angle, const double
-&h_angle, const double &t_angle, gp_Dir &x, gp_Dir &y)
+void CoordinateSystem::AnglesToAxes(const double &v_angle, const double &h_angle, const double &t_angle, gp_Dir &x, gp_Dir &y)
 {
 	gp_Trsf zmat1;
 	zmat1.SetRotation(gp_Ax1(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1)), t_angle);
@@ -1468,57 +1465,11 @@ static CoordinateSystem* coordinate_system_for_PickFrom3Points = NULL;
 static gp_Vec y_for_PickFrom3Points(0, 1, 0);
 static gp_Vec z_for_PickFrom3Points(0, 0, 1);
 static const double unit_vec_tol = 0.0000000001;
-static gp_Ax2* ax2_for_GetProperties = NULL;
 
-
-static void on_set_ax2_pos(const double *pos, HeeksObj* object)
-{
-	*ax2_for_GetProperties = gp_Ax2(make_point(pos), ax2_for_GetProperties->Direction(), ax2_for_GetProperties->XDirection());
-	wxGetApp().Repaint();
-}
-
-static void on_set_ax2_angle()
-{
-	gp_Dir dx, dy;
-	CoordinateSystem::AnglesToAxes(vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property, dx, dy);
-	gp_Trsf mat = make_matrix(ax2_for_GetProperties->Location(), dx, dy);
-	*ax2_for_GetProperties = gp_Ax2(ax2_for_GetProperties->Location(), gp_Dir(0, 0, 1).Transformed(mat), gp_Dir(1, 0, 0).Transformed(mat));
-	wxGetApp().Repaint();
-}
-
-static void on_set_ax2_vertical_angle(double value, HeeksObj* object)
-{
-	vertical_angle_for_property = value * M_PI/180;
-	on_set_ax2_angle();
-}
-
-static void on_set_ax2_horizontal_angle(double value, HeeksObj* object)
-{
-	horizontal_angle_for_property = value * M_PI/180;
-	on_set_ax2_angle();
-}
-
-static void on_set_ax2_twist_angle(double value, HeeksObj* object)
-{
-	twist_angle_for_property = value * M_PI/180;
-	on_set_ax2_angle();
-}
-
-void CoordinateSystem::GetAx2Properties(std::list<Property *> *list, gp_Ax2& a)
-{
-	ax2_for_GetProperties = &a;
-	double o[3];
-	extract(a.Location(), o);
-	list->push_back(new PropertyVertex(_("position"), o, NULL, on_set_ax2_pos));
-	AxesToAngles(a.XDirection(), a.YDirection(), vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property);
-	list->push_back(new PropertyDouble(_("Vertical Angle"), vertical_angle_for_property * 180/M_PI, NULL, on_set_ax2_vertical_angle));
-	list->push_back(new PropertyDouble(_("Horizontal Angle"), horizontal_angle_for_property * 180/M_PI, NULL, on_set_ax2_horizontal_angle));
-	list->push_back(new PropertyDouble(_("Twist Angle"), twist_angle_for_property * 180/M_PI, NULL, on_set_ax2_twist_angle));
-}
 
 static void on_set_origin(const double* pos)
 {
-	coordinate_system_for_PickFrom3Points->m_o = make_point(pos);
+	coordinate_system_for_PickFrom3Points->m_o.SetValue(make_point(pos));
 	wxGetApp().Repaint();
 }
 
@@ -1527,7 +1478,8 @@ static void on_set_x(const double* pos){
 	if(!p.IsEqual(coordinate_system_for_PickFrom3Points->m_o, wxGetApp().m_geom_tol))
 	{
 		coordinate_system_for_PickFrom3Points->m_x = make_vector(coordinate_system_for_PickFrom3Points->m_o, p);
-		if(coordinate_system_for_PickFrom3Points->m_x.IsEqual(z_for_PickFrom3Points, unit_vec_tol) || coordinate_system_for_PickFrom3Points->m_x.IsEqual(-z_for_PickFrom3Points, unit_vec_tol))
+		if(coordinate_system_for_PickFrom3Points->m_x.Normalize().IsEqual(z_for_PickFrom3Points, unit_vec_tol) ||
+		   coordinate_system_for_PickFrom3Points->m_x.Normalize().IsEqual(-z_for_PickFrom3Points, unit_vec_tol))
 		{
 			coordinate_system_for_PickFrom3Points->m_y = y_for_PickFrom3Points ^ coordinate_system_for_PickFrom3Points->m_x;
 		}
@@ -1544,10 +1496,10 @@ static void on_set_y(const double* pos){
 	if(!p.IsEqual(coordinate_system_for_PickFrom3Points->m_o, wxGetApp().m_geom_tol))
 	{
 		gp_Dir y = make_vector(coordinate_system_for_PickFrom3Points->m_o, p);
-		if(!y.IsEqual(coordinate_system_for_PickFrom3Points->m_x, unit_vec_tol) && !y.IsEqual(-coordinate_system_for_PickFrom3Points->m_x, unit_vec_tol))
+		if(!y.IsEqual(coordinate_system_for_PickFrom3Points->m_x.Normalize(), unit_vec_tol) && !y.IsEqual(-(coordinate_system_for_PickFrom3Points->m_x.Normalize()), unit_vec_tol))
 		{
-			gp_Vec z = coordinate_system_for_PickFrom3Points->m_x ^ y;
-			coordinate_system_for_PickFrom3Points->m_y = z ^ coordinate_system_for_PickFrom3Points->m_x;
+			gp_Vec z = coordinate_system_for_PickFrom3Points->m_x.Normalize() ^ y;
+			coordinate_system_for_PickFrom3Points->m_y = z ^ coordinate_system_for_PickFrom3Points->m_x.Normalize();
 			wxGetApp().Repaint();
 		}
 	}
@@ -1566,8 +1518,8 @@ void CoordinateSystem::PickFrom3Points()
 	CoordinateSystem temp = *this;
 	coordinate_system_for_PickFrom3Points = &temp;
 	y_for_PickFrom3Points = m_y;
-	z_for_PickFrom3Points = m_x ^ m_y;
-	m_visible = false;
+	z_for_PickFrom3Points = m_x.Normalize() ^ m_y.Normalize();
+	m_visible.SetValue(false);
 	wxGetApp().RegisterOnGLCommands(OnGlCommandsForPickFrom3Points);
 
 	double pos[3];
@@ -1591,8 +1543,8 @@ void CoordinateSystem::PickFrom1Point()
 	CoordinateSystem temp = *this;
 	coordinate_system_for_PickFrom3Points = &temp;
 	y_for_PickFrom3Points = m_y;
-	z_for_PickFrom3Points = m_x ^ m_y;
-	m_visible = false;
+	z_for_PickFrom3Points = m_x.Normalize() ^ m_y.Normalize();
+	m_visible.SetValue(false);
 	wxGetApp().RegisterOnGLCommands(OnGlCommandsForPickFrom3Points);
 
 	double pos[3];

@@ -13,11 +13,9 @@
 class CTreeCanvas: public wxScrolledWindow, Observer
 {
 private:
-	bool m_LButton;
 	wxPoint m_CurrentPoint;
 	bool m_frozen;
 	bool m_refresh_wanted_on_thaw;
-    int width, height, textureWidth, textureHeight;
 	std::set<HeeksObj*> m_expanded;
 	std::set<HeeksObj*> m_collapsed;
 	//int scroll_y_pos;

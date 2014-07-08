@@ -4,7 +4,6 @@
 
 #include "stdafx.h"
 #include "HPoint.h"
-#include "../interface/PropertyVertex.h"
 #include "Gripper.h"
 #include "DigitizeMode.h"
 #include "Drawing.h"
@@ -12,18 +11,21 @@
 static unsigned char cross16[32] = {0x80, 0x01, 0x40, 0x02, 0x20, 0x04, 0x10, 0x08, 0x08, 0x10, 0x04, 0x20, 0x02, 0x40, 0x01, 0x80, 0x01, 0x80, 0x02, 0x40, 0x04, 0x20, 0x08, 0x10, 0x10, 0x08, 0x20, 0x04, 0x40, 0x02, 0x80, 0x01};
 static unsigned char cross16_selected[32] = {0xc0, 0x03, 0xe0, 0x07, 0x70, 0x0e, 0x38, 0x1c, 0x1c, 0x38, 0x0e, 0x70, 0x07, 0xe0, 0x03, 0xc0, 0x03, 0xc0, 0x07, 0xe0, 0x0e, 0x70, 0x1c, 0x38, 0x38, 0x1c, 0x70, 0x0e, 0xe0, 0x07, 0xc0, 0x03};
 
+
 HPoint::~HPoint(void)
 {
 }
 
-HPoint::HPoint(const gp_Pnt &p, const HeeksColor* col)
+HPoint::HPoint(const gp_Pnt &p, const HeeksColor& col)
+:m_p(_("position"), p, this)
 {
 	m_p = p;
-	color = *col;
+	m_color = col;
 	m_draw_unselected=true;
 }
 
 HPoint::HPoint(const HPoint &p)
+:m_p(_("position"), gp_Pnt(), this)
 {
 	operator=(p);
 }
@@ -36,7 +38,7 @@ const HPoint& HPoint::operator=(const HPoint &b)
 	HeeksObj::operator =(b);
 #endif
 	m_p = b.m_p;
-	color = b.color;
+	m_color = b.m_color;
 	m_draw_unselected = b.m_draw_unselected;
 	return *this;
 }
@@ -59,20 +61,21 @@ bool HPoint::IsDifferent(HeeksObj* o)
 
 void HPoint::LoadFromDoubles()
 {
-	m_p.SetX(mx);
-	m_p.SetY(my);
+	gp_Pnt newpnt(mx,my,mz);
+	m_p = newpnt;
 }
 
 void HPoint::LoadToDoubles()
 {
 	mx = m_p.X();
 	my = m_p.Y();
+	mz = m_p.Z();
 }
 
 void HPoint::glCommands(bool select, bool marked, bool no_color)
 {
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(color);
+		wxGetApp().glColorEnsuringContrast(m_color);
 	}
 	GLfloat save_depth_range[2];
 	if(marked){
@@ -119,19 +122,6 @@ void HPoint::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	}
 }
 
-static void on_set_point(const double *vt, HeeksObj* object){
-	((HPoint*)object)->m_p = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-void HPoint::GetProperties(std::list<Property *> *list)
-{
-	double p[3];
-	extract(m_p, p);
-	list->push_back(new PropertyVertex(_("position"), p, this, on_set_point));
-
-	HeeksObj::GetProperties(list);
-}
 
 HPoint* point_for_tool = NULL;
 
@@ -243,7 +233,7 @@ void HPoint::WriteXML(TiXmlNode *root)
 	TiXmlElement * element;
 	element = new TiXmlElement( "Point" );
 	root->LinkEndChild( element );  
-	element->SetAttribute("col", color.COLORREF_color());
+	element->SetAttribute("col", m_color.COLORREF_color());
 	element->SetDoubleAttribute("x", m_p.X());
 	element->SetDoubleAttribute("y", m_p.Y());
 	element->SetDoubleAttribute("z", m_p.Z());
@@ -267,7 +257,7 @@ HeeksObj* HPoint::ReadFromXMLElement(TiXmlElement* pElem)
 		else if(name == "z"){p.SetZ(a->DoubleValue());}
 	}
 
-	HPoint* new_object = new HPoint(p, &c);
+	HPoint* new_object = new HPoint(p, c);
 	new_object->ReadBaseXML(pElem);
 
 	return new_object;
@@ -275,7 +265,7 @@ HeeksObj* HPoint::ReadFromXMLElement(TiXmlElement* pElem)
 
 void HPoint::Draw(wxDC& dc)
 {
-	wxGetApp().PlotSetColor(color);
+	wxGetApp().PlotSetColor(m_color);
 	double s[3], e[3];
 	double line_length = 1.5;
 	extract(m_p, s);

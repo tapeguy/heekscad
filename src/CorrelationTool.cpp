@@ -373,13 +373,10 @@ bool CCorrelationTool::ColorsMatch( HeeksObj *obj1, HeeksObj *obj2 ) const
     if (obj1 == NULL) return(true);
     if (obj2 == NULL) return(true);
 
-    const HeeksColor *pObj1Color = obj1->GetColor();
-    const HeeksColor *pObj2Color = obj2->GetColor();
+    const HeeksColor& obj1Color = obj1->GetColor();
+    const HeeksColor& obj2Color = obj2->GetColor();
 
-    if (pObj1Color == NULL) return(true);
-    if (pObj2Color == NULL) return(true);
-
-    return(*pObj1Color == *pObj2Color);
+    return(obj1Color == obj2Color);
 }
 
 

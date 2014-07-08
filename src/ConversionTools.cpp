@@ -557,7 +557,7 @@ bool ConvertEdgeToSketch2(const TopoDS_Edge& edge, HeeksObj* sketch, double devi
 			gp_Pnt PE;
 			gp_Vec VE;
 			curve.D1(uEnd, PE, VE);
-			HLine* new_object = new HLine(sense ? PS:PE, sense ?PE:PS, &wxGetApp().current_color);
+			HLine* new_object = new HLine(sense ? PS:PE, sense ?PE:PS, wxGetApp().CurrentColor());
 			sketch->Add(new_object, NULL);
 		}
 		break;
@@ -589,17 +589,17 @@ bool ConvertEdgeToSketch2(const TopoDS_Edge& edge, HeeksObj* sketch, double devi
 				gp_Vec VH;
 				curve.D1(uHalf, PH, VH);
 				{
-					HArc* new_object = new HArc(PS, PH, circle, &wxGetApp().current_color);
+					HArc* new_object = new HArc(PS, PH, circle, wxGetApp().CurrentColor());
 					sketch->Add(new_object, NULL);
 				}
 				{
-					HArc* new_object = new HArc(PH, PE, circle, &wxGetApp().current_color);
+					HArc* new_object = new HArc(PH, PE, circle, wxGetApp().CurrentColor());
 					sketch->Add(new_object, NULL);
 				}
 			}
 			else
 			{
-				HArc* new_object = new HArc(sense ? PS:PE, sense ?PE:PS, circle, &wxGetApp().current_color);
+				HArc* new_object = new HArc(sense ? PS:PE, sense ?PE:PS, circle, wxGetApp().CurrentColor());
 				sketch->Add(new_object, NULL);
 			}
 		}
@@ -644,7 +644,7 @@ bool ConvertEdgeToSketch2(const TopoDS_Edge& edge, HeeksObj* sketch, double devi
 					gp_Pnt p = (Points.Value(po)).Transformed(L);
 					if(i != 0)
 					{
-						HLine* new_object = new HLine(prev_p, p, &wxGetApp().current_color);
+						HLine* new_object = new HLine(prev_p, p, wxGetApp().CurrentColor());
 						sketch->Add(new_object, NULL);
 					}
 					prev_p = p;
@@ -720,7 +720,7 @@ static void AddLineOrArc(CSketch* sketch, Span &span)
 {
 	if(span.m_v.m_type == 0)
 	{
-		HLine* new_object = new HLine(gp_Pnt(span.m_p.x, span.m_p.y, 0), gp_Pnt(span.m_v.m_p.x, span.m_v.m_p.y, 0), &wxGetApp().current_color);
+		HLine* new_object = new HLine(gp_Pnt(span.m_p.x, span.m_p.y, 0), gp_Pnt(span.m_v.m_p.x, span.m_v.m_p.y, 0), wxGetApp().CurrentColor());
 		sketch->Add(new_object, NULL);
 	}
 	else
@@ -728,7 +728,7 @@ static void AddLineOrArc(CSketch* sketch, Span &span)
 		gp_Dir axis = (span.m_v.m_type > 0) ? gp_Dir(0, 0, 1):gp_Dir(0, 0, -1);
 		double radius = span.m_p.dist(span.m_v.m_c);
 		gp_Circ c(gp_Ax2(gp_Pnt(span.m_v.m_c.x, span.m_v.m_c.y, 0), axis), radius);
-		HArc* new_object = new HArc(gp_Pnt(span.m_p.x, span.m_p.y, 0), gp_Pnt(span.m_v.m_p.x, span.m_v.m_p.y, 0), c, &wxGetApp().current_color);
+		HArc* new_object = new HArc(gp_Pnt(span.m_p.x, span.m_p.y, 0), gp_Pnt(span.m_v.m_p.x, span.m_v.m_p.y, 0), c, wxGetApp().CurrentColor());
 		sketch->Add(new_object, NULL);
 	}
 }
@@ -824,7 +824,7 @@ static void callback_for_arcs_to_lines(const double* p)
 {
 	if(point_found_for_arc_to_lines)
 	{
-		HLine* new_object = new HLine(make_point(p), make_point(point_for_arcs_to_lines), &wxGetApp().current_color);
+		HLine* new_object = new HLine(make_point(p), make_point(point_for_arcs_to_lines), wxGetApp().CurrentColor());
 		sketch_for_arcs_to_lines->Add(new_object, NULL);
 	}
 	point_found_for_arc_to_lines = true;

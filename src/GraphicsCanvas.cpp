@@ -147,7 +147,8 @@ void CViewport::glCommands()
 	case BackgroundModeOneColor:
 		{
 			// clear the back buffer
-			wxGetApp().background_color[0].glClearColor(wxGetApp().m_antialiasing ? 0.0f : 1.0f);
+			const HeeksColor& bg0 = wxGetApp().background_color[0];
+			bg0.glClearColor(wxGetApp().m_antialiasing ? 0.0f : 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 		break;

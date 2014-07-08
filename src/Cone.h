@@ -16,9 +16,9 @@ protected:
 
 public:
 	gp_Ax2 m_pos;
-	double m_r1;
-	double m_r2;
-	double m_height;
+	PropertyLength m_r1;
+	PropertyLength m_r2;
+	PropertyLength m_height;
 	double m_temp_r1;
 	double m_temp_r2;
 
@@ -26,13 +26,14 @@ public:
 	CCone(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	const wxChar* GetTypeString(void)const{return _("Cone");}
 	const wxBitmap &GetIcon();
 	void glCommands(bool select, bool marked, bool no_color);
 	HeeksObj *MakeACopy(void)const;
 	void GetProperties(std::list<Property *> *list);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnApplyProperties();
+	void OnPropertyEdit(Property *prop);
 	bool ValidateProperties();
 	bool GetScaleAboutMatrix(double *m);
 	bool Stretch(const double *p, const double* shift, void* data);

@@ -39,10 +39,14 @@ private:
 	HeeksObj* m_container;
 	bool m_add_to_sketch;
 
+	static wxCursor m_cursor_start;
+	static wxCursor m_cursor_end;
+	std::list<EnumDrawingMode> m_save_drawing_mode;
+	EnumSplineDrawingMode spline_mode;
+
 	// Drawing's virtual functions
 	bool calculate_item(DigitizedPoint &end);
 	const std::list<HeeksObj*>& GetObjectsMade()const{return temp_object_in_list;}
-	void set_previous_direction();
 	int number_of_steps();
 	int step_to_go_to_after_last_step();
 	bool is_an_add_level(int level);
@@ -51,26 +55,26 @@ private:
 	void AddPoint();
 
 public:
-	static wxCursor m_cursor_start;
-	static wxCursor m_cursor_end;
-	EnumDrawingMode drawing_mode;
-	std::list<EnumDrawingMode> m_save_drawing_mode;
-	double radius_for_circle;
-	EnumCircleDrawingMode circle_mode;
-	EnumSplineDrawingMode spline_mode;
+	PropertyChoice drawing_mode;
+	PropertyLength radius_for_circle;
+	PropertyChoice circle_mode;
+	PropertyString arc_mode;
+
 	bool m_previous_direction_set;
 	gp_Vec m_previous_direction;
+	void set_previous_direction();
 
 	LineArcDrawing(void);
 	virtual ~LineArcDrawing(void);
 
 	// InputMode's virtual functions
+	void InitializeProperties();
 	const wxChar* GetTitle();
 	void OnKeyDown(wxKeyEvent& event);
 	void OnKeyUp(wxKeyEvent& event);
 	void set_cursor(void);
 	void GetTools(std::list<Tool*> *f_list, const wxPoint *p);
-	void GetProperties(std::list<Property *> *list);
+	void OnPropertyEdit(Property *prop);
 	bool OnModeChange(void);
 
 	// Drawing's virtual functions
@@ -78,4 +82,3 @@ public:
 	void set_draw_step_not_undoable(int s);
 };
 
-extern LineArcDrawing line_strip;

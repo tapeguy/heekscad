@@ -13,8 +13,8 @@ protected:
 	wxString StretchedName();
 
 public:
-	gp_Pnt m_pos;
-	double m_radius;
+	PropertyVertex m_pos;
+	PropertyLength m_radius;
 
 	CSphere(const gp_Pnt& pos, double radius, const wxChar* title, const HeeksColor& col, float opacity);
 	CSphere(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity);
@@ -22,12 +22,12 @@ public:
 	CSphere & operator= ( const CSphere &rhs );
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	const wxChar* GetTypeString(void)const{return _("Sphere");}
 	const wxBitmap &GetIcon();
 	HeeksObj *MakeACopy(void)const;
-	void GetProperties(std::list<Property *> *list);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnApplyProperties();
+	void OnPropertyEdit(Property* prop);
 	bool GetCentrePoint(double* pos);
 	bool GetScaleAboutMatrix(double *m);
 	bool IsDifferent(HeeksObj* other);

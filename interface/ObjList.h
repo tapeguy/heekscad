@@ -65,7 +65,7 @@ public:
 	void Disconnect(std::list<HeeksObj*>parents);
 #endif
 	bool IsList(){return true;}
-	void GetProperties(std::list<Property *> *list);
+	void GetProperties(std::list<Property*> *list);
 	void ReloadPointers();
 	void OnChangeViewUnits(const double units);
 

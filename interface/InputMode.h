@@ -10,7 +10,7 @@
 class HeeksObj;
 class Tool;
 
-class CInputMode{
+class CInputMode : public MutableObject {
 public:
 	virtual ~CInputMode() {}
 
@@ -24,5 +24,4 @@ public:
 	virtual void GetTools(std::list<Tool*> *t_list, const wxPoint *p){}
 	virtual void OnFrontRender(){}
 	virtual void OnRender(){}
-	virtual void GetProperties(std::list<Property *> *list){}
 };

@@ -14,22 +14,24 @@ class HCircle: public HeeksObj{
 #endif
 
 private:
-	HeeksColor color;
+        PropertyVertex m_centre;
+        PropertyVector m_axis_direction;
 
 public:
+	PropertyLength m_radius;
 	gp_Ax1 m_axis;
 	HPoint *C;
-	double m_radius;
 
 	~HCircle(void);
-	HCircle(const gp_Circ &c, const HeeksColor* col);
+	HCircle(const gp_Circ &c, const HeeksColor& col);
 	HCircle(const HCircle &c);
 
 	const HCircle& operator=(const HCircle &c);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return CircleType;}
-	long GetMarkingMask()const{return MARKING_FILTER_CIRCLE;}
+	int GetMarkingFilter()const{return CircleMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxChar* GetTypeString(void)const{return _("Circle");}
@@ -37,9 +39,8 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
-	void SetColor(const HeeksColor &col){color = col;}
-	const HeeksColor* GetColor()const{return &color;}
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
+	void OnPropertyEdit(Property *prop);
 	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);

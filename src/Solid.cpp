@@ -52,14 +52,3 @@ void CSolid::MakeTransformedShape(const gp_Trsf &mat)
 	BRepBuilderAPI_Transform myBRepTransformation(m_shape,mat);
 	m_shape = myBRepTransformation.Shape();
 }
-
-void CSolid::OnApplyProperties()
-{
-	CSolid* new_object = new CSolid(*((TopoDS_Solid*)(&m_shape)), m_title.c_str(), m_color, m_opacity);
-	new_object->CopyIDsFrom(this);
-	Owner()->Add(new_object, NULL);
-	Owner()->Remove(this);
-	wxGetApp().m_marked_list->Clear(true);
-	if(wxGetApp().m_marked_list->ObjectMarked(this))wxGetApp().m_marked_list->Add(new_object, true);
-	wxGetApp().Repaint();
-}

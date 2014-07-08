@@ -7,27 +7,28 @@
 #include "EndedObject.h"
 
 class HILine: public EndedObject{
-private:
-	HeeksColor color;
-
 public:
+        PropertyVertex m_start;
+        PropertyVertex m_end;
+        PropertyLength m_length;
+
 	~HILine(void);
-	HILine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor* col);
+	HILine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col);
 	HILine(const HILine &line);
 
 	const HILine& operator=(const HILine &b);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return ILineType;}
-	long GetMarkingMask()const{return MARKING_FILTER_ILINE;}
+	int GetMarkingFilter()const{return ILineMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxChar* GetTypeString(void)const{return _("Infinite Line");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
-	void SetColor(const HeeksColor &col){color = col;}
-	const HeeksColor* GetColor()const{return &color;}
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
+	void OnPropertyEdit(Property *prop);
 	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);

@@ -8,7 +8,7 @@
 
 class CPad: public DynamicSolid{
 public:
-	double m_length;
+	PropertyDouble m_length;
 	CSketch* m_sketch;
 
 	CPad(double length);
@@ -16,12 +16,11 @@ public:
 
 	const wxChar* GetTypeString(void)const{return _("Pad");}
 	int GetType()const{return PadType;}
+	int GetMarkingFilter()const{return PadMarkingFilter;}
 	HeeksObj *MakeACopy(void)const{ return new CPad(*this);}
 	void glCommands(bool select, bool marked, bool no_color);
-	void GetProperties(std::list<Property *> *list);
 	void WriteXML(TiXmlNode *root);
 	bool UsesID(){return true;}
-	long GetMarkingMask()const{return MARKING_FILTER_PAD;}
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
 	static void PadSketch(CSketch*,double length);
 	bool IsDifferent(HeeksObj* other);

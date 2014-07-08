@@ -4,10 +4,6 @@
 #include "stdafx.h"
 
 #include "HCircle.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyChoice.h"
-#include "../interface/PropertyVertex.h"
 #include "HLine.h"
 #include "HILine.h"
 #include "HArc.h"
@@ -15,11 +11,16 @@
 #include "DigitizeMode.h"
 #include "Drawing.h"
 
-HCircle::HCircle(const HCircle &c){
+HCircle::HCircle(const HCircle &c)
+{
+	InitializeProperties();
 	operator=(c);
 }
 
-HCircle::HCircle(const gp_Circ &c, const HeeksColor* col):color(*col){
+HCircle::HCircle(const gp_Circ &c, const HeeksColor& col)
+{
+	InitializeProperties();
+	m_color = col;
 	m_axis = c.Axis();
 	m_radius = c.Radius();
 	C = new HPoint(c.Location(),col);
@@ -38,11 +39,18 @@ const HCircle& HCircle::operator=(const HCircle &c){
 #endif
 	m_axis = c.m_axis;
 	m_radius = c.m_radius;
-	color = c.color;
-	C = new HPoint(c.C->m_p,&color);
+	m_color = c.m_color;
+	C = new HPoint(c.C->m_p, m_color);
 	C->SetSkipForUndo(true);
 	Add(C,NULL);
 	return *this;
+}
+
+void HCircle::InitializeProperties()
+{
+	m_centre.Initialize(_("centre"), this);
+	m_axis_direction.Initialize(_("axis"), this);
+	m_radius.Initialize(_("radius"), this); 
 }
 
 const wxBitmap &HCircle::GetIcon()
@@ -111,7 +119,7 @@ static void glVertexFunction(const double *p){glVertex3d(p[0], p[1], p[2]);}
 
 void HCircle::glCommands(bool select, bool marked, bool no_color){
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(color);
+		wxGetApp().glColorEnsuringContrast(m_color);
 		if (wxGetApp().m_allow_opengl_stippling)
 		{
 			glEnable(GL_LINE_STIPPLE);
@@ -152,7 +160,7 @@ void HCircle::ModifyByMatrix(const double* m){
 	gp_Trsf mat = make_matrix(m);
 	m_axis.Transform(mat);
 	C->m_p.Transform(mat);
-	m_radius *= mat.ScaleFactor();
+	m_radius = m_radius * mat.ScaleFactor();
 }
 
 void HCircle::GetBox(CBox &box){
@@ -192,28 +200,19 @@ void HCircle::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	}
 }
 
-static void on_set_centre(const double *vt, HeeksObj* object){
-	((HCircle*)object)->C->m_p = make_point(vt);
-	wxGetApp().Repaint();
-}
-
-static void on_set_axis(const double *vt, HeeksObj* object){
-	((HCircle*)object)->m_axis.SetDirection(make_vector(vt).XYZ());
-	wxGetApp().Repaint();
-}
-
-static void on_set_radius(double value, HeeksObj* object){
-	((HCircle*)object)->m_radius = value;
-	wxGetApp().Repaint();
+void HCircle::OnPropertyEdit(Property *prop)
+{
+	if (prop == &m_centre)
+		C->m_p = *(PropertyVertex *)prop;
+	else if (prop == &m_axis_direction)
+		m_axis.SetDirection(((PropertyVector *)prop)->Normalize());
+	else
+		HeeksObj::OnPropertyEdit(prop);
 }
 
 void HCircle::GetProperties(std::list<Property *> *list){
-	double c[3], a[3];
-	extract(C->m_p, c);
-	extract(m_axis.Direction(), a);
-	list->push_back(new PropertyVertex(_("centre"), c, this, on_set_centre));
-	list->push_back(new PropertyVector(_("axis"), a, this, on_set_axis));
-	list->push_back(new PropertyLength(_("radius"), m_radius, this, on_set_radius));
+	m_centre = C->m_p;
+	m_axis_direction = m_axis.Direction();
 
 	HeeksObj::GetProperties(list);
 }
@@ -268,7 +267,7 @@ void HCircle::WriteXML(TiXmlNode *root)
 	TiXmlElement * element;
 	element = new TiXmlElement( "Circle" );
 	root->LinkEndChild( element );
-	element->SetAttribute("col", color.COLORREF_color());
+	element->SetAttribute("col", m_color.COLORREF_color());
 	element->SetDoubleAttribute("r", m_radius);
 	gp_Dir D = m_axis.Direction();
 	element->SetDoubleAttribute("cx", C->m_p.X());
@@ -304,7 +303,7 @@ HeeksObj* HCircle::ReadFromXMLElement(TiXmlElement* pElem)
 
 	gp_Circ circle(gp_Ax2(centre, gp_Dir(make_vector(axis))), r);
 
-	HCircle* new_object = new HCircle(circle, &c);
+	HCircle* new_object = new HCircle(circle, c);
 	new_object->ReadBaseXML(pElem);
 
 	return new_object;
@@ -589,7 +588,6 @@ bool HCircle::GetArcTangentPoints(const gp_Circ& c1, const gp_Circ &c2, const gp
 
 	// find left and right
 	gp_Vec join(c1.Location(), c2.Location());
-	gp_Vec forward = join.Normalized();
 	gp_Vec left1 = c1.Axis().Direction() ^ join;
 	gp_Vec left2 = c2.Axis().Direction() ^ join;
 	if(left1 * left2 < 0)left2 = -left2;

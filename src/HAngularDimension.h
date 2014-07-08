@@ -7,7 +7,6 @@
 #ifdef MULTIPLE_OWNERS
 #include "../interface/ObjList.h"
 class HPoint;
-#include "../interface/HeeksColor.h"
 #else
 #include "HPoint.h"
 #endif
@@ -24,8 +23,6 @@ class HAngularDimension: public ObjList{
 #else
 class HAngularDimension: public HeeksObj{
 #endif
-private:
-	HeeksColor m_color;
 
 public:
 	wxString m_text;
@@ -34,11 +31,11 @@ public:
 	HPoint* m_p2;
 	HPoint* m_p3;
 	HPoint* m_p4;
-	AngularDimensionTextMode m_text_mode;
-	double m_scale; // to do - text, gaps, and arrow heads will be scaled by this factor
+	PropertyChoice m_text_mode;
+	PropertyDouble m_scale; // to do - text, gaps, and arrow heads will be scaled by this factor
 
-	HAngularDimension(const wxString &text, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, const gp_Pnt &p3, const gp_Pnt &p4, AngularDimensionTextMode text_mode, const HeeksColor* col);
-	HAngularDimension(const wxString &text, AngularDimensionTextMode text_mode, const HeeksColor* col);
+	HAngularDimension(const wxString &text, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, const gp_Pnt &p3, const gp_Pnt &p4, AngularDimensionTextMode text_mode, const HeeksColor& col);
+	HAngularDimension(const wxString &text, AngularDimensionTextMode text_mode, const HeeksColor& col);
 	HAngularDimension(const HAngularDimension &b);
 	~HAngularDimension(void);
 
@@ -47,8 +44,9 @@ public:
 	void DrawArc(gp_Pnt center, double radius, double a1, double a2);
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return AngularDimensionType;}
-	long GetMarkingMask()const{return MARKING_FILTER_DIMENSION;}
+	int GetMarkingFilter()const{return DimensionMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	bool DrawAfterOthers(){return true;}
 	void GetBox(CBox &box);
@@ -56,10 +54,7 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
-	void SetColor(const HeeksColor &col){m_color = col;}
-	const HeeksColor* GetColor()const{return &m_color;}
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void GetProperties(std::list<Property *> *list);
 	bool Stretch(const double *p, const double* shift, void* data);
 	void CopyFrom(const HeeksObj* object){operator=(*((HAngularDimension*)object));}
 	void WriteXML(TiXmlNode *root);

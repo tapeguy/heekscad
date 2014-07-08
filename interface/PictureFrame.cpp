@@ -48,7 +48,7 @@ void PictureWindow::SetPicture(const wxBitmap& b)
 
 void PictureWindow::SetPicture(wxBitmap** b, const wxString& filepath, long image_type)
 {
-	if(*b == NULL)*b = new wxBitmap(wxImage(filepath, image_type));
+	if(*b == NULL)*b = new wxBitmap(filepath, image_type);
 	SetPicture(**b);
 }
 

@@ -7,29 +7,34 @@
 #include "HLine.h"
 #include "HILine.h"
 #include "HCircle.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyInt.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyChoice.h"
-#include "../tinyxml/tinyxml.h"
-#include "../interface/PropertyVertex.h"
+#include "../interface/MarkedObject.h"
 #include "../interface/Tool.h"
+#include "../libarea/Arc.h"
+#include "../tinyxml/tinyxml.h"
 #include "Gripper.h"
 #include "Sketch.h"
 #include "Drawing.h"
 #include "DigitizeMode.h"
-#include "../interface/MarkedObject.h"
-#include "../libarea/Arc.h"
-#include "HeeksConfig.h"
 
-HArea::HArea(const HArea &a){
+HArea::HArea(const HArea &a)
+ : m_number_curves(a.m_number_curves)
+{
+	InitializeProperties();
 	operator=(a);
 }
 
-HArea::HArea(const CArea &a):m_area(a){
+HArea::HArea(const CArea &a)
+ : m_number_curves(a.m_curves.size()), m_area(a)
+{
+	InitializeProperties();
 }
 
 HArea::~HArea(){
+}
+
+void HArea::InitializeProperties()
+{
+	m_number_curves.Initialize(_("number of curves"), this);
 }
 
 const wxBitmap &HArea::GetIcon()
@@ -80,7 +85,7 @@ public:
 	// Tool's virtual functions
 	void Run(){
 		double offset_value = 2.0;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Read(_T("OffsetAreaValue"), &offset_value);
 		if(wxGetApp().InputLength(_("Enter Offset Value, + for making bigger, - for making smaller"), _("Offset value"), offset_value))
 		{
@@ -108,7 +113,7 @@ public:
 	// Tool's virtual functions
 	void Run(){
 		double offset_value = 0.3;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Read(_T("ObroundAreaValue"), &offset_value);
 		if(wxGetApp().InputLength(_("Enter Offset Value"), _("Offset value"), offset_value))
 		{
@@ -272,14 +277,14 @@ void HArea::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 }
 
 void HArea::GetProperties(std::list<Property *> *list){
-	list->push_back(new PropertyInt(_("number of curves"), this->m_area.m_curves.size(), this, NULL));
+	m_number_curves = m_area.m_curves.size();
 	HeeksObj::GetProperties(list);
 }
 
 bool HArea::Stretch(const double *p, const double* shift, void* data){
+#if 0
 	gp_Pnt vp = make_point(p);
 	gp_Vec vshift = make_vector(shift);
-#if 0
 	if(A->m_p.IsEqual(vp, wxGetApp().m_geom_tol)){
 		gp_Vec direction = -(GetSegmentVector(1.0));
 		gp_Pnt centre;

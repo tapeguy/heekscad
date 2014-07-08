@@ -8,9 +8,11 @@
 #include "wx/dc.h"
 
 #include <list>
+#include "MutableObject.h"
+#include "Property.h"
+#include "ObjTypes.h"
 
 class HeeksColor;
-class Property;
 class Tool;
 class MarkedObject;
 class TiXmlNode;
@@ -23,73 +25,6 @@ class ObjectCanvas;
 //    #define MULTIPLE_OWNERS
 #endif
 
-// NOTE: If adding to this enumeration, please also add the verbose description to the HeeksCADType() routine
-enum{
-	UnknownType,
-	DocumentType,
-	GripperType,
-	PointType,
-	LineType,
-	ArcType,
-	ILineType,
-	CircleType,
-	SketchType,
-	AreaType,
-	VertexType,
-	EdgeType,
-	FaceType,
-	LoopType,
-	SolidType,
-	StlSolidType,
-	WireType,
-	CoordinateSystemType,
-	TextType,
-	DimensionType,
-	RulerType,
-    EllipseType,
-	SplineType,
-	GroupType,
-	CorrelationToolType,
-	ConstraintType,
-	PadType,
-	PartType,
-	PocketSolidType,
-	AngularDimensionType,
-	OrientationModifierType,
-	HoleType,
-	HolePositionsType,
-	GearType,
-	ImageType,
-	XmlType,
-	ObjectMaximumType,
-};
-
-
-
-#define MARKING_FILTER_LINE					0x00000001
-#define MARKING_FILTER_ARC					0x00000002
-#define MARKING_FILTER_ILINE				0x00000004
-#define MARKING_FILTER_CIRCLE				0x00000008
-#define MARKING_FILTER_POINT				0x00000010
-#define MARKING_FILTER_SOLID				0x00000020
-#define MARKING_FILTER_STL_SOLID			0x00000040
-#define MARKING_FILTER_WIRE					0x00000080
-#define MARKING_FILTER_FACE					0x00000100
-#define MARKING_FILTER_EDGE					0x00000200
-#define MARKING_FILTER_SKETCH				0x00000400
-#define MARKING_FILTER_IMAGE				0x00000800
-#define MARKING_FILTER_COORDINATE_SYSTEM	0x00000800
-#define MARKING_FILTER_TEXT					0x00001000
-#define MARKING_FILTER_DIMENSION			0x00002000
-#define MARKING_FILTER_RULER				0x00004000
-#define MARKING_FILTER_LOOP					0x00008000
-#define MARKING_FILTER_VERTEX				0x00010000
-#define MARKING_FILTER_PAD					0x00020000
-#define MARKING_FILTER_PART					0x00040000
-#define MARKING_FILTER_POCKETSOLID			0x00080000
-#define MARKING_FILTER_GEAR					0x00100000
-#define MARKING_FILTER_AREA					0x00200000
-#define MARKING_FILTER_UNKNOWN				0x00400000
 
 #ifdef HEEKSCAD
 #define GET_ICON(X,Y) x = (X); y = (Y); texture_number = wxGetApp().m_icon_texture_number
@@ -97,7 +32,7 @@ enum{
 #define GET_ICON(X,Y) x = (X); y = (Y); texture_number = theApp.m_icon_texture_number
 #endif
 
-class HeeksObj{
+class HeeksObj : public MutableObject {
 protected:
 #ifdef MULTIPLE_OWNERS
 	std::list<HeeksObj*> m_owners;
@@ -105,23 +40,32 @@ protected:
 #else
 	HeeksObj* m_owner;
 #endif
+
 public:
 	bool m_skip_for_undo;
-	unsigned int m_id;
 	unsigned int m_layer;
-	bool m_visible;
 	bool m_preserving_id;
 	unsigned int m_index;
 
 	HeeksObj(void);
-	HeeksObj(const HeeksObj& ho);
+	HeeksObj(const HeeksObj& copy);
+
+	// Properties
+	PropertyString   m_type;
+	PropertyString   m_title;
+	PropertyInt      m_id;
+	PropertyCheck    m_visible;
+	PropertyColor    m_color;
+
 	virtual ~HeeksObj();
 
 	virtual const HeeksObj& operator=(const HeeksObj &ho);
+	virtual void OnPropertySet(Property *prop);
 
 	// virtual functions
+	virtual void InitializeProperties();
 	virtual int GetType()const{return UnknownType;}
-	virtual long GetMarkingMask()const{return MARKING_FILTER_UNKNOWN;}
+	virtual int GetMarkingFilter()const{return UnknownMarkingFilter;}
 	virtual int GetIDGroupType()const{return GetType();}
 	virtual void glCommands(bool select, bool marked, bool no_color){};
 	virtual void Draw(wxDC& dc){} // for printing
@@ -138,8 +82,8 @@ public:
 	virtual void ReloadPointers(){}
 	virtual void Disconnect(std::list<HeeksObj*>parents){}
 	virtual void CopyFrom(const HeeksObj* object){}
-	virtual void SetColor(const HeeksColor &col){}
-	virtual const HeeksColor* GetColor()const{return NULL;}
+	virtual void SetColor(const HeeksColor &col){ m_color = col; }
+	virtual const HeeksColor& GetColor()const { return m_color; }
 	virtual void ModifyByMatrix(const double *m){} // transform the object
 	virtual bool GetStartPoint(double* pos){return false;}
 	virtual bool GetEndPoint(double* pos){return false;}
@@ -147,18 +91,16 @@ public:
 	virtual int GetCentrePoints(double* pos, double* pos2){if(GetCentrePoint(pos))return 1; return 0;}
 	virtual bool GetMidPoint(double* pos){return false;}
 	virtual bool GetScaleAboutMatrix(double *m);
-	virtual void GetProperties(std::list<Property *> *list); // use GetDialog instead of this, if you have time to code one.
 	virtual ObjectCanvas* GetDialog(wxWindow* parent){return NULL;} // returns a window for editing the values of this object.
 	virtual void GetOnEdit(bool(**callback)(HeeksObj*)){} // returns a function for doing edit with a dialog
 	bool Edit(){ bool(*fn)(HeeksObj*) = NULL; GetOnEdit(&fn); if(fn)return (*fn)(this); else return false;}  // do edit with a dialog
-	virtual void OnApplyProperties(){}
-	virtual bool ValidateProperties(){return true;}
 	virtual const wxBitmap &GetIcon();
 	virtual int Intersects(const HeeksObj *object, std::list< double > *rl)const{return 0;}
 	virtual bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point){return false;}
 	virtual bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point){return false;}
 	virtual void GetTools(std::list<Tool*>* t_list, const wxPoint* p){}
 	virtual void GetGripperPositionsTransformed(std::list<GripData> *list, bool just_for_endof);
+	virtual void GetProperties(std::list<Property *> *list);
 	virtual bool Stretch(const double *p, const double* shift, void* data){return false;} // return true, if undo stretch is done with Add and Delete
 	virtual bool StretchTemporary(const double *p, const double* shift, void* data){Stretch(p, shift, data); return true;} // returns true, because Stretch was done.  If not done, then override and return false;
 	virtual bool StretchTemporaryTransformed(const double *p, const double* shift, void* data);
@@ -195,9 +137,11 @@ public:
 #endif
 	virtual void WriteBaseXML(TiXmlElement *element);
 	virtual void ReadBaseXML(TiXmlElement* element);
-	void SetID(int id);
-	virtual unsigned int GetID(){return m_id;}
-	virtual bool UsesID(){return true;}
+	virtual void SetID(int id) { m_id = id; }
+	virtual unsigned int GetID() { int id = m_id; return id; }
+	virtual void OnSetID(int id);
+	virtual bool UsesID() { return true; }
+	virtual bool UsesColor() { return true; }
 	bool OnVisibleLayer();
 	HeeksObj* Owner();
 	virtual void SetOwner(HeeksObj*);

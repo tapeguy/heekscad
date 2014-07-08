@@ -7,18 +7,23 @@
 #include "Sketch.h"
 #include "HLine.h"
 #include "HArc.h"
-#include "../interface/PropertyChoice.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyInt.h"
 #include "HeeksFrame.h"
 #include "InputModeCanvas.h"
 
+// Singleton instance
 DimensionDrawing dimension_drawing;
 
-DimensionDrawing::DimensionDrawing(void)
+
+DimensionDrawing::DimensionDrawing(void) :
+ m_mode( _("mode"), (int)TwoPointsDimensionMode, this)
 {
+	m_mode.m_choices.push_back ( wxString ( _("between two points") ) );
+	m_mode.m_choices.push_back ( wxString ( _("between two points, XY only") ) );
+	m_mode.m_choices.push_back ( wxString ( _("between two points, X only") ) );
+	m_mode.m_choices.push_back ( wxString ( _("between two points, Y only") ) );
+	m_mode.m_choices.push_back ( wxString ( _("between two points, Z only") ) );
+	m_mode.m_choices.push_back ( wxString ( _("orthogonal") ) );
 	temp_object = NULL;
-	m_mode = TwoPointsDimensionMode;
 }
 
 DimensionDrawing::~DimensionDrawing(void)
@@ -39,7 +44,9 @@ bool DimensionDrawing::calculate_item(DigitizedPoint &end)
 
 	// make sure dimension exists
 	if(!temp_object){
-		temp_object = new HDimension(mat, gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), m_mode, DimensionUnitsGlobal, &(wxGetApp().current_color));
+		int mode = m_mode;
+		temp_object = new HDimension(mat, gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0),
+		                             (DimensionMode)mode, DimensionUnitsGlobal, wxGetApp().CurrentColor());
 		if(temp_object)temp_object_in_list.push_back(temp_object);
 	}
 
@@ -79,14 +86,6 @@ void DimensionDrawing::clear_drawing_objects(int mode)
 	temp_object_in_list.clear();
 }
 
-static DimensionDrawing* DimensionDrawing_for_GetProperties = NULL;
-
-static void on_set_mode(int value, HeeksObj* object)
-{
-	DimensionDrawing_for_GetProperties->m_mode = (DimensionMode)value;
-	wxGetApp().Repaint();
-}
-
 void DimensionDrawing::StartOnStep3(HDimension* object)
 {
 	wxGetApp().SetInputMode(this);
@@ -97,21 +96,6 @@ void DimensionDrawing::StartOnStep3(HDimension* object)
 	current_view_stuff->start_pos.m_point = object->B->m_p;
 
 	m_mode = object->m_mode;
-}
-
-void DimensionDrawing::GetProperties(std::list<Property *> *list){
-	// add drawing mode
-	std::list< wxString > choices;
-	choices.push_back ( wxString ( _("between two points") ) );
-	choices.push_back ( wxString ( _("between two points, XY only") ) );
-	choices.push_back ( wxString ( _("between two points, X only") ) );
-	choices.push_back ( wxString ( _("between two points, Y only") ) );
-	choices.push_back ( wxString ( _("between two points, Z only") ) );
-	choices.push_back ( wxString ( _("orthogonal") ) );
-	DimensionDrawing_for_GetProperties = this;
-	list->push_back ( new PropertyChoice ( _("mode"),  choices, m_mode, NULL, on_set_mode ) );
-
-	Drawing::GetProperties(list);
 }
 
 void DimensionDrawing::GetTools(std::list<Tool*> *f_list, const wxPoint *p){

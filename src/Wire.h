@@ -10,7 +10,7 @@ public:
 	~CWire();
 
 	int GetType()const{return WireType;}
-	long GetMarkingMask()const{return MARKING_FILTER_WIRE;}
+	int GetMarkingFilter()const{return WireMarkingFilter;}
 	const wxChar* GetTypeString(void)const{return _("Wire");}
 	HeeksObj *MakeACopy(void)const{ return new CWire(*this);}
 	const wxBitmap &GetIcon();
@@ -19,4 +19,3 @@ public:
 	const TopoDS_Wire &Wire()const;
 	static HeeksObj *Sketch( const TopoDS_Wire & wire );
 };
-

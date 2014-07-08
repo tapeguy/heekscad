@@ -42,7 +42,7 @@ bool GripperSelTransform::OnGripperGrabbed(const std::list<HeeksObj*>& list, boo
 		for(It = list.begin(); It != list.end(); It++){
 			HeeksObj* object = *It;
 			if(object->m_visible)wxGetApp().m_hidden_for_drag.push_back(object);
-			object->m_visible = false;
+			object->m_visible.SetValue(false);
 		}
 	}
 	return true;
@@ -159,7 +159,7 @@ void GripperSelTransform::OnGripperReleased ( const double* from, const double* 
 		for(std::list<HeeksObj*>::iterator It = wxGetApp().m_hidden_for_drag.begin(); It != wxGetApp().m_hidden_for_drag.end(); It++)
 		{
 			HeeksObj* object = *It;
-			object->m_visible = true;
+			object->m_visible.SetValue(true);
 		}
 		wxGetApp().m_hidden_for_drag.clear();
 	}

@@ -4,10 +4,6 @@
 
 #include "stdafx.h"
 #include "HeeksObj.h"
-#include "PropertyString.h"
-#include "PropertyInt.h"
-#include "PropertyColor.h"
-#include "PropertyCheck.h"
 #ifdef HEEKSCAD
 #include "../tinyxml/tinyxml.h"
 #include "ObjList.h"
@@ -21,23 +17,65 @@
 #include "GripData.h"
 #endif
 
-HeeksObj::HeeksObj(void): m_skip_for_undo(false), m_id(0), m_layer(0), m_visible(true), m_preserving_id(false), m_index(0)
-#ifndef MULTIPLE_OWNERS
-, m_owner(NULL)
-#endif
-{}
 
-HeeksObj::HeeksObj(const HeeksObj& ho): m_skip_for_undo(false), m_id(0), m_layer(0), m_visible(true),m_preserving_id(false), m_index(0)
+HeeksObj::HeeksObj(void):
 #ifndef MULTIPLE_OWNERS
-, m_owner(NULL)
+  m_owner(NULL),
 #endif
-{operator=(ho);}
+  m_skip_for_undo(false)
+, m_layer(0)
+, m_preserving_id(false)
+, m_index(0)
+, m_type(GetTypeString())
+, m_title(GetShortString())
+, m_id(0)
+, m_visible(true)
+{
+	InitializeProperties();
+}
+
+HeeksObj::HeeksObj(const HeeksObj& ho):
+#ifndef MULTIPLE_OWNERS
+  m_owner(NULL),
+#endif
+  m_skip_for_undo(false)
+, m_layer(0)
+, m_preserving_id(false)
+, m_index(0)
+, m_id(0)
+{
+	InitializeProperties();
+	operator=(ho);
+}
+
+void HeeksObj::InitializeProperties()
+{
+	m_type.Initialize(_("object type"), this);
+	m_type.SetReadOnly(true);
+	m_title.Initialize(_("object title"), this);
+	m_id.Initialize(_("ID"), this);
+	m_visible.Initialize(_("visible"), this);
+	m_color.Initialize(_("color"), this);
+}
+
+void HeeksObj::OnPropertySet(Property *prop)
+{
+	if(prop == &m_title) {
+		OnEditString(m_title);
+	}
+	else if(prop == &m_id) {
+		OnSetID(m_id);
+	}
+}
 
 const HeeksObj& HeeksObj::operator=(const HeeksObj &ho)
 {
 	// don't copy the ID or the owner
 	m_layer = ho.m_layer;
+	m_type = ho.m_type;
+	m_title = ho.m_title;
 	m_visible = ho.m_visible;
+	m_color = ho.m_color;
 	m_skip_for_undo = ho.m_skip_for_undo;
 
 	if(ho.m_preserving_id)
@@ -73,40 +111,6 @@ HeeksObj* HeeksObj::MakeACopyWithID()
 	return ret;
 }
 
-void on_edit_string(const wxChar* value, HeeksObj* object)
-{
-	object->OnEditString(value);
-}
-
-static void on_set_color(HeeksColor value, HeeksObj* object)
-{
-	object->SetColor(value);
-
-
-#ifdef HEEKSCAD
-	wxGetApp().m_frame->m_properties->OnApply2();
-	wxGetApp().Repaint();
-#else
-	heeksCAD->PropertiesOnApply2();
-	heeksCAD->Repaint();
-#endif
-}
-
-static void on_set_id(int value, HeeksObj* object)
-{
-	object->SetID(value);
-}
-
-static void on_set_visible(bool value, HeeksObj* object)
-{
-	object->m_visible = value;
-#ifdef HEEKSCAD
-	wxGetApp().Repaint();
-#else
-	heeksCAD->Repaint();
-#endif
-}
-
 const wxBitmap &HeeksObj::GetIcon()
 {
 	static wxBitmap* icon = NULL;
@@ -116,20 +120,6 @@ const wxBitmap &HeeksObj::GetIcon()
 	if(icon == NULL)icon = new wxBitmap(wxImage(heeksCAD->GetResFolder() + _T("/icons/unknown.png")));
 #endif
 	return *icon;
-}
-
-void HeeksObj::GetProperties(std::list<Property *> *list)
-{
-	bool editable = CanEditString();
-	list->push_back(new PropertyString(_("object type"), GetTypeString(), NULL));
-	if(GetShortString())list->push_back(new PropertyString(_("object title"), GetShortString(), this, editable ? on_edit_string : NULL));
-	if(UsesID())list->push_back(new PropertyInt(_("ID"), m_id, this, on_set_id));
-	const HeeksColor* c = GetColor();
-	if(c)
-	{
-		list->push_back ( new PropertyColor ( _("color"),  *c, this, on_set_color ) );
-	}
-	list->push_back(new PropertyCheck(_("visible"), m_visible, this, on_set_visible));
 }
 
 bool HeeksObj::GetScaleAboutMatrix(double *m)
@@ -250,6 +240,14 @@ void HeeksObj::GetGripperPositions(std::list<GripData> *list, bool just_for_endo
 //#endif
 }
 
+void HeeksObj::GetProperties(std::list<Property *> *list)
+{
+	m_type = GetTypeString();
+	if (!UsesID()) m_id.SetVisible(false);
+	if (!UsesColor()) m_color.SetVisible(false);
+	MutableObject::GetProperties(list);
+}
+
 bool HeeksObj::Add(HeeksObj* object, HeeksObj* prev_object)
 {
 #ifdef MULTIPLE_OWNERS
@@ -270,7 +268,7 @@ void HeeksObj::OnRemove()
 #endif
 }
 
-void HeeksObj::SetID(int id)
+void HeeksObj::OnSetID(int id)
 {
 #ifdef HEEKSCAD
 	wxGetApp().SetObjectID(this, id);
@@ -440,7 +438,8 @@ void HeeksObj::RemoveOwner()
 
 HeeksObj *HeeksObj::Find( const int type, const unsigned int id )
 {
-	if ((type == this->GetType()) && (this->m_id == id)) return(this);
+	if ((type == this->GetType()) && (id == this->GetID()))
+		return(this);
 	return(NULL);
 }
 
@@ -453,7 +452,7 @@ void HeeksObj::ToString(char *str, unsigned int* rlen, unsigned int len)
 	unsigned int printed;
 	*rlen = 0;
 
-	printed = snprintf(str,len,"ID: 0x%X, Type: 0x%X, MarkingMask: 0x%X, IDGroup: 0x%X\n",GetID(),GetType(),(unsigned int)GetMarkingMask(),GetIDGroupType());
+	printed = snprintf(str,len,"ID: 0x%X, Type: 0x%X, MarkingFilter: 0x%X, IDGroup: 0x%X\n",GetID(),GetType(),(unsigned int)GetMarkingFilter(),GetIDGroupType());
 	if(printed >= len)
 		goto abort;
 	*rlen += printed; len -= printed;

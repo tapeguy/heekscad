@@ -33,17 +33,21 @@ class HRuler: public HeeksObj{
 
 public:
 	gp_Trsf m_trsf; // position and orientation ( no scaling allowed )
-	bool m_use_view_units;
+	PropertyCheck m_use_view_units;
+	PropertyChoice m_units_choice;
 	double m_units; // used, if m_use_view_units == false; 1.0 for mm, 25.4 for inches
-	double m_width; // in mm
-	double m_length;// in mm
-	double m_empty_length; // space at each end in mm
+	PropertyLength m_width; // in mm
+	PropertyLength m_length;// in mm
+	PropertyLength m_empty_length; // space at each end in mm
 
 	HRuler();
+	HRuler(const HRuler& copy);
+	HRuler& operator= ( const HRuler& copy );
 
 	// HeeksObj's virtual functions
+	void InitializeProperties();
 	int GetType()const{return RulerType;}
-	long GetMarkingMask()const{return MARKING_FILTER_RULER;}
+	int GetMarkingFilter()const{return RulerMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void KillGLLists(void);
 	void GetBox(CBox &box);
@@ -51,6 +55,7 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
+	void OnPropertyEdit(Property *prop);
 	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	bool GetScaleAboutMatrix(double *m);

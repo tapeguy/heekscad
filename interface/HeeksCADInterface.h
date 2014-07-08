@@ -30,7 +30,6 @@ class TransientObject;
 class Plugin;
 class CoordinateSystem;
 
-
 #include "SketchOrder.h"
 
 class TopoDS_Shape;
@@ -88,15 +87,16 @@ public:
 	virtual void Mark(HeeksObj* object);
 	virtual void Unmark(HeeksObj* object);
 	virtual bool ObjectMarked(HeeksObj* object);
-	virtual void SetMarkingFilter(long filter);
-	virtual long GetMarkingFilter();
+	virtual void SetMarkingFilter(int filter);
+	virtual void UnsetMarkingFilter(int filter);
+	virtual bool GetMarkingFilter(int filter);
 	virtual void ClearMarkedList();
 	virtual CInputMode* GetSelectMode();
 	virtual void SetLineDrawingMode();
 	virtual void SetInputMode(CInputMode* input_mode);
 	virtual bool EndSketchMode();
 	virtual void EnterSketchMode(HeeksObj* sketch);
-	virtual int PickObjects(const wxChar* str, long marking_filter = -1, bool m_just_one = false);
+	virtual int PickObjects(const wxChar* str, const std::set<MarkingFilter>& marking_filter = std::set<MarkingFilter>(), bool m_just_one = false);
 	virtual bool PickPosition(const wxChar* str, double* pos);
 	virtual bool Digitize(const wxPoint &point, double* pos);
 	virtual bool GetLastClickPosition(double *pos);
@@ -297,7 +297,6 @@ public:
 	virtual void RemoveLogWindow();
 	virtual void RemoveObjectsWindow();
 	virtual void RemoveInputWindow();
-	virtual void PropertiesOnApply2();// don't need to press tick to make changes
 	virtual void AddToAboutBox(const wxChar* str);
 	virtual void SetDefaultLayout(const wxString& str);
 	virtual HeeksObj* NewSTLSolid();

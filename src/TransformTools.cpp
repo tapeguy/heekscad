@@ -10,7 +10,6 @@
 #include "MarkedList.h"
 #include "HLine.h"
 #include "HILine.h"
-#include "HeeksConfig.h"
 
 static double from[3];
 static double centre[3];
@@ -43,7 +42,7 @@ void TransformTools::Translate(bool copy)
 	if(wxGetApp().m_marked_list->size() == 0)return;
 
 	// get number of copies
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	int ncopies;
 	config.Read(_T("TranslateNumCopies"), &ncopies, 1);
 	if(copy)
@@ -140,7 +139,7 @@ void TransformTools::Rotate(bool copy)
 	if(wxGetApp().m_marked_list->size() == 0)return;
 
 	// get number of copies
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	int ncopies;
 	config.Read(_T("RotateNumCopies"), &ncopies, 1);
 	if(copy)
@@ -247,9 +246,9 @@ void TransformTools::Mirror(bool copy)
 	// pick a line to mirror about
 	bool line_found = false;
 	gp_Lin line;
-	int save_filter = wxGetApp().m_marked_list->m_filter;
-	wxGetApp().PickObjects(_("Pick line to mirror about"), MARKING_FILTER_LINE | MARKING_FILTER_ILINE, true);
-	wxGetApp().m_marked_list->m_filter = save_filter;
+	MarkingFilter line_filters[] = { LineMarkingFilter, ILineMarkingFilter };
+	std::set<MarkingFilter> filterset (line_filters, line_filters + sizeof(line_filters) / sizeof(MarkingFilter));
+	wxGetApp().PickObjects(_("Pick line to mirror about"), filterset, true);
 	for(std::list<HeeksObj *>::const_iterator It = wxGetApp().m_marked_list->list().begin(); It != wxGetApp().m_marked_list->list().end(); It++)
 	{
 		HeeksObj* object = *It;
@@ -300,8 +299,8 @@ void TransformTools::Scale(bool copy)
 	if(wxGetApp().m_marked_list->size() == 0)return;
 
 	// get number of copies
+	HeeksConfig& config = wxGetApp().GetConfig();
 	int ncopies;
-	HeeksConfig config;
 	config.Read(_T("ScaleNumCopies"), &ncopies, 1);
 	if(copy)
 	{

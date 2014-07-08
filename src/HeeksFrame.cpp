@@ -34,7 +34,6 @@
 #include "HeeksPrintout.h"
 #include "../interface/HeeksCADInterface.h"
 #include "Plugins.h"
-#include "HeeksConfig.h"
 #include "AboutBox.h"
 #include "HSpline.h"
 #include "../interface/Plugin.h"
@@ -90,9 +89,9 @@ static wxString default_layout_string = _T("layout2|name=Graphics;caption=Graphi
 
 CHeeksCADInterface heekscad_interface;
 
-int CHeeksFrame::m_loglevel;
-bool CHeeksFrame::m_logrepeatcounts;
-bool CHeeksFrame::m_logtimestamps;
+PropertyChoice CHeeksFrame::m_loglevel;
+PropertyCheck CHeeksFrame::m_logrepeatcounts;
+PropertyCheck CHeeksFrame::m_logtimestamps;
 
 CHeeksFrame::CHeeksFrame( const wxString& title, const wxPoint& pos, const wxSize& size )
 	: wxFrame((wxWindow *)NULL, -1, title, pos, size)
@@ -101,10 +100,10 @@ CHeeksFrame::CHeeksFrame( const wxString& title, const wxPoint& pos, const wxSiz
 
 	m_logger = new wxLogWindow(NULL,_("Trace Log"),false,false); // disable log popups
 	wxLog::SetActiveTarget(m_logger);
-	HeeksConfig config;
-	config.Read(_T("LogLevel"), &m_loglevel);
-	config.Read(_T("LogRepeatCounting"), &m_logrepeatcounts);
-	config.Read(_T("LogTimestamps"), &m_logtimestamps);
+	HeeksConfig& config = wxGetApp().GetConfig();
+	config.Read(_T("LogLevel"), m_loglevel);
+	config.Read(_T("LogRepeatCounting"), m_logrepeatcounts);
+	config.Read(_T("LogTimestamps"), m_logtimestamps);
 
 	SetLogLevel(m_loglevel);
 	SetLogRepeatCounting(m_logrepeatcounts);
@@ -234,7 +233,7 @@ CHeeksFrame::~CHeeksFrame()
 	}
 #endif
 
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	config.Write(_T("AuiPerspective"), str);
 	config.Write(_T("ToolImageSize"), ToolImage::GetBitmapSize());
 	config.Write(_T("Perspective"), m_graphics->m_view_point.GetPerspective());
@@ -249,7 +248,7 @@ void CHeeksFrame::SetLogLevel(const int level){
 	wxLog::SetLogLevel(level);
 	if (m_loglevel != level) {
 		m_loglevel = level;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Write(_T("LogLevel"), m_loglevel);
 	}
 }
@@ -258,7 +257,7 @@ void CHeeksFrame::SetLogRepeatCounting(const bool repeatcounting) {
 	wxLog::SetRepetitionCounting ((bool) repeatcounting);
 	if (m_logrepeatcounts != repeatcounting) {
 		m_logrepeatcounts = repeatcounting;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Write(_T("LogRepeatCounting"), m_logrepeatcounts);
 	}
 }
@@ -266,7 +265,7 @@ void CHeeksFrame::SetLogRepeatCounting(const bool repeatcounting) {
 void CHeeksFrame::SetLogLogTimestamps(const bool uselogtimestamps) {
 	if (uselogtimestamps != m_logtimestamps)  {
 		m_logtimestamps = uselogtimestamps;
-		HeeksConfig config;
+		HeeksConfig& config = wxGetApp().GetConfig();
 		config.Write(_T("LogTimestamps"), m_logtimestamps);
 	}
 	if (m_logtimestamps)  {
@@ -279,19 +278,19 @@ void CHeeksFrame::SetLogLogTimestamps(const bool uselogtimestamps) {
 void CHeeksFrame::RefreshInputCanvas()
 {
 	if(wxGetApp().m_frame && wxGetApp().m_frame->m_input_canvas)
-		wxGetApp().m_frame->m_input_canvas->RefreshByRemovingAndAddingAll();
+		wxGetApp().m_frame->m_input_canvas->RefreshProperties();
 }
 
 void CHeeksFrame::RefreshProperties()
 {
 	if(wxGetApp().m_frame && wxGetApp().m_frame->m_properties)
-		wxGetApp().m_frame->m_properties->RefreshByRemovingAndAddingAll();
+		wxGetApp().m_frame->m_properties->RefreshProperties();
 }
 
 void CHeeksFrame::RefreshOptions()
 {
 	if(wxGetApp().m_frame && wxGetApp().m_frame->m_options)
-		wxGetApp().m_frame->m_options->RefreshByRemovingAndAddingAll();
+		wxGetApp().m_frame->m_options->RefreshProperties();
 }
 
 void CHeeksFrame::OnKeyDown(wxKeyEvent& event)
@@ -542,15 +541,15 @@ static void OnUpdateViewProperties( wxUpdateUIEvent& event )
 
 static void OnSelectModeButton( wxCommandEvent& WXUNUSED( event ) )
 {
-	wxGetApp().m_marked_list->m_filter = -1;
+	wxGetApp().m_marked_list->SetFilters( MarkedList::all_filters );
 	wxGetApp().SetInputMode((CInputMode*)(wxGetApp().m_select_mode));
 }
 
 static void OnLinesButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	wxGetApp().CreateUndoPoint();
-	line_strip.drawing_mode = LineDrawingMode;
-	wxGetApp().SetInputMode(&line_strip);
+	wxGetApp().m_line_strip.drawing_mode = LineDrawingMode;
+	wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
 	wxGetApp().Changed();
 }
 
@@ -558,8 +557,8 @@ static void OnLinesButton( wxCommandEvent& WXUNUSED( event ) )
 static void OnEllipseButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	wxGetApp().CreateUndoPoint();
-	line_strip.drawing_mode = EllipseDrawingMode;
-	wxGetApp().SetInputMode(&line_strip);
+	wxGetApp().m_line_strip.drawing_mode = EllipseDrawingMode;
+	wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
 	wxGetApp().Changed();
 }
 static void OnPointsButton( wxCommandEvent& WXUNUSED( event ) )
@@ -582,7 +581,7 @@ static void OnSplinePointsButton( wxCommandEvent& WXUNUSED( event ) )
 			points.push_back(((HPoint*)object)->m_p);
 		}
 	}
-	HSpline* new_object = new HSpline(points, &wxGetApp().current_color);
+	HSpline* new_object = new HSpline(points, wxGetApp().CurrentColor());
 	wxGetApp().Add(new_object, NULL);
 	wxGetApp().Changed();
 }
@@ -590,31 +589,31 @@ static void OnSplinePointsButton( wxCommandEvent& WXUNUSED( event ) )
 static void OnRectanglesButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	wxGetApp().CreateUndoPoint();
-	regular_shapes_drawing.m_mode = RectanglesRegularShapeMode;
-	wxGetApp().SetInputMode(&regular_shapes_drawing);
+	wxGetApp().m_regular_shapes_drawing.m_drawing_mode = RectanglesRegularShapeMode;
+	wxGetApp().SetInputMode(&(wxGetApp().m_regular_shapes_drawing));
 	wxGetApp().Changed();
 }
 
 static void OnObroundsButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	wxGetApp().CreateUndoPoint();
-	regular_shapes_drawing.m_mode = ObroundRegularShapeMode;
-	wxGetApp().SetInputMode(&regular_shapes_drawing);
+	wxGetApp().m_regular_shapes_drawing.m_drawing_mode = ObroundRegularShapeMode;
+	wxGetApp().SetInputMode(&(wxGetApp().m_regular_shapes_drawing));
 	wxGetApp().Changed();
 }
 
 static void OnPolygonsButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	wxGetApp().CreateUndoPoint();
-	regular_shapes_drawing.m_mode = PolygonsRegularShapeMode;
-	wxGetApp().SetInputMode(&regular_shapes_drawing);
+	wxGetApp().m_regular_shapes_drawing.m_drawing_mode = PolygonsRegularShapeMode;
+	wxGetApp().SetInputMode(&(wxGetApp().m_regular_shapes_drawing));
 	wxGetApp().Changed();
 }
 
 static void OnTextButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	gp_Trsf mat = wxGetApp().GetDrawMatrix(true);
-	HText* new_object = new HText(mat, _T("text"), &(wxGetApp().current_color), wxGetApp().m_pVectorFont );
+	HText* new_object = new HText(mat, _T("text"), wxGetApp().CurrentColor(), wxGetApp().m_pVectorFont );
 	wxGetApp().CreateUndoPoint();
 	wxGetApp().Add(new_object, NULL);
 	wxGetApp().m_marked_list->Clear(true);
@@ -671,30 +670,30 @@ static void OnCircles3pButton( wxCommandEvent& WXUNUSED( event ) )
     else
     {
         wxGetApp().CreateUndoPoint();
-        line_strip.drawing_mode = CircleDrawingMode;
-        line_strip.circle_mode = ThreePointsCircleMode;
-        wxGetApp().SetInputMode(&line_strip);
+        wxGetApp().m_line_strip.drawing_mode = CircleDrawingMode;
+        wxGetApp().m_line_strip.circle_mode = ThreePointsCircleMode;
+        wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
     }
 }
 
 static void OnCircles2pButton( wxCommandEvent& WXUNUSED( event ) )
 {
-	line_strip.drawing_mode = CircleDrawingMode;
-	line_strip.circle_mode = CentreAndPointCircleMode;
-	wxGetApp().SetInputMode(&line_strip);
+	wxGetApp().m_line_strip.drawing_mode = CircleDrawingMode;
+	wxGetApp().m_line_strip.circle_mode = CentreAndPointCircleMode;
+        wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
 }
 
 static void OnCirclesprButton( wxCommandEvent& WXUNUSED( event ) )
 {
-	line_strip.drawing_mode = CircleDrawingMode;
-	line_strip.circle_mode = CentreAndRadiusCircleMode;
-	wxGetApp().SetInputMode(&line_strip);
+	wxGetApp().m_line_strip.drawing_mode = CircleDrawingMode;
+	wxGetApp().m_line_strip.circle_mode = CentreAndRadiusCircleMode;
+        wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
 }
 
 static void OnILineButton( wxCommandEvent& WXUNUSED( event ) )
 {
-	line_strip.drawing_mode = ILineDrawingMode;
-	wxGetApp().SetInputMode(&line_strip);
+	wxGetApp().m_line_strip.drawing_mode = ILineDrawingMode;
+        wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
 }
 
 static void OnCoordinateSystem( wxCommandEvent& WXUNUSED( event ) )
@@ -886,7 +885,7 @@ static void OnFilletButton( wxCommandEvent& event )
 {
 	if(!wxGetApp().CheckForNOrMore(wxGetApp().m_marked_list->list(), 1, EdgeType, _("Pick one or more edges to add a fillet to"), _("Edge Fillet")))return;
 	double rad = 2.0;
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	config.Read(_T("EdgeBlendRadius"), &rad);
 	if(wxGetApp().InputLength(_("Enter Blend Radius"), _("Radius"), rad))
 	{
@@ -902,7 +901,7 @@ static void OnChamferButton( wxCommandEvent& event )
 {
 	if(!wxGetApp().CheckForNOrMore(wxGetApp().m_marked_list->list(), 1, EdgeType, _("Pick one or more edges to add a chamfer to"), _("Edge Chamfer")))return;
 	double rad = 2.0;
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	config.Read(_T("EdgeChamferDist"), &rad);
 	if(wxGetApp().InputLength(_("Enter chamfer distance"), _("Distance"), rad))
 	{
@@ -1177,7 +1176,7 @@ void CHeeksFrame::OnSize( wxSizeEvent& evt )
 	wxSize size = evt.GetSize();
 	int width = size.GetWidth();
 	int height = size.GetHeight();
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	config.Write(_T("MainFrameWidth"), width);
 	config.Write(_T("MainFrameHeight"), height);
 
@@ -1194,7 +1193,7 @@ void CHeeksFrame::OnMove( wxMoveEvent& evt )
 	wxPoint pos = GetPosition();
 	int posx = pos.x;
 	int posy = pos.y;
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	config.Write(_T("MainFramePosX"), posx);
 	config.Write(_T("MainFramePosY"), posy);
 }
@@ -1296,7 +1295,7 @@ class ToolBarPopup: public wxPopupTransientWindow
 {
 public:
 	wxToolBar *m_toolBar;
-    PanelForToolBar *m_panel;
+	PanelForToolBar *m_panel;
 
 public:
 	ToolBarPopup( wxWindow *parent, const CFlyOutList &flyout_list):wxPopupTransientWindow( parent )
@@ -1345,10 +1344,6 @@ public:
 		topSizer->Fit(m_panel);
 		topSizer->Fit(this);
 	}
-
-private:
-    wxButton *m_button;
-    wxStaticText *m_mouseText;
 };
 
 class CFlyOutButton: public wxBitmapButton
@@ -1388,7 +1383,6 @@ public:
 		m_toolbarPopup = new ToolBarPopup( this, m_flyout_list );
 		wxWindow *btn = (wxWindow*) event.GetEventObject();
 		wxPoint pos = btn->ClientToScreen( wxPoint(0,0) );
-		wxSize sz = btn->GetSize();
 #ifdef WIN32
 		m_toolbarPopup->Move(pos.x - FLYOUT_PANEL_BORDER, pos.y - 3 - FLYOUT_PANEL_BORDER);
 #else
@@ -2006,7 +2000,7 @@ const CFlyOutItem* CFlyOutList::GetMainItem()const
 	const CFlyOutItem &first_fo = m_list.front();
 
 	wxString config_string = GetFlyoutConfigString(m_title) + _T("ActiveTool");
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	wxString active_tool_str;
 	config.Read(config_string, &active_tool_str, first_fo.m_title);
 
@@ -2027,7 +2021,7 @@ const CFlyOutItem* CFlyOutList::GetMainItem()const
 void CFlyOutList::SetMainItem(const CFlyOutItem* item)
 {
 	wxString config_string = GetFlyoutConfigString(m_title) + _T("ActiveTool");
-	HeeksConfig config;
+	HeeksConfig& config = wxGetApp().GetConfig();
 	wxString active_tool_str = item->m_title;
 	config.Write(config_string, active_tool_str);
 }

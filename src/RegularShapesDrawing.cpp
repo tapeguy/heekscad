@@ -7,19 +7,15 @@
 #include "Sketch.h"
 #include "HLine.h"
 #include "HArc.h"
-#include "../interface/PropertyChoice.h"
-#include "../interface/PropertyDouble.h"
-#include "../interface/PropertyLength.h"
-#include "../interface/PropertyInt.h"
 #include "HeeksFrame.h"
 #include "InputModeCanvas.h"
 
-RegularShapesDrawing regular_shapes_drawing;
 
 RegularShapesDrawing::RegularShapesDrawing(void)
 {
+	InitializeProperties();
 	temp_object = NULL;
-	m_mode = RectanglesRegularShapeMode;
+	m_drawing_mode = RectanglesRegularShapeMode;
 	m_number_of_side_for_polygon = 6;
 	m_rect_radius = 0.0;
 	m_obround_radius = 2.0;
@@ -27,6 +23,23 @@ RegularShapesDrawing::RegularShapesDrawing(void)
 
 RegularShapesDrawing::~RegularShapesDrawing(void)
 {
+}
+
+void RegularShapesDrawing::InitializeProperties()
+{
+	m_drawing_mode.Initialize(_("drawing mode"), this);
+	m_drawing_mode.m_choices.push_back ( wxString ( _("draw rectangles") ) );
+	m_drawing_mode.m_choices.push_back ( wxString ( _("draw polygons") ) );
+	m_drawing_mode.m_choices.push_back ( wxString ( _("draw slots") ) );
+
+	m_polygon_mode.Initialize(_("polygon mode"), this);
+	m_polygon_mode.m_choices.push_back ( wxString ( _("excribed circle") ) );
+	m_polygon_mode.m_choices.push_back ( wxString ( _("inscribed circle") ) );
+
+	m_number_of_side_for_polygon.Initialize(_("number of sides for polygon"), this);
+
+	m_rect_radius.Initialize(_("radius"), this);
+	m_obround_radius.Initialize(_("radius"), this);
 }
 
 void RegularShapesDrawing::ClearSketch()
@@ -86,7 +99,7 @@ bool RegularShapesDrawing::calculate_item(DigitizedPoint &end)
 	}
 
 	// add ( or modify ) lines and arcs
-	switch(m_mode)
+	switch(m_drawing_mode)
 	{
 	case RectanglesRegularShapeMode:
 		CalculateRectangle(x, y, p0, p1, p2, p3, xdir, ydir, zdir);
@@ -151,7 +164,7 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 			{
 				for(int i = 0; i<2; i++)
 				{
-					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), &(wxGetApp().current_color));
+					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
 					temp_object->Add(arcs[i], NULL);
 				}
 			}
@@ -182,9 +195,9 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 			{
 				for(int i = 0; i<2; i++)
 				{
-					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), &(wxGetApp().current_color));
+					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
 					temp_object->Add(arcs[i], NULL);
-					lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), &(wxGetApp().current_color));
+					lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
 					temp_object->Add(lines[i], NULL);
 				}
 			}
@@ -233,9 +246,9 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 			{
 				for(int i = 0; i<4; i++)
 				{
-					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), &(wxGetApp().current_color));
+					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
 					temp_object->Add(arcs[i], NULL);
-					lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), &(wxGetApp().current_color));
+					lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
 					temp_object->Add(lines[i], NULL);
 				}
 			}
@@ -279,7 +292,7 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 		{
 			for(int i = 0; i<4; i++)
 			{
-				lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), &(wxGetApp().current_color));
+				lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
 				temp_object->Add(lines[i], NULL);
 			}
 		}
@@ -316,7 +329,7 @@ void RegularShapesDrawing::CalculatePolygon(const gp_Pnt& p0, const gp_Pnt& p1, 
 	{
 		for(int i = 0; i<m_number_of_side_for_polygon; i++)
 		{
-			lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), &(wxGetApp().current_color));
+			lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
 			temp_object->Add(lines[i], NULL);
 		}
 	}
@@ -326,7 +339,7 @@ void RegularShapesDrawing::CalculatePolygon(const gp_Pnt& p0, const gp_Pnt& p1, 
     double angle0;
     double angle1;
 
-    switch (p_mode)
+    switch (m_polygon_mode)
     {
         case InscribedMode:
             //inscribed circle
@@ -392,7 +405,7 @@ void RegularShapesDrawing::CalculateObround(const gp_Pnt& p0, const gp_Pnt& p1, 
 		{
 			for(int i = 0; i<2; i++)
 			{
-				arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), &(wxGetApp().current_color));
+				arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
 				temp_object->Add(arcs[i], NULL);
 			}
 		}
@@ -424,9 +437,9 @@ void RegularShapesDrawing::CalculateObround(const gp_Pnt& p0, const gp_Pnt& p1, 
 		{
 			for(int i = 0; i<2; i++)
 			{
-				arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), &(wxGetApp().current_color));
+				arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
 				temp_object->Add(arcs[i], NULL);
-				lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), &(wxGetApp().current_color));
+				lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
 				temp_object->Add(lines[i], NULL);
 			}
 		}
@@ -454,40 +467,9 @@ void RegularShapesDrawing::clear_drawing_objects(int mode)
 	temp_object_in_list.clear();
 }
 
-static RegularShapesDrawing* RegularShapesDrawing_for_GetProperties = NULL;
-
-static void on_set_drawing_mode(int value, HeeksObj* object)
-{
-	RegularShapesDrawing_for_GetProperties->m_mode = (RegularShapeMode)value;
-	RegularShapesDrawing_for_GetProperties->ClearSketch();
-	wxGetApp().m_frame->RefreshInputCanvas();
-}
-
-static void on_set_polygon_mode(int value, HeeksObj* object)
-{
-	RegularShapesDrawing_for_GetProperties->p_mode = (PolygonMode)value;
-	//RegularShapesDrawing_for_GetProperties->ClearSketch();
-	//wxGetApp().m_frame->RefreshInputCanvas();
-}
-
-static void on_set_rect_radius(double value, HeeksObj* object)
-{
-	RegularShapesDrawing_for_GetProperties->m_rect_radius = value;
-}
-
-static void on_set_obround_radius(double value, HeeksObj* object)
-{
-	RegularShapesDrawing_for_GetProperties->m_obround_radius = value;
-}
-
-static void on_set_num_sides(int value, HeeksObj* object)
-{
-	RegularShapesDrawing_for_GetProperties->m_number_of_side_for_polygon = value;
-}
-
 const wxChar* RegularShapesDrawing::GetTitle()
 {
-	switch(m_mode)
+	switch(m_drawing_mode)
 	{
 	case RectanglesRegularShapeMode:
 		return _("Rectangle drawing");
@@ -503,27 +485,26 @@ const wxChar* RegularShapesDrawing::GetTitle()
 	}
 }
 
-void RegularShapesDrawing::GetProperties(std::list<Property *> *list){
-	// add drawing mode
-	std::list< wxString > choices;
-	choices.push_back ( wxString ( _("draw rectangles") ) );
-	choices.push_back ( wxString ( _("draw polygons") ) );
-	choices.push_back ( wxString ( _("draw slots") ) );
-	RegularShapesDrawing_for_GetProperties = this;
-	list->push_back ( new PropertyChoice ( _("drawing mode"),  choices, m_mode, NULL, on_set_drawing_mode ) );
-
-
-	if(m_mode == RectanglesRegularShapeMode)list->push_back( new PropertyLength( _("radius"), m_rect_radius, NULL, on_set_rect_radius));
-	if(m_mode == ObroundRegularShapeMode)list->push_back( new PropertyLength( _("radius"), m_obround_radius, NULL, on_set_obround_radius));
-	if(m_mode == PolygonsRegularShapeMode)
+void RegularShapesDrawing::OnPropertyEdit(Property *prop)
+{
+	if (prop == &m_drawing_mode)
 	{
-        list->push_back( new PropertyInt(_("number of sides for polygon"), m_number_of_side_for_polygon, NULL, on_set_num_sides));
-
-        std::list< wxString > polygonChoices;
-            polygonChoices.push_back ( wxString ( _("excribed circle") ) );
-            polygonChoices.push_back ( wxString ( _("inscribed circle") ) );
-        list->push_back ( new PropertyChoice ( _("polygon mode"),  polygonChoices, p_mode, NULL, on_set_polygon_mode ) );
+		ClearSketch();
+		wxGetApp().m_frame->RefreshInputCanvas();
 	}
+}
+
+void RegularShapesDrawing::GetProperties(std::list<Property *> *list)
+{
+	// RectanglesRegularShapeMode
+	m_rect_radius.SetVisible(m_drawing_mode == RectanglesRegularShapeMode);
+
+	// ObroundRegularShapeMode
+	m_obround_radius.SetVisible(m_drawing_mode == ObroundRegularShapeMode);
+
+	// PolygonsRegularShapeMode
+	m_number_of_side_for_polygon.SetVisible(m_drawing_mode == PolygonsRegularShapeMode);
+	m_polygon_mode.SetVisible(m_drawing_mode == PolygonsRegularShapeMode);
 
 	Drawing::GetProperties(list);
 }

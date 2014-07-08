@@ -1,4 +1,4 @@
-// HeeksObj.h
+// MutableObject.h
 // Copyright (c) 2009, Dan Heeks
 // This program is released under the BSD license. See the file COPYING for details.
 
@@ -17,6 +17,7 @@ public:
 	MutableObject() { }
 	virtual ~MutableObject() { }
 
+	virtual void AddProperty(Property *prop) { m_properties.push_back(prop); }
 	virtual void GetProperties(std::list<Property*> *list) { list->insert(list->end(), m_properties.begin(), m_properties.end()); }
 	virtual bool ValidateProperties() { return true; }
 	virtual void InitializeProperties() { }
@@ -25,5 +26,5 @@ public:
 	virtual void OnPropertySet(Property *) { }      // Assignment via the equals operator
 	virtual void OnPropertyEdit(Property *) { }     // User edit in the GUI
 	virtual void OnPropertySelect(Property *) { }   // User select in the GUI
-	virtual void OnPropertiesApply(Property *) { }  // Apply button in GUI
+	virtual void OnPropertiesApply() { }  		// Apply button in GUI
 };

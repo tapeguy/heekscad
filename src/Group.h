@@ -12,15 +12,16 @@ class CGroup: public ObjList{
 public:
 	wxString m_title;
 	bool m_gripper_datum_set;
-	bool m_custom_grippers;
-	bool m_custom_grippers_just_one_axis;
-	gp_Pnt m_o;
-	gp_Pnt m_px;
-	gp_Pnt m_py;
-	gp_Pnt m_pz;
+	PropertyCheck m_custom_grippers;
+	PropertyCheck m_custom_grippers_just_one_axis;
+	PropertyVertex m_o;
+	PropertyVertex m_px;
+	PropertyVertex m_py;
+	PropertyVertex m_pz;
 
 	CGroup();
-
+	void InitializeProperties();
+	void OnPropertyEdit(Property *prop);
 	const wxChar* GetTypeString(void)const{return _("Group");}
 	int GetType()const{return GroupType;}
 	HeeksObj *MakeACopy(void)const{ return new CGroup(*this);}
@@ -32,7 +33,6 @@ public:
 	void OnEditString(const wxChar* str);
 	bool Stretch(const double *p, const double* shift, void* data);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	bool GetScaleAboutMatrix(double *m);
 	void ModifyByMatrix(const double *m);
