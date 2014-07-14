@@ -15,8 +15,9 @@ DimensionDrawing dimension_drawing;
 
 
 DimensionDrawing::DimensionDrawing(void) :
- m_mode( _("mode"), (int)TwoPointsDimensionMode, this)
+ m_mode( _("mode"), _("Mode"), this)
 {
+    m_mode = (int)TwoPointsDimensionMode;
 	m_mode.m_choices.push_back ( wxString ( _("between two points") ) );
 	m_mode.m_choices.push_back ( wxString ( _("between two points, XY only") ) );
 	m_mode.m_choices.push_back ( wxString ( _("between two points, X only") ) );

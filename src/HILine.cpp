@@ -107,25 +107,28 @@ void HILine::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	}
 }
 
-void HILine::OnPropertyEdit(Property *prop)
+void HILine::OnPropertyEdit(Property& prop)
 {
-        if (prop == &m_start) {
-                A->m_p = m_start;
-        }
-        else if (prop == &m_end) {
-                B->m_p = m_end;
-        }
-        else {
-                HeeksObj::OnPropertyEdit(prop);
-        }
+    if ( prop == m_start )
+    {
+        A->m_p = m_start;
+    }
+    else if ( prop == m_end )
+    {
+        B->m_p = m_end;
+    }
+    else
+    {
+        HeeksObj::OnPropertyEdit ( prop );
+    }
 }
 
 void HILine::GetProperties(std::list<Property *> *list)
 {
-        m_start = A->m_p;
-        m_end = B->m_p;
-        m_length = A->m_p.Distance(B->m_p);
-        HeeksObj::GetProperties(list);
+    m_start = A->m_p;
+    m_end = B->m_p;
+    m_length = A->m_p.Distance ( B->m_p );
+    HeeksObj::GetProperties ( list );
 }
 
 bool HILine::FindNearPoint(const double* ray_start, const double* ray_direction, double *point){

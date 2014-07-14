@@ -7,31 +7,44 @@
 #define Property_HEADER
 
 #include "HeeksColor.h"
-#include "MutableObject.h"
+#include "DomainObject.h"
 
-enum{
-	InvalidPropertyType,
-	StringPropertyType,
-	DoublePropertyType,
-	LengthPropertyType,
-	IntPropertyType,
-	VertexPropertyType,
-	VectorPropertyType,
-	ChoicePropertyType,
-	ColorPropertyType,
-	CheckPropertyType,
-	ListOfPropertyType,
-	TrsfPropertyType,
-	FilePropertyType,
-	CoordPropertyType
-};
+
+typedef enum
+{
+    PropertyInvalidType = 0,
+    PropertyStringType = 1,
+    PropertyDoubleType = 2,
+    PropertyLengthType = 3,
+    PropertyIntType = 4,
+    PropertyVertexType = 5,
+    PropertyVertex2dType = 6,
+    PropertyVectorType = 7,
+    PropertyChoiceType = 8,
+    PropertyColorType = 9,
+    PropertyCheckType = 10,
+    PropertyListType = 11,
+    PropertyTrsfType = 12,
+    PropertyFileType = 13,
+    PropertyCoordType = 14
+} PropertyType;
 
 // Abstract base class for all Properties
 //
 class Property {
+protected:
+
+    wxString m_name;
+    wxString m_title;
+    DomainObject * m_owner;
+
 public:
+
+    Property(const wxChar* name, const wxChar* title, DomainObject * owner = NULL)
+    : m_name(name), m_title(title), m_owner(owner)
+    { }
 	virtual ~Property() { }
-        virtual int GetPropertyType(){return InvalidPropertyType;}
+	virtual int GetPropertyType(){return PropertyInvalidType;}
 	virtual bool IsHighlighted() = 0;
 	virtual void SetHighlighted(bool value) = 0;
 	virtual bool IsReadOnly() = 0;
@@ -39,45 +52,61 @@ public:
 	virtual bool IsVisible() = 0;
 	virtual void SetVisible(bool value) = 0;
 	virtual bool PropertyEditable() const = 0;
-	virtual void CallSetFunction() = 0;
-	virtual void CallEditFunction() = 0;
-	virtual void CallSelectFunction() = 0;
-	virtual const wxChar* GetShortString(void)const{return _("Unknown Property");}
+    virtual void CallEditFunction() = 0;
+    virtual Property * Clone ( ) const = 0;
+
+    virtual bool operator == ( const Property& prop ) const { return this == &prop; }
+
+    void SetName(const wxChar * name) { m_name = name; }
+    const wxString& GetName() const { return m_name; }
+
+    void SetTitle(const wxChar * title) { m_title = title; }
+    const wxString& GetTitle() const { return m_title; }
+
+    void SetOwner(DomainObject * owner) { m_owner = owner; }
+    DomainObject * GetOwner() const { return m_owner; }
+
+    virtual const wxChar* GetShortString() const { return m_title.c_str(); }
+
+    friend class DomainObject;
 };
 
 
 template <class PropType>
 class PropertyTmpl : public Property {
-
 protected:
-	wxString m_title;
-	MutableObject* m_object;
+
 	PropType m_value;
 	bool m_highlighted;
 	bool m_readonly;
 	bool m_visible;
 
 public:
-	PropertyTmpl()
-          :m_title(_("")), m_object(NULL), m_highlighted(false), m_readonly(false), m_visible(false) { };
 
-	PropertyTmpl(const wxChar* title, const PropType& initial_value, MutableObject* object)
-	{ m_value = initial_value; Initialize(title, object); }
+	PropertyTmpl()
+    : Property(_(""), _("")), m_highlighted(false), m_readonly(false), m_visible(false) { };
+
+	PropertyTmpl(const wxChar* name, const wxChar* title, DomainObject* owner = NULL)
+	: Property(name, title)
+	{ Initialize(title, owner); }
 
 	virtual ~PropertyTmpl() { }
 
-	virtual void Initialize(const wxChar* title, MutableObject* object) {
-		m_title = title;
-		m_object = object;
+	virtual void Initialize(const wxChar* title, DomainObject* owner = NULL) {
+	    if (GetName ( ).IsEmpty()) {
+	        SetName ( title );
+	    }
+	    m_title = title;
 		m_highlighted = false;
 		m_readonly = false;
 		m_visible = true;
-		if(m_object)	m_object->AddProperty(this);
+		if(owner) {
+		    owner->AddProperty(this);
+		}
 	}
 
 	virtual void SetValue(const PropType& value) { m_value = value; CallSetFunction(); }
 	virtual operator const PropType&() const { return m_value; }
-	virtual void SetTitle(const wxChar * title) { m_title = title; }
 	virtual bool IsHighlighted() { return m_highlighted; }
 	virtual void SetHighlighted(bool value) { m_highlighted = value; }
 	virtual bool IsReadOnly() { return m_readonly; }
@@ -85,10 +114,19 @@ public:
 	virtual bool IsVisible() { return m_visible; }
 	virtual void SetVisible(bool value) { m_visible = value; }
 	virtual bool PropertyEditable() const { return (m_readonly == false); }
-	virtual void CallSetFunction() { if(m_object) m_object->OnPropertySet(this); }
-	virtual void CallEditFunction() { if(m_object) m_object->OnPropertyEdit(this); }
-	virtual void CallSelectFunction() { if(m_object) m_object->OnPropertySelect(this); }
-	virtual const wxChar* GetShortString() const { return m_title.c_str(); }
+	virtual void CallSetFunction()
+	{
+	    DomainObject * owner = (DomainObject *)this->GetOwner();
+	        if (owner)
+	            owner->OnPropertySet(*this);
+	}
+
+	virtual void CallEditFunction()
+    {
+	    DomainObject * owner = (DomainObject *)this->GetOwner();
+            if (owner)
+                owner->OnPropertyEdit(*this);
+    }
 };
 
 
@@ -96,10 +134,12 @@ class PropertyCheck : public PropertyTmpl<bool>{
 public:
     PropertyCheck() : PropertyTmpl<bool>() { }
     PropertyCheck(bool value) : PropertyTmpl<bool>() { m_value = value; }
-    PropertyCheck(const wxChar* t, bool initial_value, MutableObject* object) : PropertyTmpl<bool>(t, initial_value, object) { }
+    PropertyCheck(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<bool>(name, title, owner) { }
     const PropertyCheck& operator=(const PropertyCheck& value) { SetValue(value.m_value); return *this; }
-    bool IsSet() { return m_value; }
-    int GetPropertyType(){return CheckPropertyType;}
+    bool IsSet() const { return m_value; }
+    int GetPropertyType(){return PropertyCheckType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -108,10 +148,12 @@ public:
     std::list< wxString > m_choices;	// 0 is the first
     PropertyChoice() : PropertyTmpl<int>() { }
     PropertyChoice(int value) : PropertyTmpl<int>() { m_value = value; }
-    PropertyChoice(const wxChar* t, int initial_value, MutableObject* object) : PropertyTmpl<int>(t, initial_value, object) { }
+    PropertyChoice(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<int>(name, title, owner) { }
     const PropertyChoice& operator=(const PropertyChoice& value) { SetValue(value.m_value); return *this; }
     int operator=(int value) { SetValue(value); return m_value; }
-    int GetPropertyType(){return ChoicePropertyType;}
+    int GetPropertyType(){return PropertyChoiceType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -119,11 +161,13 @@ class PropertyColor : public PropertyTmpl<HeeksColor>{
 public:
     PropertyColor() : PropertyTmpl<HeeksColor>() { }
     PropertyColor(const HeeksColor& value) : PropertyTmpl<HeeksColor>() { m_value = value; }
-    PropertyColor(const wxChar* t, const HeeksColor& initial_value, MutableObject* object) : PropertyTmpl<HeeksColor>(t, initial_value, object) { }
+    PropertyColor(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<HeeksColor>(name, title, owner) { }
     const PropertyColor& operator=(const PropertyColor& value) { SetValue(value.m_value); return *this; }
     const HeeksColor& operator=(const HeeksColor& value){SetValue(value); return m_value;}
     long COLORREF_color() const { return m_value.COLORREF_color(); }
-    int GetPropertyType(){return ColorPropertyType;}
+    int GetPropertyType(){return PropertyColorType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -131,10 +175,12 @@ class PropertyDouble : public PropertyTmpl<double>{
 public:
     PropertyDouble() : PropertyTmpl<double>() { };
     PropertyDouble(double value) : PropertyTmpl<double>() { m_value = value; }
-    PropertyDouble(const wxChar* t, double initial_value, MutableObject* object) : PropertyTmpl<double>(t, initial_value, object) { }
+    PropertyDouble(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<double>(name, title, owner) { }
     const PropertyDouble& operator=(const PropertyDouble& value) { SetValue(value.m_value); return *this; }
     double operator=(double value){SetValue(value); return m_value;}
-    int GetPropertyType(){return DoublePropertyType;}
+    int GetPropertyType(){return PropertyDoubleType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -145,14 +191,16 @@ private:
 public:
     PropertyLength();
     PropertyLength(double initial_value);
-    PropertyLength(const wxChar* t, double initial_value, MutableObject* object);
+    PropertyLength(const wxChar* name, const wxChar* title, DomainObject* owner);
 
     void SetValue(const double& value);
     double operator=(double new_value);
     operator const double&() const;
 
     // Property's virtual functions
-    int GetPropertyType(){return LengthPropertyType;}
+    int GetPropertyType(){return PropertyLengthType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -160,10 +208,12 @@ class PropertyInt : public PropertyTmpl<int>{
 public:
     PropertyInt() : PropertyTmpl<int>() { }
     PropertyInt(int value) : PropertyTmpl<int>() { m_value = value; }
-    PropertyInt(const wxChar* t, int initial_value, MutableObject* object) : PropertyTmpl<int>(t, initial_value, object) { }
+    PropertyInt(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<int>(name, title, owner) { }
     const PropertyInt& operator=(const PropertyInt& value) { SetValue(value.m_value); return *this; }
     int operator=(int value) {SetValue(value); return m_value;}
-    int GetPropertyType(){return IntPropertyType;}
+    int GetPropertyType(){return PropertyIntType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -171,14 +221,14 @@ class PropertyString : public PropertyTmpl<wxString>{
 public:
     PropertyString() : PropertyTmpl<wxString>() { }
     PropertyString(const wxChar* value) : PropertyTmpl<wxString>() { m_value = value; }
-    PropertyString(const wxChar* t, const wxChar* initial_value, MutableObject* object) : PropertyTmpl<wxString>(t, initial_value, object) { }
+    PropertyString(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<wxString>(name, title, owner) { }
     const PropertyString& operator=(const PropertyString& value) { SetValue(value.m_value); return *this; }
-
     operator const wxChar *() const {return m_value;}
     const wxString& operator=(const wxString& value) {SetValue(value); return m_value;}
     const wxString& operator=(const wxChar* value) {SetValue(value); return m_value;}
-
-    int GetPropertyType() {return StringPropertyType;}
+    int GetPropertyType() {return PropertyStringType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -186,14 +236,14 @@ class PropertyFile : public PropertyString{
 public:
     PropertyFile() : PropertyString() { }
     PropertyFile(const wxChar* value) : PropertyString(value) { }
-    PropertyFile(const wxChar* t, const wxChar* initial_value, MutableObject* object) : PropertyString(t, initial_value, object) { }
+    PropertyFile(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyString(name, title, owner) { }
     const PropertyFile& operator=(const PropertyFile& value) { SetValue(value.m_value); return *this; }
-
     operator const wxChar *() const {return m_value;}
     const wxString& operator=(wxString value) {SetValue(value); return m_value;}
     const wxString& operator=(const wxChar* value) {SetValue(value); return m_value;}
-
-    int GetPropertyType(){return FilePropertyType;}
+    int GetPropertyType(){return PropertyFileType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -201,7 +251,7 @@ class PropertyVector : public PropertyTmpl<gp_Vec> {
 public:
     PropertyVector() : PropertyTmpl<gp_Vec>() { }
     PropertyVector(const gp_Vec& value) : PropertyTmpl<gp_Vec>() { m_value = value; }
-    PropertyVector(const wxChar* t, const gp_Vec& initial_value, MutableObject* object) : PropertyTmpl<gp_Vec>(t, initial_value, object) { }
+    PropertyVector(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<gp_Vec>(name, title, owner) { }
     const PropertyVector& operator=(const PropertyVector& value) { SetValue(value.m_value); return *this; }
 
     // Wrap some basic methods for convenience
@@ -217,7 +267,9 @@ public:
     double Z(const bool in_drawing_units = false) const;
     gp_XYZ XYZ() { return m_value.XYZ(); }
 
-    int GetPropertyType(){return VectorPropertyType;}
+    int GetPropertyType(){return PropertyVectorType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -225,8 +277,7 @@ class PropertyVertex : public PropertyTmpl<gp_Pnt> {
 public:
     PropertyVertex() : PropertyTmpl<gp_Pnt>() { };
     PropertyVertex(const gp_Pnt& value) : PropertyTmpl<gp_Pnt>() { m_value = value; }
-    PropertyVertex(const wxChar *t, const gp_Pnt& initial_vt, MutableObject* object) : PropertyTmpl<gp_Pnt>(t, initial_vt, object) { }
-    PropertyVertex(const wxChar *t, const double *initial_vt, MutableObject* object) : PropertyTmpl<gp_Pnt>(t, gp_Pnt(initial_vt[0], initial_vt[1], initial_vt[2]), object) { }
+    PropertyVertex(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<gp_Pnt>(name, title, owner) { }
     const PropertyVertex& operator=(const PropertyVertex& value) { SetValue(value.m_value); return *this; }
 
     // Wrap some basic methods for convenience
@@ -245,9 +296,11 @@ public:
     bool IsEqual(const gp_Pnt& other, const double tolerance) { return m_value.IsEqual(other, tolerance); }
     double Distance(const gp_Pnt& other) { return m_value.Distance(other); }
 
-    int GetPropertyType(){return VertexPropertyType;}
-
     virtual bool xyOnly()const{return false;}
+
+    int GetPropertyType(){return PropertyVertexType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -255,14 +308,17 @@ class PropertyVertex2d : public PropertyVertex{
 public:
     PropertyVertex2d() : PropertyVertex() { }
     PropertyVertex2d(const gp_Pnt& value) : PropertyVertex(value) { }
-    PropertyVertex2d(const wxChar *t, const gp_Pnt& initial_vt, MutableObject* object) : PropertyVertex(t, initial_vt, object) { }
-    PropertyVertex2d(const wxChar *t, const double *initial_vt, MutableObject* object) : PropertyVertex(t, initial_vt, object) { }
+    PropertyVertex2d(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyVertex(name, title, owner) { }
     const PropertyVertex2d& operator=(const PropertyVertex2d& value) { SetValue(value.m_value); return *this; }
 
     const gp_Pnt& operator=(const gp_Pnt& value){ SetValue(value); return m_value; }
 
     // PropertyVertex's virtual functions
     bool xyOnly()const{return true;}
+
+    int GetPropertyType(){return PropertyVertex2dType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 
@@ -270,19 +326,21 @@ class PropertyTrsf : public PropertyTmpl<gp_Trsf>{
 public:
     PropertyTrsf() : PropertyTmpl<gp_Trsf>() { }
     PropertyTrsf(const gp_Trsf& value) : PropertyTmpl<gp_Trsf>() { m_value = value; }
-    PropertyTrsf(const wxChar* t, const gp_Trsf& initial_value, MutableObject* object) : PropertyTmpl<gp_Trsf>(t, initial_value, object) { }
+    PropertyTrsf(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<gp_Trsf>(name, title, owner) { }
     const PropertyTrsf& operator=(const PropertyTrsf& value) { SetValue(value.m_value); return *this; }
 
     gp_Trsf& operator=(const gp_Trsf& value){ SetValue(value); return m_value; }
 
-    int GetPropertyType(){return TrsfPropertyType;}
+    int GetPropertyType(){return PropertyTrsfType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 class PropertyCoord : public PropertyTmpl<gp_Ax2>{
 public:
     PropertyCoord() : PropertyTmpl<gp_Ax2>() { }
     PropertyCoord(const gp_Ax2& value) : PropertyTmpl<gp_Ax2>() { m_value = value; }
-    PropertyCoord(const wxChar* t, const gp_Ax2& initial_value, MutableObject* object) : PropertyTmpl<gp_Ax2>(t, initial_value, object) { }
+    PropertyCoord(const wxChar* name, const wxChar* title, DomainObject* owner) : PropertyTmpl<gp_Ax2>(name, title, owner) { }
     const PropertyCoord& operator=(const PropertyCoord& value) { SetValue(value.m_value); return *this; }
 
     gp_Ax2& operator=(const gp_Ax2& value){ SetValue(value); return m_value; }
@@ -293,7 +351,9 @@ public:
     const gp_Pnt& Location() const { return m_value.Location(); }
     void Transform (const gp_Trsf &T) { return m_value.Transform(T); }
 
-    int GetPropertyType(){return CoordPropertyType;}
+    int GetPropertyType(){return PropertyCoordType;}
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 #endif

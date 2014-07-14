@@ -15,6 +15,7 @@ protected:
 	CBox m_box;
 	TopoDS_Shape m_shape;
 	wxLongLong m_creation_time;
+    PropertyColor m_color;
 	PropertyCheck m_calc_volume;
 	PropertyDouble m_opacity;
 	PropertyDouble m_volume;
@@ -28,6 +29,7 @@ protected:
 
 public:
 	static bool m_solids_found; // a flag for xml writing
+
 	CFaceList* m_faces;
 	CEdgeList* m_edges;
 	CVertexList* m_vertices;
@@ -39,10 +41,14 @@ public:
 	CShape(const CShape& s);
 	~CShape();
 
+    void InitializeProperties();
+    void GetProperties(std::list<Property *> *list);
+
 	virtual const CShape& operator=(const CShape& s);
 
+	PropertyColor& GetColor() { return m_color; };
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	bool IsDifferent(HeeksObj* obj);
 	int GetType()const{return SolidType;}
 	void glCommands(bool select, bool marked, bool no_color);
@@ -62,7 +68,6 @@ public:
 	bool CanAddTo(HeeksObj* owner){return ((owner != NULL) && (owner->GetType() == GroupType));}
 	bool DescendForUndo(){return false;}
 	bool DrawAfterOthers(){return m_opacity < 0.9999;}
-	void GetProperties(std::list<Property *> *list);
 
 	const TopoDS_Shape &Shape(){return m_shape;}
 	const TopoDS_Shape *GetShape(){return &m_shape;}

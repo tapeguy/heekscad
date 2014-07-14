@@ -39,9 +39,10 @@ CDoubleInput::CDoubleInput()
 
 CDoubleInput::CDoubleInput(const wxChar* prompt, const wxChar* value_name, double initial_value)
 {
-        m_value = new PropertyDouble(value_name, initial_value, this);
-	m_title.assign(prompt);
-	m_success = false;
+    m_value = new PropertyDouble ( value_name, prompt, this );
+    m_value->SetValue ( initial_value );
+    m_title.assign ( prompt );
+    m_success = false;
 }
 
 CDoubleInput::~CDoubleInput()
@@ -77,7 +78,8 @@ void CDoubleInput::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 
 CLengthInput::CLengthInput(const wxChar* prompt, const wxChar* value_name, double initial_value)
 {
+    m_value = new PropertyLength ( value_name, prompt, this );
+    m_value->SetValue ( initial_value );
 	m_title.assign(prompt);
-	m_value = new PropertyLength(value_name, initial_value, this);
 	m_success = false;
 }

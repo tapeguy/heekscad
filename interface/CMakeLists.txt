@@ -2,7 +2,7 @@ project( heeksintf )
 cmake_minimum_required( VERSION 2.6 )
 set ( CMAKE_BUILD_TYPE Debug )
 add_definitions ( -Wall -Wno-overloaded-virtual -DHEEKSCAD -DUNICODE -DTIXML_USE_STL )
-FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS base core gl )
+FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS core gl )
 INCLUDE(${wxWidgets_USE_FILE})
 include_directories ( ${CMAKE_SOURCE_DIR}
                       ${CMAKE_CURRENT_BINARY_DIR}
@@ -12,6 +12,7 @@ include_directories ( ${CMAKE_SOURCE_DIR}
 set ( LIBRARY_OUTPUT_PATH ../bin )
 
 set( heeksintf_SRCS
+    DomainObject.cpp
     DoubleInput.cpp
     Geom.cpp
     GripperTypes.cpp
@@ -28,6 +29,7 @@ set( heeksintf_SRCS
     ObjectCanvas.cpp
     PictureFrame.cpp
     Property.cpp
+    PropertyFactory.cpp
     PropertyList.cpp
     ToolImage.cpp
     ToolList.cpp
@@ -37,6 +39,7 @@ set( heeksintf_SRCS
    
 set( heeksintf_HDRS
     Box.h
+    DomainObject.cpp
     DoubleInput.h
     Geom.h
     GripData.h
@@ -59,6 +62,7 @@ set( heeksintf_HDRS
     PictureFrame.h
     Plugin.h
     Property.h
+    PropertyFactory.h
     PropertyList.h
     SketchOrder.h
     Tool.h

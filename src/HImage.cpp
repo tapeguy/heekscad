@@ -108,7 +108,7 @@ void HImage::glCommands(bool select, bool marked, bool no_color)
 			glBindTexture(GL_TEXTURE_2D, m_texture_number);
 		}
 	}
-	
+
 	if(m_rectangle_intialized){
 		glBegin(GL_QUADS);
 
@@ -125,7 +125,7 @@ void HImage::glCommands(bool select, bool marked, bool no_color)
 				}
 			}
 		}
-		else{		
+		else{
 			glTexCoord2f(0, 0);
 			glVertex3dv(m_x[0]);
 			glTexCoord2f((float)width / textureWidth, 0);
@@ -135,7 +135,7 @@ void HImage::glCommands(bool select, bool marked, bool no_color)
 			glTexCoord2f(0, (float)height / textureHeight);
 			glVertex3dv(m_x[3]);
 		}
-		
+
 		glEnd();
 	}
 
@@ -197,13 +197,13 @@ bool HImage::Stretch(const double *p, const double* shift, void* data){
 		}
 	}
 	return false;
-}	
+}
 
 void HImage::WriteXML(TiXmlNode *root)
 {
 	TiXmlElement * element;
 	element = new TiXmlElement( "Image" );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 	element->SetAttribute("filepath", m_file_path.utf8_str());
 
 	element->SetDoubleAttribute("x00", m_x[0][0]);

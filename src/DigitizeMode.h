@@ -33,10 +33,11 @@ public:
 	DigitizeMode();
 	virtual ~DigitizeMode(void);
 
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+    void GetProperties(std::list<Property *> *list);
+
 	// InputMode's virtual functions
-	void InitializeProperties();
-	void OnPropertyEdit(Property * prop);
-	void GetProperties(std::list<Property *> *list);
 	const wxChar* GetTitle();
 	const wxChar* GetHelpText();
 	void OnMouse( wxMouseEvent& event );

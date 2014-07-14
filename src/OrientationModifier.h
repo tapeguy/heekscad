@@ -6,12 +6,14 @@
 
 class COrientationModifier;
 
-class COrientationModifierParams : public MutableObject
+class COrientationModifierParams : public DomainObject
 {
 private:
+
 	COrientationModifier * m_parent;
 
 public:
+
 	typedef enum
 	{
 	    eNormalSpacing = 0
@@ -34,7 +36,7 @@ public:
 	COrientationModifierParams(COrientationModifier * parent);
 
 	void InitializeProperties();
-	void OnPropertyEdit(Property *prop);
+	void OnPropertyEdit(Property& prop);
 	void GetProperties(std::list<Property *> *list);
 	void set_initial_values();
 	void write_values_to_config();

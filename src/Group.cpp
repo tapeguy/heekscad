@@ -23,10 +23,10 @@ void CGroup::InitializeProperties()
 	m_pz.Initialize(_("z"), this);
 }
 
-void CGroup::OnPropertyEdit(Property *prop)
+void CGroup::OnPropertyEdit(Property& prop)
 {
-	if(prop == &m_custom_grippers_just_one_axis) {
-		bool enabled = ((PropertyCheck *)prop)->IsSet();
+	if(prop == m_custom_grippers_just_one_axis) {
+		bool enabled = m_custom_grippers_just_one_axis.IsSet();
 		m_o.SetVisible(enabled);
 		m_px.SetVisible(enabled);
 		m_py.SetVisible(enabled);
@@ -70,7 +70,7 @@ void CGroup::WriteXML(TiXmlNode *root)
 		{
 			TiXmlElement* solid_element = new TiXmlElement( "solid" );
 			element->LinkEndChild( solid_element );
-			solid_element->SetAttribute("id", object->m_id);
+			solid_element->SetAttribute("id", object->GetID());
 		}
 
 		object->WriteXML(element);
@@ -314,7 +314,7 @@ bool CGroup::GetScaleAboutMatrix(double *m)
 		extract(mat, m);
 		return true;
 	}
-	
+
 	return ObjList::GetScaleAboutMatrix(m);
 }
 

@@ -5,15 +5,14 @@
 #pragma once
 
 #include "../interface/HeeksObj.h"
-#ifdef MULTIPLE_OWNERS
-#include "../interface/ObjList.h"
 
-class HPoint: public ObjList{
-#else
 class HPoint: public HeeksObj{
-#endif
+protected:
+
+    PropertyColor m_color;
 
 public:
+
 	PropertyVertex m_p;
 	bool m_draw_unselected;
 	double mx,my,mz;
@@ -23,6 +22,9 @@ public:
 	HPoint(const HPoint &p);
 
 	const HPoint& operator=(const HPoint &b);
+
+    void SetColor(const HeeksColor &col) { m_color = col; }
+    const HeeksColor& GetColor() const { return m_color; }
 
 	// HeeksObj's virtual functions
 	int GetType()const{return PointType;}

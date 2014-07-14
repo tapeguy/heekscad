@@ -161,7 +161,7 @@ static const gp_Trsf& digitizing_matrix(bool calculate = false){
 			po = wxGetApp().m_current_viewport->m_view_point.glUnproject(po);
 			x1 = wxGetApp().m_current_viewport->m_view_point.glUnproject(x1);
 			y1 = wxGetApp().m_current_viewport->m_view_point.glUnproject(y1);
-			
+
 			global_matrix_relative_to_screen = make_matrix(origin, gp_Vec(po, x1).Normalized(), gp_Vec(po, y1).Normalized());
 		}
 		else{
@@ -335,7 +335,7 @@ DigitizedPoint DigitizeMode::digitize1(const wxPoint &input_point){
 	else if(wxGetApp().digitize_coords){
 		point = DigitizeRay(ray);
 	}
-	
+
 	return point;
 }
 
@@ -396,18 +396,17 @@ void DigitizeMode::OnFrontRender(){
 	point_or_window->OnFrontRender();
 }
 
-void DigitizeMode::OnPropertyEdit(Property * prop)
+void DigitizeMode::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_x || prop == &m_y || prop == &m_z) {
-		double value = *(PropertyLength *)prop;
-		if (prop == &m_x) wxGetApp().m_digitizing->digitized_point.m_point.SetX(value);
-		if (prop == &m_y) wxGetApp().m_digitizing->digitized_point.m_point.SetY(value);
-		if (prop == &m_z) wxGetApp().m_digitizing->digitized_point.m_point.SetZ(value);
+	if (prop == m_x || prop == m_y || prop == m_z) {
+		if (prop == m_x) wxGetApp().m_digitizing->digitized_point.m_point.SetX(m_x);
+		if (prop == m_y) wxGetApp().m_digitizing->digitized_point.m_point.SetY(m_y);
+		if (prop == m_z) wxGetApp().m_digitizing->digitized_point.m_point.SetZ(m_z);
 
 		wxGetApp().m_frame->RefreshInputCanvas();
 	}
-	else if (prop == &m_offset) {
-		wxStringTokenizer tokens(*(PropertyString *)prop, _T(" :,\t\n"));
+	else if (prop == m_offset) {
+		wxStringTokenizer tokens(m_offset, _T(" :,\t\n"));
 
 		// The reference_point is the last coordinate that was used in the Drawing::AddPoint() method.  i.e. the
 		// last point clicked by the operator during a drawing operation.
@@ -424,7 +423,7 @@ void DigitizeMode::OnPropertyEdit(Property * prop)
 					offset *= wxGetApp().m_view_units;
 					switch(i)
 					{
-					case 0: 
+					case 0:
 						wxGetApp().m_digitizing->digitized_point.m_point.SetX( location.X() + offset );
 						break;
 
@@ -436,7 +435,7 @@ void DigitizeMode::OnPropertyEdit(Property * prop)
 						wxGetApp().m_digitizing->digitized_point.m_point.SetZ( location.Z() + offset );
 						break;
 					}
-					
+
 				}
 			}
 		}

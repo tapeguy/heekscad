@@ -71,8 +71,9 @@ void TransformTools::Translate(bool copy)
 	{
 		for(std::list<HeeksObj*>::const_iterator It = selected_items.begin(); It != selected_items.end(); It++){
 			HeeksObj* object = *It;
-			if(object->m_visible)wxGetApp().m_hidden_for_drag.push_back(object);
-			object->m_visible = false;
+			if ( object->IsVisible ( ) )
+			    wxGetApp().m_hidden_for_drag.push_back(object);
+			object->SetVisible ( false );
 		}
 	}
 	double to[3];
@@ -84,7 +85,7 @@ void TransformTools::Translate(bool copy)
 		for(std::list<HeeksObj*>::iterator It = wxGetApp().m_hidden_for_drag.begin(); It != wxGetApp().m_hidden_for_drag.end(); It++)
 		{
 			HeeksObj* object = *It;
-			object->m_visible = true;
+			object->SetVisible ( true );
 		}
 		wxGetApp().m_hidden_for_drag.clear();
 	}

@@ -133,7 +133,7 @@ public:
 
 	bool SimilarScale( const CBox &reference_box, const CBox &sample_box, const double max_scale_threshold, double *pRequiredScaling ) const;
 	double Score( const CorrelationData_t & sample, const CorrelationData_t & reference ) const;
-	bool ColorsMatch( HeeksObj *obj1, HeeksObj *obj2 ) const;
+	bool ColorsMatch( CShape *obj1, CShape *obj2 ) const;
 
 	std::list<HeeksObj *> ListAllChildren( HeeksObj *parent ) const;
 

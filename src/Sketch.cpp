@@ -41,7 +41,7 @@ CSketch::CSketch()
 {
 	InitializeProperties();
 	m_title = _("Sketch");
-	m_solidify = false;
+	m_solidify.SetValue(false);
 	m_coordinate_system = NULL;
 	m_draw_with_transform = true;
 }
@@ -199,9 +199,9 @@ void CSketch::glCommands(bool select, bool marked, bool no_color)
 		glPopMatrix();
 }
 
-void CSketch::OnPropertyEdit(Property *prop)
+void CSketch::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_order)
+	if (prop == m_order)
 	{
 		std::map<int, int>::iterator FindIt = order_map_for_properties.find(m_order);
 		if(FindIt != order_map_for_properties.end())
@@ -424,7 +424,7 @@ public:
 		CBox box;
 		sketch_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(centre[0], box.MaxY(), centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
@@ -448,7 +448,7 @@ public:
 		CBox box;
 		sketch_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(centre[0], box.MinY(), centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
@@ -472,7 +472,7 @@ public:
 		CBox box;
 		sketch_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(box.MaxX(), centre[1], centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
@@ -496,7 +496,7 @@ public:
 		CBox box;
 		sketch_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(box.MinX(), centre[1], centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
@@ -594,7 +594,8 @@ void CSketch::SetColor(const HeeksColor &col)
 	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
 		HeeksObj* object = *It;
-		object->SetColor(col);
+		EndedObject* ended = (EndedObject *) object;
+		ended->SetColor(col);
 	}
 }
 

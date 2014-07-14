@@ -19,9 +19,10 @@ extern CHeeksCADInterface heekscad_interface;
 /**
 	These settings relate to the fixes available in the ShapeFix_Wire class.
  */
-class SketchToolOptions : public MutableObject
+class SketchToolOptions : public DomainObject
 {
 public:
+
 	SketchToolOptions()
 	{
 		InitializeProperties();
@@ -500,7 +501,7 @@ struct EdgeComparison : public std::binary_function<const TopoDS_Edge &, const T
     the 'beginning' of this edge.  This tell us whether we want to run forwards
     or backwards along this edge so that we're setup ready to machine the next edge.
  */
-/* static */ bool SimplifySketchTool::DirectionTowarardsNextEdge( const TopoDS_Edge &from, const TopoDS_Edge &to )
+/* static */ bool SimplifySketchTool::DirectionTowardsNextEdge( const TopoDS_Edge &from, const TopoDS_Edge &to )
 {
     const bool forwards = true;
     const bool backwards = false;
@@ -605,7 +606,7 @@ std::list<SimplifySketchTool::SortPoint> SimplifySketchTool::GetPoints( TopoDS_W
 
 					if (i < (edges.size()-1))
 					{
-                        if (! DirectionTowarardsNextEdge( edges[i], edges[i+1] ))
+                        if (! DirectionTowardsNextEdge( edges[i], edges[i+1] ))
                         {
                             // The next edge is closer to this edge's start point.  reverse direction
                             // so that the next movement is better.
@@ -831,7 +832,7 @@ static void SimplifySketch(const double deviation, bool make_bspline )
 
 				if (points.size() >= 2)
 				{
-					
+
 
 
 				    if (make_bspline)

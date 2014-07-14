@@ -18,7 +18,6 @@ public:
 	const wxChar* GetTypeString(void)const{return _("Xml");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
-	void GetProperties(std::list<Property *> *list);
 	void CopyFrom(const HeeksObj* object){operator=(*((HXml*)object));}
 	void WriteXML(TiXmlNode *root);
 

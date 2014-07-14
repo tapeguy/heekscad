@@ -54,11 +54,12 @@ public:
 	Drawing(void);
 	virtual ~Drawing(void);
 
+    void GetProperties(std::list<Property *> *list);
+
 	// InputMode's virtual functions
 	void OnMouse( wxMouseEvent& event );
 	void OnKeyDown(wxKeyEvent& event);
 	bool OnModeChange(void);
-	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*> *f_list, const wxPoint *p);
 	void OnFrontRender();
 	void OnRender();

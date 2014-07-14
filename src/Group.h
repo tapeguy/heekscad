@@ -21,7 +21,7 @@ public:
 
 	CGroup();
 	void InitializeProperties();
-	void OnPropertyEdit(Property *prop);
+	void OnPropertyEdit(Property& prop);
 	const wxChar* GetTypeString(void)const{return _("Group");}
 	int GetType()const{return GroupType;}
 	HeeksObj *MakeACopy(void)const{ return new CGroup(*this);}

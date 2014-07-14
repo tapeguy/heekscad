@@ -8,6 +8,7 @@
 
 class HArc: public EndedObject{
 private:
+
 	PropertyVertex m_start;
 	PropertyVertex m_end;
 	PropertyVertex m_centre;
@@ -30,8 +31,11 @@ public:
 	void SetCircle(gp_Circ c);
 	bool IsIncluded(gp_Pnt pnt);
 
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+    void GetProperties(std::list<Property *> *list);
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	int GetType()const{return ArcType;}
 	int GetMarkingFilter()const{return ArcMarkingFilter;}
 	int GetIDGroupType()const{return LineType;}
@@ -43,8 +47,6 @@ public:
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property *prop);
-	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool Stretch(const double *p, const double* shift, void* data);
@@ -64,13 +66,7 @@ public:
 	gp_Vec GetSegmentVector(double fraction)const;
 	gp_Pnt GetPointAtFraction(double fraction)const;
 	static bool TangentialArc(const gp_Pnt &p0, const gp_Vec &v0, const gp_Pnt &p1, gp_Pnt &centre, gp_Dir &axis);
-	bool UsesID(){return true;} 
+	bool UsesID(){return true;}
 	void Reverse();
 	double IncludedAngle()const;
-
-#ifdef MULTIPLE_OWNERS
-	//Ended Objects virtaul functions;
-	void LoadToDoubles();
-	void LoadFromDoubles();
-#endif
 };

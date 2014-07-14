@@ -49,7 +49,7 @@ HSpline::HSpline(const HSpline &s):EndedObject(s.m_color){
 HSpline::HSpline(const Geom_BSplineCurve &s, const HeeksColor& col):EndedObject(col)
 {
 	InitializeProperties();
-	m_spline = Handle(Geom_BSplineCurve)::DownCast(s.Copy());	
+	m_spline = Handle(Geom_BSplineCurve)::DownCast(s.Copy());
 	gp_Pnt a = A->m_p;
 	gp_Pnt b = B->m_p;
 	m_spline->D0(m_spline->FirstParameter(), a);
@@ -121,7 +121,7 @@ bool HSpline::IsDifferent(HeeksObj* o)
 		if(m_spline->Pole(i).Distance(other->m_spline->Pole(i))>wxGetApp().m_geom_tol)
 			return true;
 	}
-	
+
 	return EndedObject::IsDifferent(o);
 }
 
@@ -149,7 +149,7 @@ void HSpline::GetSegments(void(*callbackfunc)(const double *p), double pixels_pe
 		m_spline->D0(u0 + ((double)i / segments) * uw,p);
 		extract(p, pp);
 		(*callbackfunc)(pp);
-    } 
+    }
 }
 
 static void glVertexFunction(const double *p){glVertex3d(p[0], p[1], p[2]);}
@@ -210,7 +210,7 @@ void HSpline::GetBox(CBox &box){
 		m_spline->D0(u0 + uw * .01,p);
 		extract(p, pp);
 		box.Insert(pp);
-    } 
+    }
 }
 
 void HSpline::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
@@ -221,7 +221,7 @@ void HSpline::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 			gp_Pnt pole = m_spline->Pole(i);
 			list->push_back(GripData(GripperTypeStretch,pole.X(),pole.Y(),pole.Z(),NULL, true));
 		}
-	} 
+	}
 }
 
 void OnSetKnot(double v, HeeksObj* obj, int i)
@@ -240,7 +240,7 @@ void OnSetPole(const double *v, HeeksObj* obj, int i)
 	((HSpline*)obj)->m_spline->SetPole(i,p);
 }
 
-void HSpline::OnPropertyEdit(Property* prop)
+void HSpline::OnPropertyEdit(Property& prop)
 {
 }
 
@@ -266,14 +266,14 @@ void HSpline::GetProperties(std::list<Property *> *list){
 		list->push_back(new PropertyDouble(str,m_spline->Weight(i),this,OnSetWeight,i));
 	}
 */
-	EndedObject::GetProperties(list); 
+	EndedObject::GetProperties(list);
 }
 
 bool HSpline::FindNearPoint(const double* ray_start, const double* ray_direction, double *point){
 	gp_Lin ray(make_point(ray_start), make_vector(ray_direction));
 	std::list< gp_Pnt > rl;
 
-	return false; 
+	return false;
 }
 
 bool HSpline::FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point){
@@ -297,14 +297,14 @@ bool HSpline::Stretch(const double *p, const double* shift, void* data){
 			m_spline->SetPole(i,m_spline->Pole(i).XYZ() + vshift.XYZ());
 		}
   	}
-	return false; 
+	return false;
 }
 
 void HSpline::WriteXML(TiXmlNode *root)
 {
 	TiXmlElement * element;
 	element = new TiXmlElement( "Spline" );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 	element->SetAttribute("col", m_color.COLORREF_color());
 	element->SetAttribute("rational", m_spline->IsRational()?1:0);
 	element->SetAttribute("periodic", m_spline->IsPeriodic()?1:0);
@@ -336,7 +336,7 @@ void HSpline::WriteXML(TiXmlNode *root)
 		knot->SetDoubleAttribute("knot",knotdoub);
 		knot->SetAttribute("mult", mult);
 	}
-	WriteBaseXML(element); 
+	WriteBaseXML(element);
 }
 
 // static member function
@@ -391,7 +391,7 @@ HeeksObj* HSpline::ReadFromXMLElement(TiXmlElement* pElem)
 		tkweight.SetValue(index,weight);
 		pPole = pPole->NextSiblingElement("Pole");
 	}
-	
+
 	TiXmlElement *pKnot = pElem->FirstChildElement("Knot");
 	for(int i=1; i <= nknots; i++)
 	{
@@ -416,7 +416,7 @@ HeeksObj* HSpline::ReadFromXMLElement(TiXmlElement* pElem)
 	HSpline* new_object = new HSpline(spline, c);
 	new_object->ReadBaseXML(pElem);
 
-	return new_object;  
+	return new_object;
 }
 
 int HSpline::Intersects(const HeeksObj *object, std::list< double > *rl)const
@@ -473,10 +473,10 @@ int HSpline::Intersects(const HeeksObj *object, std::list< double > *rl)const
 			if(rl)convert_pnts_to_doubles(plist, *rl);
 			numi += plist.size();
 		}
-		break; 
+		break;
 	}
 */
-	return 0; //return numi; 
+	return 0; //return numi;
 }
 
 static bool calculate_biarc_points(const gp_Pnt &p0, gp_Vec v_start, const gp_Pnt &p4, gp_Vec v_end, gp_Pnt &p1, gp_Pnt &p2, gp_Pnt &p3)
@@ -553,7 +553,7 @@ void CreateArcs(const gp_Pnt &p_start, const gp_Vec &v_start, double t_start, do
 		new_spans_for_CreateArcs->push_back(new HLine(p_start, p_end, wxGetApp().CurrentColor()));
 		return;
 	}
-	
+
 	if(can_do_spline_whole)
 	{
 		new_spans_for_CreateArcs->push_back(arc_object1);

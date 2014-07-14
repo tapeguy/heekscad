@@ -37,7 +37,7 @@ CPropertiesCanvas::CPropertiesCanvas(wxWindow* parent)
 		// Default style
 		wxPG_DEFAULT_STYLE | wxBORDER_THEME );
 
-	m_pg->SetExtraStyle( wxPG_EX_HELP_AS_TOOLTIPS );  
+	m_pg->SetExtraStyle( wxPG_EX_HELP_AS_TOOLTIPS );
 
 	wxGetApp().RegisterObserver(this);
 }
@@ -68,7 +68,7 @@ void CPropertiesCanvas::RemoveProperty(Property* property)
 {
 	for(std::map<wxPGProperty*, Property*>::iterator It = pmap.begin(); It != pmap.end(); It++)
 	{
-		Property* cursor = It->second;
+	    Property* cursor = It->second;
 		if(property == cursor)
 		{
 			m_pg->DeleteProperty((wxPGProperty*)It->first);
@@ -97,20 +97,20 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 	}
 
 	switch(p->GetPropertyType()){
-	case StringPropertyType:
+	case PropertyStringType:
 		{
 			wxPGProperty *new_prop = new wxStringProperty(p->GetShortString(),wxPG_LABEL, *(PropertyString*)p);
 			if(p->IsReadOnly()) {
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
-			if(p->IsHighlighted()) {
-				m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
-			}
 			Append( parent_prop, new_prop, p);
+            if(p->IsHighlighted()) {
+                m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
+            }
 		}
 		break;
-	case DoublePropertyType:
-	case LengthPropertyType:
+	case PropertyDoubleType:
+	case PropertyLengthType:
 		{
 			wxPGProperty *new_prop = new wxFloatProperty(p->GetShortString(),wxPG_LABEL, *(PropertyDouble*)p);
 			if(p->IsReadOnly()) {
@@ -122,7 +122,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			}
 		}
 		break;
-	case IntPropertyType:
+	case PropertyIntType:
 		{
 			wxPGProperty *new_prop = new wxIntProperty(p->GetShortString(),wxPG_LABEL, *(PropertyInt*)p);
 			if(p->IsReadOnly()) {
@@ -134,7 +134,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			}
 		}
 		break;
-	case ColorPropertyType:
+	case PropertyColorType:
 		{
 			const HeeksColor& col = *(PropertyColor*)p;
 			wxColour wcol(col.red, col.green, col.blue);
@@ -148,7 +148,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			}
 		}
 		break;
-	case ChoicePropertyType:
+	case PropertyChoiceType:
 		{
 			wxArrayString array_string;
 			wxArrayInt array_ids;
@@ -169,7 +169,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			}
 		}
 		break;
-	case VertexPropertyType:
+	case PropertyVertexType:
 		{
 			wxPGProperty* new_prop = new wxPropertyCategory(p->GetShortString(),wxPG_LABEL);
 			PropertyVertex* vertex = (PropertyVertex*)p;
@@ -198,7 +198,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			}
 		}
 		break;
-	case TrsfPropertyType:
+	case PropertyTrsfType:
 		{
 			const gp_Trsf& trsf = *(PropertyTrsf*)p;
 			gp_XYZ xyz = trsf.TranslationPart();
@@ -235,7 +235,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			Append( new_prop, t_prop, p );
 		}
 		break;
-	case CheckPropertyType:
+	case PropertyCheckType:
 		{
 			wxPGProperty* new_prop = new wxBoolProperty(p->GetShortString(),wxPG_LABEL, ((PropertyCheck*)p)->IsSet());
 			if(p->IsReadOnly()) {
@@ -248,7 +248,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			}
 		}
 		break;
-	case ListOfPropertyType:
+	case PropertyListType:
 		{
 			wxPGProperty* new_prop = new wxPropertyCategory(p->GetShortString(),wxPG_LABEL);
 			if(p->IsReadOnly()) {
@@ -263,7 +263,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			}
 		}
 		break;
-	case FilePropertyType:
+	case PropertyFileType:
 		{
 			wxPGProperty *new_prop = new wxFileProperty(p->GetShortString(),wxPG_LABEL, *(PropertyFile*)p);
 			if(p->IsReadOnly()) {
@@ -289,32 +289,33 @@ Property* CPropertiesCanvas::GetProperty(wxPGProperty* p)
 void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 	wxPGProperty* p = event.GetProperty();
 
-	Property* property = GetProperty(p);
-	if(property == NULL)return;
+	Property * property = (Property *)GetProperty(p);
+	if(property == NULL)
+	    return;
 
 	wxGetApp().CreateUndoPoint();
 	switch(property->GetPropertyType()) {
-	case StringPropertyType:
-		*(PropertyString*)property = event.GetPropertyValue().GetString();
+	case PropertyStringType:
+		((PropertyString*)property)->SetValue ( event.GetPropertyValue().GetString() );
 		break;
-	case DoublePropertyType:
-		*(PropertyDouble*)property = event.GetPropertyValue().GetDouble();
+	case PropertyDoubleType:
+		((PropertyDouble*)property)->SetValue ( event.GetPropertyValue().GetDouble() );
 		break;
-	case LengthPropertyType:
-		*(PropertyLength*)property = event.GetPropertyValue().GetDouble();
+	case PropertyLengthType:
+		((PropertyLength*)property)->SetValue ( event.GetPropertyValue().GetDouble() );
 		break;
-	case IntPropertyType:
-		*(PropertyInt*)property = event.GetPropertyValue().GetLong();
+	case PropertyIntType:
+		((PropertyInt*)property)->SetValue ( event.GetPropertyValue().GetLong() );
 		break;
-	case ColorPropertyType:
+	case PropertyColorType:
 		{
 			wxAny var = event.GetPropertyValue();
 			wxColour wcol = wxANY_AS(var, wxColour);
 			HeeksColor col(wcol.Red(), wcol.Green(), wcol.Blue());
-			*(PropertyColor*)property = col;
+			((PropertyColor*)property)->SetValue ( col );
 		}
 		break;
-	case VertexPropertyType:
+	case PropertyVertexType:
 		{
 			if(p->GetLabel()[0] == 'x'){
 				((PropertyVertex*)property)->SetX( event.GetPropertyValue().GetLong() );
@@ -327,7 +328,7 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 			}
 		}
 		break;
-	case TrsfPropertyType:
+	case PropertyTrsfType:
 		{
 			const gp_Trsf& trsf = *(PropertyTrsf*)p;
 			gp_Pnt pnt = trsf.TranslationPart();
@@ -362,34 +363,26 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 			}
 
 			CoordinateSystem::AnglesToAxes(vertical_angle, horizontal_angle, twist_angle, xaxis, yaxis);
-			*(PropertyTrsf*)p = make_matrix(pnt, xaxis, yaxis);
+			((PropertyTrsf*)property)->SetValue ( make_matrix(pnt, xaxis, yaxis) );
 		}
 		break;
-	case ChoicePropertyType:
-		*(PropertyChoice*)property = event.GetPropertyValue().GetLong();
+	case PropertyChoiceType:
+		((PropertyChoice*)property)->SetValue ( event.GetPropertyValue().GetLong() );
 		break;
-	case CheckPropertyType:
+	case PropertyCheckType:
 		((PropertyChoice*)property)->SetValue ( event.GetPropertyValue().GetBool() );
 		break;
-	case ListOfPropertyType:
+	case PropertyListType:
 		{
 		}
 		break;
-	case FilePropertyType:
-		*(PropertyFile*)property = event.GetPropertyValue().GetString();
+	case PropertyFileType:
+		((PropertyFile*)property)->SetValue ( event.GetPropertyValue().GetString() );
 		break;
 	}
-	property->CallEditFunction();
+    property->CallEditFunction();
 	wxGetApp().Changed();
 	wxGetApp().Repaint();
-}
-
-void CPropertiesCanvas::OnPropertyGridSelect( wxPropertyGridEvent& event ) {
-	wxPGProperty* p = event.GetProperty();
-
-	Property* property = GetProperty(p);
-	if(property == NULL)return;
-	property->CallSelectFunction();
 }
 
 void CPropertiesCanvas::DeselectProperties()

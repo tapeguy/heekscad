@@ -18,11 +18,11 @@ enum AngularDimensionTextMode
 	RadiansAngularDimensionTextMode
 };
 
-#ifdef MULTIPLE_OWNERS
-class HAngularDimension: public ObjList{
-#else
-class HAngularDimension: public HeeksObj{
-#endif
+
+class HAngularDimension: public HeeksObj
+{
+private:
+    PropertyColor m_color;
 
 public:
 	wxString m_text;
@@ -61,10 +61,6 @@ public:
 	//const wxChar* GetShortString(void)const{return m_text.c_str();}
 	bool CanEditString(void)const{return true;}
 	void OnEditString(const wxChar* str);
-#ifdef MULTIPLE_OWNERS
-	void LoadToDoubles();
-	void LoadFromDoubles();
-#endif
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	bool IsDifferent(HeeksObj* other);
 	void ReloadPointers();

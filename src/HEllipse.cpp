@@ -11,6 +11,10 @@
 
 HEllipse::HEllipse(const HEllipse &e){
 	InitializeProperties();
+	C = new HPoint(*(e.C));
+    C->m_draw_unselected = false;
+    C->SetSkipForUndo(true);
+    Add(C,NULL);
 	operator=(e);
 }
 
@@ -18,7 +22,7 @@ HEllipse::HEllipse(const gp_Elips &e, const HeeksColor& col)
 {
 	InitializeProperties();
 	m_color = col;
-	C = new HPoint(e.Location(),col);
+	C = new HPoint(e.Location(), col);
 	C->m_draw_unselected = false;
 	C->SetSkipForUndo(true);
 	Add(C,NULL);
@@ -32,8 +36,9 @@ HEllipse::HEllipse(const gp_Elips &e, double start, double end, const HeeksColor
 {
 	InitializeProperties();
 	m_color = col;
-	m_start = start; m_end = end;
-	C = new HPoint(e.Location(),col);
+	m_start = start;
+	m_end = end;
+	C = new HPoint(e.Location(), col);
 	C->m_draw_unselected = false;
 	C->SetSkipForUndo(true);
 	Add(C,NULL);
@@ -45,12 +50,9 @@ HEllipse::~HEllipse(){
 }
 
 const HEllipse& HEllipse::operator=(const HEllipse &e){
-#ifdef MULTIPLE_OWNERS
-	ObjList::operator=(e);
-#else
 	HeeksObj::operator =(e);
-#endif
-	m_start = e.m_start; m_end = e.m_end;
+	m_start = e.m_start;
+	m_end = e.m_end;
 	m_color = e.m_color;
 	C = (HPoint*)GetFirstChild();
 	C->SetSkipForUndo(true);
@@ -241,15 +243,15 @@ void HEllipse::SetRotation(double value)
 	m_rot = GetEllipseRotation(GetEllipse());
 }
 
-void HEllipse::OnPropertyEdit(Property *prop)
+void HEllipse::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_centre) {
+	if (prop == m_centre) {
 		C->m_p = m_centre;
 	}
-	else if (prop == &m_rot) {
+	else if (prop == m_rot) {
 		SetRotation(m_rot);
 	}
-	else if(prop == &m_axis) {
+	else if(prop == m_axis) {
 		gp_Ax2 a(C->m_p, m_zdir, m_xdir);
 		a.SetDirection(m_axis.Normalize());
 		m_zdir = a.Direction();
@@ -258,7 +260,8 @@ void HEllipse::OnPropertyEdit(Property *prop)
 	}
 }
 
-void HEllipse::GetProperties(std::list<Property *> *list){
+void HEllipse::GetProperties(std::list<Property *> *list)
+{
 	m_centre = C->m_p;
 
 	HeeksObj::GetProperties(list);
@@ -302,11 +305,7 @@ bool HEllipse::Stretch(const double *p, const double* shift, void* data){
 	gp_Pnt min_s(c.XYZ() + y_axis.XYZ() * min_r);
 
 	gp_Pnt np = vp.XYZ() + vshift.XYZ();
-#if 0
-	// these cause compiler warnings, so I have commented them out
-    double d = c.Distance(np);
-    double f = DistanceToFoci(np,m_ellipse)/2;
-#endif
+
 	if(data == &C){
 		C->m_p = np;
 	}
@@ -351,6 +350,7 @@ bool HEllipse::Stretch(const double *p, const double* shift, void* data){
 			}
 		}
 	}
+
 	return false;
 }
 
@@ -427,11 +427,7 @@ HeeksObj* HEllipse::ReadFromXMLElement(TiXmlElement* pElem)
 void HEllipse::ReloadPointers()
 {
 	C = (HPoint*)GetFirstChild();
-#ifdef MULTIPLE_OWNERS
-	ObjList::ReloadPointers();
-#else
 	HeeksObj::ReloadPointers();
-#endif
 }
 
 void HEllipse::SetEllipse(gp_Elips e)
@@ -441,6 +437,13 @@ void HEllipse::SetEllipse(gp_Elips e)
 	m_xdir = e.XAxis().Direction();
 	m_majr = e.MajorRadius();
 	m_minr = e.MinorRadius();
+
+    if ( m_majr < m_minr )
+    {
+        double temp = m_majr;
+        m_majr = m_minr;
+        m_minr = temp;
+    }
 }
 
 gp_Elips HEllipse::GetEllipse() const

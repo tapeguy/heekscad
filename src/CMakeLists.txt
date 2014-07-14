@@ -282,10 +282,8 @@ set( heekscad_SRCS
     wxImageLoader.cpp
    )
 
-# remove lsketchsolve below
-# -L../bin -ltinyxml -lheeksintf -lsketchsolve
 set( HeeksCAD_LIBS
-       -L../bin -ltinyxml -lheeksintf
+       -L../bin -ltinyxml -lbase -lheeksintf
    )
 add_executable( heekscad ${heekscad_SRCS} ${platform_SRCS} ${heekscad_HDRS} )
 # Link ${HeeksCAD_LIBS} first to prevent installed libs from being found first in the search order

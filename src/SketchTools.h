@@ -80,7 +80,7 @@ public:
 		the 'beginning' of this edge.  This tell us whether we want to run forwards
 		or backwards along this edge so that we're setup ready to machine the next edge.
 	 */
-	static bool DirectionTowarardsNextEdge( const TopoDS_Edge &from, const TopoDS_Edge &to );
+	static bool DirectionTowardsNextEdge( const TopoDS_Edge &from, const TopoDS_Edge &to );
 
 
 public:

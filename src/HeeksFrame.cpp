@@ -553,7 +553,6 @@ static void OnLinesButton( wxCommandEvent& WXUNUSED( event ) )
 	wxGetApp().Changed();
 }
 
-
 static void OnEllipseButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	wxGetApp().CreateUndoPoint();
@@ -561,6 +560,7 @@ static void OnEllipseButton( wxCommandEvent& WXUNUSED( event ) )
 	wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
 	wxGetApp().Changed();
 }
+
 static void OnPointsButton( wxCommandEvent& WXUNUSED( event ) )
 {
 	wxGetApp().CreateUndoPoint();
@@ -1667,11 +1667,11 @@ void CHeeksFrame::MakeMenus()
 
 	wxMenu *coordinate_menu = new wxMenu;
 	//AddMenuItem(coordinate_menu, _("Add Coordinate System"), ToolImage(_T("coordsys")), coordinate_menu);
-	
+
 	AddMenuItem(coordinate_menu, _("Pick 3 points"), ToolImage(_T("coordsys")), OnCoordinateSystem);
 	//coordinate_menu->AppendSeparator();
 	AddMenuItem(coordinate_menu, _("Pick 1 point"), ToolImage(_T("coordsys")), OnNewOrigin);
-	
+
 	// View Menu
 	wxMenu *view_menu = new wxMenu;
 	AddMenuItem(view_menu, _("Previous view"), ToolImage(_T("magprev")), OnMagPreviousButton);

@@ -47,7 +47,8 @@ resolve_dylibs()
 	sudo install_name_tool -id "$binary" "$binary"
 	otool -L $binary | tail +2 | awk '{ print $1 }' | while read dylib; do
 		destdir=""
-		if [ "`echo $dylib | grep libheeksintf`" -o \
+		if [ "`echo $dylib | grep libbase`" -o \
+		     "`echo $dylib | grep libheeksintf`" -o \
 		     "`echo $dylib | grep libtinyxml`" -o \
 		     "`echo $dylib | grep libjpeg`" -o \
 		     "`echo $dylib | grep libfreetype`" ]; then

@@ -6,7 +6,7 @@
 
 #include "../interface/ObjList.h"
 
-class DynamicSolid:public ObjList{
+class DynamicSolid : public ObjList{
 public:
 	CFaceList* m_faces;
 	CEdgeList* m_edges;
@@ -16,16 +16,14 @@ public:
 	DynamicSolid();
 	~DynamicSolid();
 
-	//virtual const DynamicSolid& operator=(const DynamicSolid& s);
-
 	int GetType()const{return SolidType;}
 	int GetMarkingFilter()const{return SolidMarkingFilter;}
 	const wxChar* GetTypeString(void)const{return _("Solid");}
-	void ReloadPointers(); 
+	void ReloadPointers();
 
 	virtual SolidTypeEnum GetSolidType(){return SOLID_TYPE_UNKNOWN;}
 	virtual gp_Trsf GetTransform(){return gp_Trsf();}
-		
+
 	void SetShapes(std::list<TopoDS_Shape>);
 	void DrawShapes();
 	virtual void Update(){}

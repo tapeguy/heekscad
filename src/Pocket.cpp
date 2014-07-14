@@ -9,13 +9,14 @@
 #include "Part.h"
 
 HPocket::HPocket(double length) :
-m_length(_("Height"), length, this)
+m_length(_("height"), _("Height"), this)
 {
-	m_faces->m_visible=false;
+    m_length.SetValue ( length );
+	m_faces->SetVisible ( false );
 }
 
 HPocket::HPocket() :
-m_length(_("Height"), 0.0, this)
+        m_length(_("height"), _("Height"), this)
 {
 }
 
@@ -92,7 +93,7 @@ void HPocket::glCommands(bool select, bool marked, bool no_color)
 
 void HPocket::WriteXML(TiXmlNode *root)
 {
-	TiXmlElement * element = new TiXmlElement( "Pad" );  
+	TiXmlElement * element = new TiXmlElement( "Pad" );
 	return;
 	root->LinkEndChild( element );
 
@@ -104,8 +105,8 @@ void HPocket::WriteXML(TiXmlNode *root)
 		if(CShape::IsTypeAShape(object->GetType()))
 		{
 			TiXmlElement* solid_element = new TiXmlElement( "solid" );
-			element->LinkEndChild( solid_element );  
-			solid_element->SetAttribute("id", object->m_id);
+			element->LinkEndChild( solid_element );
+			solid_element->SetAttribute("id", object->GetID());
 		}
 
 		object->WriteXML(element);
@@ -118,31 +119,6 @@ HeeksObj* HPocket::ReadFromXMLElement(TiXmlElement* element)
 {
 	HPocket* new_object = new HPocket;
 	return new_object;
-
-#if 0
-	// instead of ( ObjList:: ) new_object->ReadBaseXML(pElem);
-
-	// loop through all the objects
-	for(TiXmlElement* pElem = TiXmlHandle(element).FirstChildElement().Element(); pElem; pElem = pElem->NextSiblingElement())
-	{
-		std::string name(pElem->Value());
-		if(name == "solid")
-		{
-			int id = 0;
-			pElem->Attribute("id", &id);
-		}
-		else
-		{
-			// load other objects normal
-			HeeksObj* object = wxGetApp().ReadXMLElement(pElem);
-			if(object)new_object->Add(object, NULL);
-		}
-	}
-
-	new_object->HeeksObj::ReadBaseXML(element);
-
-	return (ObjList*)new_object;
-#endif
 }
 
 // static
@@ -152,11 +128,8 @@ void HPocket::PocketSketch(CSketch* sketch, double length)
 	sketch->Owner()->Add(pad,NULL);
 
 	sketch->Owner()->Remove(sketch);
-#ifdef MULTIPLE_OWNERS
-	sketch->RemoveOwner(sketch->Owner());
-#else
 	sketch->RemoveOwner();
-#endif
+
 	sketch->m_draw_with_transform = false;
 	pad->Add(sketch,NULL);
 	pad->ReloadPointers();

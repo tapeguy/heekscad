@@ -13,12 +13,12 @@
 
 
 CFace::CFace()
- : m_surface(_("surface type"), _(""), NULL), m_temp_attr(0)
+ : m_surface(_("surface_type"), _("Surface Type"), NULL), m_temp_attr(0)
 {
 }
 
 CFace::CFace(const TopoDS_Face &face)
- : m_topods_face(face), m_surface(_("surface type"), GetSurfaceTypeStr(), NULL), m_temp_attr(0)
+ : m_topods_face(face), m_surface(_("surface_type"), _("Surface Type"), NULL), m_temp_attr(0)
 {
 #if _DEBUG
 	gp_Pnt pos;
@@ -31,6 +31,7 @@ CFace::CFace(const TopoDS_Face &face)
 	m_normal_z = norm.Z();
 	m_orientation = Orientation();
 #endif
+	m_surface = GetSurfaceTypeStr();
 	m_marking_gl_list = 0;
 }
 
@@ -159,10 +160,10 @@ bool CFace::GetUVAtPoint(const gp_Pnt &pos, double *u, double *v)const{
 	GeomAPI_ProjectPointOnSurf projection( pos, surface);
 
 	if(projection.NbPoints() > 0)
-	{               
+	{
 		projection.LowerDistanceParameters(*u, *v);
 		return true;
-	}     
+	}
 	return false;
 }
 
@@ -513,7 +514,7 @@ void CFace::GetPlaneParams(gp_Pln &p)
 		if(	m_topods_face.Orientation()== TopAbs_REVERSED )
 		{
 			p = gp_Pln(p.Axis().Location(), -p.Axis().Direction());
-			
+
 		}
 	}
 }
@@ -793,7 +794,7 @@ void CFace::UpdateMarkingGLList(bool marked)
 		{
 			// use the parent body's colour
 			CShape* parent_body = GetParentBody();
-			if(parent_body)Material(parent_body->m_color).glMaterial(parent_body->GetOpacity());
+			if(parent_body)Material(parent_body->GetColor()).glMaterial(parent_body->GetOpacity());
 			else
 			{
 				Material().glMaterial(1.0);

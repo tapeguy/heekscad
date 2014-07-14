@@ -14,7 +14,7 @@ CCuboid::CCuboid(const gp_Ax2& pos, double x, double y, double z, const wxChar* 
 {
 	InitializeProperties();
 }
- 
+
 CCuboid::CCuboid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity)
  : CSolid(solid, title, col, opacity),
  m_pos(gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)))
@@ -123,9 +123,9 @@ void CCuboid::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	list->push_back(GripData(GripperTypeObjectScaleZ,m8.X(),m8.Y(),m8.Z(),NULL));
 }
 
-void CCuboid::OnPropertyEdit(Property *prop)
+void CCuboid::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_x || prop == &m_y || prop == &m_z) {
+	if (prop == m_x || prop == m_y || prop == m_z) {
 		CCuboid* new_object = new CCuboid(m_pos, m_x, m_y, m_z, m_title.c_str(), m_color, m_opacity);
 		new_object->CopyIDsFrom(this);
 		Owner()->Add(new_object, NULL);

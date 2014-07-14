@@ -192,9 +192,9 @@ void HText::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	list->push_back(GripData(GripperTypeScale,point[3].X(),point[3].Y(),point[3].Z(),NULL));
 }
 
-void HText::OnPropertyEdit(Property* prop)
+void HText::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_font) {
+	if (prop == m_font) {
 		if (m_font == 0)
 		{
 			m_pFont = NULL;

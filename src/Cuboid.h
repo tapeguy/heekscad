@@ -33,7 +33,7 @@ public:
 	void GetProperties(std::list<Property *> *list);
 	//ObjectCanvas* GetDialog(wxWindow* parent);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property *prop);
+	void OnPropertyEdit(Property& prop);
 	bool GetScaleAboutMatrix(double *m);
 	bool Stretch(const double *p, const double* shift, void* data);
 	bool DescendForUndo(){return false;}

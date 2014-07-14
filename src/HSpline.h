@@ -37,8 +37,11 @@ public:
 
 	const HSpline& operator=(const HSpline &c);
 
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+    void GetProperties(std::list<Property *> *list);
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	int GetType()const{return SplineType;}
 	int GetMarkingFilter()const{return ArcMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
@@ -48,8 +51,6 @@ public:
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property* prop);
-	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool Stretch(const double *p, const double* shift, void* data);

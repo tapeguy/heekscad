@@ -9,7 +9,8 @@ class CLoop;
 class CShape;
 class CNurbSurfaceParams;
 
-class CFace:public HeeksObj{
+class CFace : public HeeksObj
+{
 private:
 	TopoDS_Face m_topods_face;
 	PropertyString m_surface;
@@ -37,6 +38,8 @@ public:
 	CFace(const TopoDS_Face &face);
 	~CFace();
 
+    void GetProperties(std::list<Property *> *list);
+
 	int GetType()const{return FaceType;}
 	int GetMarkingFilter()const{return FaceMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
@@ -48,7 +51,6 @@ public:
 	double Area()const;
 	void ModifyByMatrix(const double* m);
 	void WriteXML(TiXmlNode *root);
-	void GetProperties(std::list<Property *> *list);
 	bool UsesID(){return true;}
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	void GetGripperPositionsTransformed(std::list<GripData> *list, bool just_for_endof);
@@ -81,7 +83,7 @@ public:
 	void UpdateMarkingGLList(bool marked);
 };
 
-class FaceToSketchTool:public Tool
+class FaceToSketchTool : public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Make a sketch from face");}

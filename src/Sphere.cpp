@@ -83,9 +83,9 @@ void CSphere::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	list->push_back(GripData(GripperTypeScale,m_pos.X() + m_radius,m_pos.Y(),m_pos.Z(),NULL));
 }
 
-void CSphere::OnPropertyEdit(Property* prop)
+void CSphere::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_pos || prop == &m_radius) {
+	if (prop == m_pos || prop == m_radius) {
 		CSphere* new_object = new CSphere(m_pos, m_radius, m_title.c_str(), m_color, m_opacity);
 		new_object->CopyIDsFrom(this);
 		Owner()->Add(new_object, NULL);

@@ -331,7 +331,7 @@ void Drawing::OnRender(){
 	if(!DragDoneWithXOR() && GetDrawStep()){
 		std::list<HeeksObj*>::const_iterator It;
 		const std::list<HeeksObj*>& drawing_objects = GetObjectsMade();
-		
+
 		HeeksObj *owner = GetOwnerForDrawingObjects();
 		CSketch *sketch = dynamic_cast<CSketch*>(owner);
 		glPushMatrix();

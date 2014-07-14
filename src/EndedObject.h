@@ -6,28 +6,22 @@
 
 #include "../interface/HeeksObj.h"
 #include "HPoint.h"
-#ifdef MULTIPLE_OWNERS
-#include "../interface/ObjList.h"
 
-class EndedObject: public ObjList{
-#else
 class EndedObject: public HeeksObj{
-#endif
+protected:
+    PropertyColor m_color;
+
 public:
 	HPoint* A, *B;
 
 	~EndedObject(void);
 	EndedObject(const HeeksColor& color);
-#ifndef MULTIPLE_OWNERS
 	EndedObject(const EndedObject& e);
-#endif
 
 	const EndedObject& operator=(const EndedObject &b);
 
-#ifdef MULTIPLE_OWNERS
-	virtual void LoadToDoubles();
-	virtual void LoadFromDoubles();
-#endif
+	void SetColor(const HeeksColor &col) { m_color = col; }
+	const HeeksColor& GetColor() const { return m_color; }
 
 	// HeeksObj's virtual functions
 	bool Stretch(const double *p, const double* shift, void* data);
@@ -40,5 +34,5 @@ public:
 	HeeksObj* MakeACopyWithID();
 	bool IsDifferent(HeeksObj* other);
 //	void WriteBaseXML(TiXmlElement *element);
-	
+
 };

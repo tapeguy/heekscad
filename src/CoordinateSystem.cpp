@@ -1236,25 +1236,24 @@ void CoordinateSystem::ModifyByMatrix(const double *m)
 	m_y.Transform(mat);
 }
 
-void CoordinateSystem::OnPropertyEdit(Property *prop) {
+void CoordinateSystem::OnPropertyEdit(Property& prop) {
 
-	if (prop == &m_x || prop == &m_y) {
+	if (prop == m_x || prop == m_y) {
 		AxesToAngles(m_x.Normalize(), m_y.Normalize(), vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property);
 		m_vert_angle = vertical_angle_for_property * 180/M_PI;
 		m_horiz_angle = horizontal_angle_for_property * 180/M_PI;
 		m_twist_angle = twist_angle_for_property * 180/M_PI;
 	}
-	else if (prop == &m_vert_angle || prop == &m_horiz_angle || prop == &m_twist_angle) {
+	else if (prop == m_vert_angle || prop == m_horiz_angle || prop == m_twist_angle) {
 		gp_Dir x = m_x.Normalize();
 		gp_Dir y = m_y.Normalize();
-		double value = *(PropertyDouble *)prop;
-	
-		if (prop == &m_vert_angle)
-			vertical_angle_for_property = value * M_PI/180;
-		else if (prop == &m_horiz_angle)
-			horizontal_angle_for_property = value * M_PI/180;
-		else if (prop == &m_twist_angle)
-			twist_angle_for_property = value * M_PI/180;
+
+		if (prop == m_vert_angle)
+			vertical_angle_for_property = m_vert_angle * M_PI/180;
+		else if (prop == m_horiz_angle)
+			horizontal_angle_for_property = m_vert_angle * M_PI/180;
+		else if (prop == m_twist_angle)
+			twist_angle_for_property = m_vert_angle * M_PI/180;
 		CoordinateSystem::AnglesToAxes(vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property, x, y);
 		m_x = x;
 		m_y = y;
@@ -1351,7 +1350,7 @@ void CoordinateSystem::WriteXML(TiXmlNode *root)
 {
 	TiXmlElement * element;
 	element = new TiXmlElement( "CoordinateSystem" );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 	element->SetAttribute("title", m_title.utf8_str() );
 	element->SetDoubleAttribute("ox", m_o.X());
 	element->SetDoubleAttribute("oy", m_o.Y());
@@ -1459,7 +1458,7 @@ void CoordinateSystem::AnglesToAxes(const double &v_angle, const double &h_angle
 
 	x = gp_Dir(1, 0, 0).Transformed(mat);
 	y = gp_Dir(0, 1, 0).Transformed(mat);
-} 
+}
 
 static CoordinateSystem* coordinate_system_for_PickFrom3Points = NULL;
 static gp_Vec y_for_PickFrom3Points(0, 1, 0);
@@ -1469,7 +1468,7 @@ static const double unit_vec_tol = 0.0000000001;
 
 static void on_set_origin(const double* pos)
 {
-	coordinate_system_for_PickFrom3Points->m_o.SetValue(make_point(pos));
+	coordinate_system_for_PickFrom3Points->m_o = make_point(pos);
 	wxGetApp().Repaint();
 }
 
@@ -1519,7 +1518,7 @@ void CoordinateSystem::PickFrom3Points()
 	coordinate_system_for_PickFrom3Points = &temp;
 	y_for_PickFrom3Points = m_y;
 	z_for_PickFrom3Points = m_x.Normalize() ^ m_y.Normalize();
-	m_visible.SetValue(false);
+	SetVisible(false);
 	wxGetApp().RegisterOnGLCommands(OnGlCommandsForPickFrom3Points);
 
 	double pos[3];
@@ -1544,13 +1543,13 @@ void CoordinateSystem::PickFrom1Point()
 	coordinate_system_for_PickFrom3Points = &temp;
 	y_for_PickFrom3Points = m_y;
 	z_for_PickFrom3Points = m_x.Normalize() ^ m_y.Normalize();
-	m_visible.SetValue(false);
+	SetVisible(false);
 	wxGetApp().RegisterOnGLCommands(OnGlCommandsForPickFrom3Points);
 
 	double pos[3];
 
 	wxGetApp().PickPosition(_("Pick the location"), pos, on_set_origin);
-	
+
 	*this = temp;
 	wxGetApp().RemoveOnGLCommands(OnGlCommandsForPickFrom3Points);
 

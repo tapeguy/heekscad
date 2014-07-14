@@ -30,9 +30,10 @@ public:
 
 	const CoordinateSystem& operator=(const CoordinateSystem &c);
 
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
-	void OnPropertyEdit(Property* prop);
 	int GetType()const{return CoordinateSystemType;}
 	int GetMarkingFilter()const{return CoordinateSystemMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);

@@ -7,8 +7,10 @@
 
 #include "Gripper.h"
 
-class GripperSelTransform:public Gripper{
+class GripperSelTransform : public Gripper
+{
 public:
+
 	double m_from[3];
 	double m_last_from[3];
 	double m_initial_grip_pos[3];

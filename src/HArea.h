@@ -28,8 +28,10 @@ public:
 
 	const HArea& operator=(const HArea &b);
 
+    void InitializeProperties();
+    void GetProperties(std::list<Property *> *list);
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	int GetType()const{return AreaType;}
 	int GetMarkingFilter()const{return AreaMarkingFilter;}
 	int GetIDGroupType()const{return SketchType;}
@@ -41,7 +43,6 @@ public:
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void GetProperties(std::list<Property *> *list);
 	bool Stretch(const double *p, const double* shift, void* data);
 	void WriteXML(TiXmlNode *root);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);

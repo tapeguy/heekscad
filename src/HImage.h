@@ -9,7 +9,7 @@
 class HImage: public HeeksObj
 {
 private:
-	// in the case of the movie "C:\image00001.jpg" ( for example ) will be changed to "C:\image00045.jpg", 
+	// in the case of the movie "C:\image00001.jpg" ( for example ) will be changed to "C:\image00045.jpg",
 	// where 45 is the frame number stored in theApp.m_animation_current_frame
 	unsigned int m_texture_number;
 	int m_frame_when_loaded;// for movies only. only valid if m_texture_number != 0

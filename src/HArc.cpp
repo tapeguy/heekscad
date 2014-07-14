@@ -19,9 +19,7 @@ HArc::HArc(const HArc &line)
  : EndedObject(line.m_color)
 {
 	InitializeProperties();
-#ifndef MULTIPLE_OWNERS
 	C = new HPoint(gp_Pnt(), line.m_color);
-#endif
 	operator=(line);
 }
 
@@ -29,17 +27,9 @@ HArc::HArc(const gp_Pnt &a, const gp_Pnt &b, const gp_Circ &c, const HeeksColor&
  : EndedObject(col)
 {
 	InitializeProperties();
-#ifdef MULTIPLE_OWNERS
 	A->m_p = a;
 	B->m_p = b;
-	C = new HPoint(c.Location(),col);
-	C->SetSkipForUndo(true);
-	Add(C,NULL);
-#else
-	A->m_p = a;
-	B->m_p = b;
-	C = new HPoint(c.Location(),col);
-#endif
+	C = new HPoint(c.Location(), col);
 	C->m_draw_unselected = false;
 	m_axis = c.Axis();
 	m_radius = c.Radius();
@@ -81,13 +71,7 @@ const HArc& HArc::operator=(const HArc &b){
 	EndedObject::operator=(b);
 	m_radius = b.m_radius;
 	m_axis = b.m_axis;
-#ifdef MULTIPLE_OWNERS
-	std::list<HeeksObj*>::iterator it = m_objects.begin();
-	it++;it++;
-	C = (HPoint*)*it;
-#else
 	*C = *b.C;
-#endif
 	C->SetSkipForUndo(true);
 	return *this;
 }
@@ -344,21 +328,20 @@ void HArc::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 	list->push_back(GripData(GripperTypeStretch,C->m_p.X(),C->m_p.Y(),C->m_p.Z(),C));
 }
 
-void HArc::OnPropertyEdit(Property *prop)
+void HArc::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_start || prop == &m_end || prop == &m_centre)
+	if (prop == m_start || prop == m_end || prop == m_centre)
 	{
-		const gp_Pnt& vt = *(PropertyVertex *)prop;
-		if (prop == &m_start)
-			A->m_p = vt;
-		else if (prop == &m_end)
-			B->m_p = vt;
-		else if (prop == &m_centre)
-			C->m_p = vt;
+		if (prop == m_start)
+			A->m_p = m_start;
+		else if (prop == m_end)
+			B->m_p = m_start;
+		else if (prop == m_centre)
+			C->m_p = m_start;
 	}
-	else if (prop == &m_axis_direction)
+	else if (prop == m_axis_direction)
 	{
-		const gp_Vec& vt = *(PropertyVector *)prop;
+		const gp_Vec& vt = m_axis_direction;
 		gp_Ax1 a = m_axis;
 		a.SetDirection(vt);
 		m_axis = a;
@@ -368,7 +351,8 @@ void HArc::OnPropertyEdit(Property *prop)
 	}
 }
 
-void HArc::GetProperties(std::list<Property *> *list){
+void HArc::GetProperties(std::list<Property *> *list)
+{
 	m_start = A->m_p;
 	m_end = B->m_p;
 	m_centre = C->m_p;
@@ -734,7 +718,7 @@ double HArc::IncludedAngle()const
 	int dir = (this->m_axis.Direction().Z() > 0) ? 1:-1;
 	if(inc_ang > 1. - 1.0e-10) return 0;
 	if(inc_ang < -1. + 1.0e-10)
-		inc_ang = M_PI;  
+		inc_ang = M_PI;
 	else {									// dot product,   v1 . v2  =  cos ang
 		if(inc_ang > 1.0) inc_ang = 1.0;
 		inc_ang = acos(inc_ang);									// 0 to M_PI radians

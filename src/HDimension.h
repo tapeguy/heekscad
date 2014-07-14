@@ -26,7 +26,8 @@ enum DimensionUnits
 
 class HeeksConfig;
 
-class HDimension: public EndedObject{
+class HDimension: public EndedObject
+{
 private:
 	gp_Pnt GetB2(); // return B, possibly flattened
 	gp_Pnt GetC2(); // return m_p2, possibly flattened

@@ -141,19 +141,19 @@ void HRuler::CalculateMarks(std::list<RulerMark> &marks)
 			if(i % 10 == 0)
 			{
 				// big mark
-				mark.length = 3.0; 
+				mark.length = 3.0;
 				mark.width = 0.1;
 			}
 			else if(i % 5 == 0)
 			{
 				// medium mark
-				mark.length = 2.0; 
+				mark.length = 2.0;
 				mark.width = 0.1;
 			}
 			else
 			{
 				// small mark
-				mark.length = 1.0; 
+				mark.length = 1.0;
 				mark.width = 0.1;
 			}
 
@@ -172,19 +172,19 @@ void HRuler::CalculateMarks(std::list<RulerMark> &marks)
 			if(i % 10 == 0)
 			{
 				// big mark
-				mark.length = 3.0; 
+				mark.length = 3.0;
 				mark.width = 0.1;
 			}
 			else if(i % 5 == 0)
 			{
 				// medium mark
-				mark.length = 2.0; 
+				mark.length = 2.0;
 				mark.width = 0.1;
 			}
 			else
 			{
 				// small mark
-				mark.length = 1.0; 
+				mark.length = 1.0;
 				mark.width = 0.1;
 			}
 
@@ -310,9 +310,9 @@ public:
 
 static ResetRulerTool reset_ruler_tool;
 
-void HRuler::OnPropertyEdit(Property* prop)
+void HRuler::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_units_choice) {
+	if (prop == m_units_choice) {
 		m_units = (m_units_choice == 0) ? 1.0 : 25.4;
 	}
 	KillGLLists();

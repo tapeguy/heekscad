@@ -8,7 +8,7 @@
 #include "wx/dc.h"
 
 #include <list>
-#include "MutableObject.h"
+#include "DomainObject.h"
 #include "Property.h"
 #include "ObjTypes.h"
 
@@ -21,10 +21,6 @@ class GripData;
 class TopoDS_Shape;
 class ObjectCanvas;
 
-#ifndef MULTIPLE_OWNERS
-//    #define MULTIPLE_OWNERS
-#endif
-
 
 #ifdef HEEKSCAD
 #define GET_ICON(X,Y) x = (X); y = (Y); texture_number = wxGetApp().m_icon_texture_number
@@ -32,38 +28,38 @@ class ObjectCanvas;
 #define GET_ICON(X,Y) x = (X); y = (Y); texture_number = theApp.m_icon_texture_number
 #endif
 
-class HeeksObj : public MutableObject {
+class HeeksObj : public DomainObject {
+
 protected:
-#ifdef MULTIPLE_OWNERS
-	std::list<HeeksObj*> m_owners;
-	std::list<HeeksObj*>::iterator m_owners_it;
-#else
+
 	HeeksObj* m_owner;
-#endif
+	std::list<HeeksObj*> m_links;
 
 public:
-	bool m_skip_for_undo;
-	unsigned int m_layer;
-	bool m_preserving_id;
-	unsigned int m_index;
 
-	HeeksObj(void);
-	HeeksObj(const HeeksObj& copy);
+    bool m_skip_for_undo;
+    unsigned int m_layer;
+    bool m_preserving_id;
+    unsigned int m_index;
 
-	// Properties
-	PropertyString   m_type;
-	PropertyString   m_title;
-	PropertyInt      m_id;
-	PropertyCheck    m_visible;
-	PropertyColor    m_color;
+    HeeksObj(void);
+    HeeksObj(const HeeksObj& copy);
+
+    // Properties
+    PropertyString&   GetTypeProperty() const;
+    PropertyString&   GetTitleProperty() const;
+    PropertyInt&      GetIDProperty() const;
+    PropertyCheck&    GetVisibleProperty() const;
 
 	virtual ~HeeksObj();
 
 	virtual const HeeksObj& operator=(const HeeksObj &ho);
-	virtual void OnPropertySet(Property *prop);
+	virtual bool OnPropertySet(Property& prop);
 
 	// virtual functions
 	virtual void InitializeProperties();
+    virtual void GetProperties(std::list<Property *> *list);
+
 	virtual int GetType()const{return UnknownType;}
 	virtual int GetMarkingFilter()const{return UnknownMarkingFilter;}
 	virtual int GetIDGroupType()const{return GetType();}
@@ -82,8 +78,6 @@ public:
 	virtual void ReloadPointers(){}
 	virtual void Disconnect(std::list<HeeksObj*>parents){}
 	virtual void CopyFrom(const HeeksObj* object){}
-	virtual void SetColor(const HeeksColor &col){ m_color = col; }
-	virtual const HeeksColor& GetColor()const { return m_color; }
 	virtual void ModifyByMatrix(const double *m){} // transform the object
 	virtual bool GetStartPoint(double* pos){return false;}
 	virtual bool GetEndPoint(double* pos){return false;}
@@ -100,7 +94,6 @@ public:
 	virtual bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point){return false;}
 	virtual void GetTools(std::list<Tool*>* t_list, const wxPoint* p){}
 	virtual void GetGripperPositionsTransformed(std::list<GripData> *list, bool just_for_endof);
-	virtual void GetProperties(std::list<Property *> *list);
 	virtual bool Stretch(const double *p, const double* shift, void* data){return false;} // return true, if undo stretch is done with Add and Delete
 	virtual bool StretchTemporary(const double *p, const double* shift, void* data){Stretch(p, shift, data); return true;} // returns true, because Stretch was done.  If not done, then override and return false;
 	virtual bool StretchTemporaryTransformed(const double *p, const double* shift, void* data);
@@ -137,27 +130,20 @@ public:
 #endif
 	virtual void WriteBaseXML(TiXmlElement *element);
 	virtual void ReadBaseXML(TiXmlElement* element);
-	virtual void SetID(int id) { m_id = id; }
-	virtual unsigned int GetID() { int id = m_id; return id; }
+    virtual unsigned int GetID() const { int id = GetIDProperty(); return id; }
+	virtual void SetID(int id) { GetIDProperty() = id; }
 	virtual void OnSetID(int id);
 	virtual bool UsesID() { return true; }
-	virtual bool UsesColor() { return true; }
+	virtual bool IsVisible() const { return GetVisibleProperty(); }
+	virtual void SetVisible(bool visible) { GetVisibleProperty().SetValue(visible); }
+    virtual const wxString& GetTitle() const { return GetTitleProperty(); }
+    virtual void SetTitle(const wxChar* title) { GetTitleProperty().SetValue(title); }
+    virtual bool UsesColor() { return false; }
 	bool OnVisibleLayer();
 	HeeksObj* Owner();
 	virtual void SetOwner(HeeksObj*);
-#ifdef MULTIPLE_OWNERS
-	virtual std::list<HeeksObj*> Owners();
-	virtual bool HasOwner();
-	virtual bool HasOwner(HeeksObj* obj);
-	virtual void AddOwner(HeeksObj*);
-	virtual void AddOwners(std::list<HeeksObj *> owners);
-	virtual void RemoveOwners();
-	virtual void RemoveOwner(HeeksObj*);
-	virtual HeeksObj* GetFirstOwner();
-	virtual HeeksObj* GetNextOwner();
-#else
 	virtual void RemoveOwner();
-#endif
+    const std::list<HeeksObj*>& GetLinks ( ) const;
 	virtual const TopoDS_Shape *GetShape() { return(NULL); }
 	virtual bool IsTransient(){return false;}
 	virtual bool IsList(){return false;}

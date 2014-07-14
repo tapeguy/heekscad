@@ -12,6 +12,8 @@ class CoordinateSystem;
 class CSketch:public ObjList
 {
 private:
+    PropertyColor m_color;
+
 	wxString m_title;
 	bool IsClockwise()const{return GetArea()>0;}
 	std::map<int, int> order_map_for_properties; // maps drop-down index to SketchOrderType
@@ -42,7 +44,7 @@ public:
 	int GetMarkingFilter()const{return SketchMarkingFilter;}
 	const wxChar* GetTypeString(void)const{return _("Sketch");}
 	const wxBitmap &GetIcon();
-	void OnPropertyEdit(Property* prop);
+	void OnPropertyEdit(Property& prop);
 	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	HeeksObj *MakeACopy(void)const;

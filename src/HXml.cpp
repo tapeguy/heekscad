@@ -16,11 +16,6 @@ HeeksObj *HXml::MakeACopy(void)const{
 	return new_object;
 }
 
-void HXml::GetProperties(std::list<Property *> *list){
-
-	HeeksObj::GetProperties(list);
-}
-
 const wxBitmap &HXml::GetIcon()
 {
 	static wxBitmap* icon = NULL;
@@ -31,7 +26,7 @@ const wxBitmap &HXml::GetIcon()
 void HXml::WriteXML(TiXmlNode *root)
 {
 	TiXmlElement * element = new TiXmlElement( m_element );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 	//WriteBaseXML(element);
 }
 

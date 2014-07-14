@@ -6,7 +6,8 @@
 
 #include "DynamicSolid.h"
 
-class CPad: public DynamicSolid{
+class CPad: public DynamicSolid
+{
 public:
 	PropertyDouble m_length;
 	CSketch* m_sketch;

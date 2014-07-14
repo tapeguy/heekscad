@@ -71,7 +71,8 @@ void CInputModeCanvas::RefreshProperties2(){
 	std::list<Property *> list;
 
 	// add the input_mode mode's properties
-	PropertyString* title = new PropertyString(_("Input Mode"), wxGetApp().input_mode_object->GetTitle(), NULL);
+	PropertyString* title = new PropertyString(_("input_mode"), _("Input Mode"), NULL);
+	title->SetValue ( wxGetApp().input_mode_object->GetTitle() );
 	if(wxGetApp().input_mode_object->TitleHighlighted())
 			title->SetHighlighted(true);
 	list.push_back(title);
@@ -81,8 +82,7 @@ void CInputModeCanvas::RefreshProperties2(){
 	std::list<Property *>::iterator It;
 	for(It = list.begin(); It != list.end(); It++)
 	{
-		Property* property = *It;
-		printf ("CInputModeCanvas::RefreshProperties2(): property - %ls\n", property->GetShortString());
+	    Property * property = (Property *)*It;
 		AddProperty(property);
 	}
 

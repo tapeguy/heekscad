@@ -25,15 +25,16 @@ public:
 	CCone(const gp_Ax2& pos, double r1, double r2, double height, const wxChar* title, const HeeksColor& col, float opacity);
 	CCone(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity);
 
+    void InitializeProperties();
+    void GetProperties(std::list<Property *> *list);
+    void OnPropertyEdit(Property& prop);
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	const wxChar* GetTypeString(void)const{return _("Cone");}
 	const wxBitmap &GetIcon();
 	void glCommands(bool select, bool marked, bool no_color);
 	HeeksObj *MakeACopy(void)const;
-	void GetProperties(std::list<Property *> *list);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property *prop);
 	bool ValidateProperties();
 	bool GetScaleAboutMatrix(double *m);
 	bool Stretch(const double *p, const double* shift, void* data);

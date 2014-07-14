@@ -4,6 +4,7 @@
 
 #include "stdafx.h"
 #include "HeeksObj.h"
+#include "PropertyFactory.h"
 #ifdef HEEKSCAD
 #include "../tinyxml/tinyxml.h"
 #include "ObjList.h"
@@ -18,31 +19,45 @@
 #endif
 
 
-HeeksObj::HeeksObj(void):
-#ifndef MULTIPLE_OWNERS
-  m_owner(NULL),
-#endif
-  m_skip_for_undo(false)
-, m_layer(0)
-, m_preserving_id(false)
-, m_index(0)
-, m_type(GetTypeString())
-, m_title(GetShortString())
-, m_id(0)
-, m_visible(true)
+
+PropertyDescriptor desc[] = {
+        { PropertyStringType,       _("type"),       _("Object Type"),       { {  PROP_READONLY,  "TRUE"  }, { NULL } }    },
+        { PropertyStringType,       _("title"),      _("Object Title")       },
+        { PropertyIntType,          _("id"),         _("ID")                 },
+        { PropertyCheckType,        _("visible"),    _("Visible")            },
+        { PropertyInvalidType }
+};
+
+
+PropertyString& HeeksObj::GetTypeProperty() const    {   return *((PropertyString *)GetProperty ( _("type") ));      }
+PropertyString& HeeksObj::GetTitleProperty() const   {   return *((PropertyString *)GetProperty ( _("title") ));     }
+PropertyInt& HeeksObj::GetIDProperty() const         {   return *((PropertyInt *)GetProperty ( _("id") ));           }
+PropertyCheck& HeeksObj::GetVisibleProperty() const  {   return *((PropertyCheck *)GetProperty ( _("visible") ));    }
+
+
+HeeksObj::HeeksObj(void)
+ : DomainObject(GetTypeString(), PropertyFactory(), (unsigned char *)&desc, sizeof(PropertyDescriptor)),
+   m_owner(NULL),
+   m_skip_for_undo(false),
+   m_layer(0),
+   m_preserving_id(false),
+   m_index(0)
 {
+    GetTypeProperty().SetValue(GetTypeString());
+    SetTitle(_(""));
+    SetID(0);
+    SetVisible(true);
+
 	InitializeProperties();
 }
 
-HeeksObj::HeeksObj(const HeeksObj& ho):
-#ifndef MULTIPLE_OWNERS
-  m_owner(NULL),
-#endif
-  m_skip_for_undo(false)
-, m_layer(0)
-, m_preserving_id(false)
-, m_index(0)
-, m_id(0)
+HeeksObj::HeeksObj(const HeeksObj& ho)
+ : DomainObject(GetTypeString(), PropertyFactory(), (unsigned char *)&desc, sizeof(PropertyDescriptor)),
+   m_owner(NULL),
+   m_skip_for_undo(false),
+   m_layer(0),
+   m_preserving_id(false),
+   m_index(0)
 {
 	InitializeProperties();
 	operator=(ho);
@@ -50,51 +65,48 @@ HeeksObj::HeeksObj(const HeeksObj& ho):
 
 void HeeksObj::InitializeProperties()
 {
-	m_type.Initialize(_("object type"), this);
-	m_type.SetReadOnly(true);
-	m_title.Initialize(_("object title"), this);
-	m_id.Initialize(_("ID"), this);
-	m_visible.Initialize(_("visible"), this);
-	m_color.Initialize(_("color"), this);
 }
 
-void HeeksObj::OnPropertySet(Property *prop)
+bool HeeksObj::OnPropertySet(Property& prop)
 {
-	if(prop == &m_title) {
-		OnEditString(m_title);
+	if(prop == GetTitleProperty()) {
+		OnEditString(GetTitleProperty());
 	}
-	else if(prop == &m_id) {
-		OnSetID(m_id);
+	else if(prop == GetIDProperty() && GetID() != 0) {
+		OnSetID(GetIDProperty() );
 	}
+	return TRUE;
 }
 
 const HeeksObj& HeeksObj::operator=(const HeeksObj &ho)
 {
-	// don't copy the ID or the owner
+    int id = ho.m_preserving_id ? ho.GetID() : GetID();
+
+    for ( DomainObjectIterator itr = ho.begin(); itr != ho.end(); itr++ )
+    {
+        Property * prop = *itr;
+        Property * my_prop = this->GetProperty ( prop->GetName ( ) );
+        if ( my_prop )
+        {
+            *my_prop = *prop;
+        }
+//        else
+//        {
+//            this->AddProperty ( (Property *)prop.Clone ( ) );
+//        }
+    }
 	m_layer = ho.m_layer;
-	m_type = ho.m_type;
-	m_title = ho.m_title;
-	m_visible = ho.m_visible;
-	m_color = ho.m_color;
 	m_skip_for_undo = ho.m_skip_for_undo;
 
-	if(ho.m_preserving_id)
-		m_id = ho.m_id;
+	SetID(id);
 
 	return *this;
 }
 
 HeeksObj::~HeeksObj()
 {
-#ifdef MULTIPLE_OWNERS
-	std::list<HeeksObj*>::iterator it;
-	for(it = m_owners.begin(); it!= m_owners.end(); ++it)
-	{
-		(*it)->Remove(this);
-	}
-#else
-	if(m_owner)m_owner->Remove(this);
-#endif
+	if(m_owner)
+	    m_owner->Remove(this);
 
 #ifdef HEEKSCAD
 	if (m_index) wxGetApp().ReleaseIndex(m_index);
@@ -143,11 +155,7 @@ bool HeeksObj::StretchTemporaryTransformed(const double *p, const double* shift,
 #ifdef HEEKSCAD
 	gp_Trsf mat;
 
-#ifdef MULTIPLE_OWNERS
-	HeeksObj* owner = Owner();
-#else
 	HeeksObj* owner = m_owner;
-#endif
 	CSketch *sketch = dynamic_cast<CSketch*>(owner);
 
 	if(sketch && sketch->m_coordinate_system)
@@ -185,25 +193,15 @@ void HeeksObj::GetGripperPositionsTransformed(std::list<GripData> *list, bool ju
 
 	gp_Trsf mat;
 
-#ifdef MULTIPLE_OWNERS
-	HeeksObj* owner = Owner();
-	CSketch *sketch = dynamic_cast<CSketch*>(owner);
-#else
 	CSketch *sketch = dynamic_cast<CSketch*>(m_owner);
-#endif
 
 	if(sketch && sketch->m_coordinate_system)
 		mat = sketch->m_coordinate_system->GetMatrix();
 
-#ifdef MULTIPLE_OWNERS
-	CPad *pad = dynamic_cast<CPad*>(owner);
-	if(!pad && owner)
-		pad = dynamic_cast<CPad*>(owner->Owner());
-#else
 	CPad *pad = dynamic_cast<CPad*>(m_owner);
 	if(!pad && m_owner)
 		pad = dynamic_cast<CPad*>(m_owner->m_owner);
-#endif
+
 	if(pad && pad->m_sketch->m_coordinate_system)
 		mat = pad->m_sketch->m_coordinate_system->GetMatrix();
 
@@ -232,7 +230,7 @@ void HeeksObj::GetGripperPositions(std::list<GripData> *list, bool just_for_endo
 	if(!box.m_valid)return;
 
 	//TODO: This is a tab bit of a strange thing to do. Especially for planar objects like faces
-	//ones that are on a plane like y-z or x-z will have all gripper merged togeather.
+	//ones that are on a plane like y-z or x-z will have all gripper merged together.
 	list->push_back(GripData(GripperTypeTranslate,box.m_x[0],box.m_x[1],box.m_x[2],NULL));
 	list->push_back(GripData(GripperTypeRotateObject,box.m_x[3],box.m_x[1],box.m_x[2],NULL));
 	list->push_back(GripData(GripperTypeRotateObject,box.m_x[0],box.m_x[4],box.m_x[2],NULL));
@@ -242,30 +240,24 @@ void HeeksObj::GetGripperPositions(std::list<GripData> *list, bool just_for_endo
 
 void HeeksObj::GetProperties(std::list<Property *> *list)
 {
-	m_type = GetTypeString();
-	if (!UsesID()) m_id.SetVisible(false);
-	if (!UsesColor()) m_color.SetVisible(false);
-	MutableObject::GetProperties(list);
+    GetTypeProperty().SetValue(GetTypeString());
+    if (!UsesID())
+        GetIDProperty().SetVisible(false);
+
+    DomainObject::GetProperties ( list );
 }
 
 bool HeeksObj::Add(HeeksObj* object, HeeksObj* prev_object)
 {
-#ifdef MULTIPLE_OWNERS
-	object->AddOwner(this);
-#else
 	object->m_owner = this;
-#endif
 	object->OnAdd();
 	return true;
 }
 
 void HeeksObj::OnRemove()
 {
-#ifdef MULTIPLE_OWNERS
-	if(m_owners.size() == 0)KillGLLists();
-#else
-	if(m_owner == NULL)KillGLLists();
-#endif
+	if(m_owner == NULL)
+	    KillGLLists();
 }
 
 void HeeksObj::OnSetID(int id)
@@ -338,86 +330,6 @@ bool HeeksObj::OnVisibleLayer()
 	return true;
 }
 
-#ifdef MULTIPLE_OWNERS
-
-HeeksObj* HeeksObj::Owner()
-{
-	if(m_owners.size() == 0)return NULL;
-	return *m_owners.begin();
-}
-
-std::list<HeeksObj*> HeeksObj::Owners()
-{
-	std::list<HeeksObj *> copy;
-	std::copy( m_owners.begin(), m_owners.end(), std::inserter( copy, copy.begin() ) );
-	return(copy);
-}
-
-void HeeksObj::SetOwner(HeeksObj *obj)
-{
-	m_owners.clear();
-	if(obj)AddOwner(obj);
-}
-
-bool HeeksObj::HasOwner(HeeksObj *obj)
-{
-	std::list<HeeksObj*>::iterator it;
-	for(it = m_owners.begin(); it!= m_owners.end(); ++it)
-	{
-		if(*it == obj)
-			return true;
-	}
-	return false;
-}
-
-bool HeeksObj::HasOwner()
-{
-	return !m_owners.empty();
-}
-
-void HeeksObj::RemoveOwners()
-{
-	m_owners.clear();
-}
-
-void HeeksObj::RemoveOwner(HeeksObj* obj)
-{
-	m_owners.remove(obj);
-}
-
-void HeeksObj::AddOwner(HeeksObj *obj)
-{
-	// Make sure we don't add duplicates.
-	for (std::list<HeeksObj*>::iterator itOwner = m_owners.begin(); itOwner != m_owners.end(); itOwner++)
-	{
-		if (*itOwner == obj) return;	// It's already here.
-	}
-
-	m_owners.push_back(obj);
-}
-
-void HeeksObj::AddOwners(std::list<HeeksObj*> owners)
-{
-	for (std::list<HeeksObj*>::iterator itOwner = m_owners.begin(); itOwner != m_owners.end(); itOwner++)
-	{
-		AddOwner( *itOwner );
-	}
-}
-
-HeeksObj* HeeksObj::GetFirstOwner()
-{
-	m_owners_it = m_owners.begin();
-	return GetNextOwner();
-}
-
-HeeksObj* HeeksObj::GetNextOwner()
-{
-	if(m_owners_it != m_owners.end())
-		return *m_owners_it++;
-	return NULL;
-}
-
-#else
 
 HeeksObj* HeeksObj::Owner()
 {
@@ -434,7 +346,10 @@ void HeeksObj::RemoveOwner()
 	m_owner = NULL;
 }
 
-#endif
+const std::list<HeeksObj*>& HeeksObj::GetLinks ( ) const
+{
+    return m_links;
+}
 
 HeeksObj *HeeksObj::Find( const int type, const unsigned int id )
 {

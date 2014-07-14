@@ -110,146 +110,146 @@ SectioningDlg::SectioningDlg( wxWindow* parent, SectioningData &data ) : HDialog
 	m_ignore_event_functions = true;
 
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
-	
+
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
-	
+
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
-	
+
 	m_staticText1 = new wxStaticText( this, wxID_ANY, wxT("Axis"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText1->Wrap( -1 );
 	bSizer5->Add( m_staticText1, 0, wxALL, 5 );
-	
+
 	m_radioBtn1 = new wxRadioButton( this, ID_RADIO_X, wxT("X axis"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP );
 	bSizer5->Add( m_radioBtn1, 0, wxALL, 5 );
-	
+
 	m_radioBtn2 = new wxRadioButton( this, ID_RADIO_Y, wxT("Y axis"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( m_radioBtn2, 0, wxALL, 5 );
-	
+
 	m_radioBtn3 = new wxRadioButton( this, ID_RADIO_Z, wxT("Z axis"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( m_radioBtn3, 0, wxALL, 5 );
-	
+
 	m_radioBtn4 = new wxRadioButton( this, ID_RADIO_SPECIFY, wxT("Specify"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( m_radioBtn4, 0, wxALL, 5 );
 
 	bSizer2->Add( bSizer5, 0, wxEXPAND, 5 );
-	
+
 	wxBoxSizer* bSizer6;
 	bSizer6 = new wxBoxSizer( wxVERTICAL );
-	
+
 	wxBoxSizer* bSizer101;
 	bSizer101 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	m_staticText3 = new wxStaticText( this, wxID_ANY, wxT("Point on axis"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText3->Wrap( -1 );
 	bSizer101->Add( m_staticText3, 0, wxALL, 5 );
-	
+
 	m_button1 = new wxButton( this, ID_BUTTON_PICK_POS1, wxT("Select"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer101->Add( m_button1, 0, wxALL, 5 );
 
 	m_button_zero = new wxButton( this, ID_BUTTON_ZERO, wxT("0, 0, 0"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer101->Add( m_button_zero, 0, wxALL, 5 );
-	
+
 	bSizer6->Add( bSizer101, 1, wxEXPAND, 5 );
-	
+
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	m_staticText2 = new wxStaticText( this, wxID_ANY, wxT("X"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText2->Wrap( -1 );
 	bSizer7->Add( m_staticText2, 1, wxLEFT|wxRIGHT, 5 );
-	
+
 	m_staticText4 = new wxStaticText( this, wxID_ANY, wxT("Y"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText4->Wrap( -1 );
 	bSizer7->Add( m_staticText4, 1, wxLEFT|wxRIGHT, 5 );
-	
+
 	m_staticText5 = new wxStaticText( this, wxID_ANY, wxT("Z"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText5->Wrap( -1 );
 	bSizer7->Add( m_staticText5, 1, wxLEFT|wxRIGHT, 5 );
-	
+
 	bSizer6->Add( bSizer7, 0, wxEXPAND, 0 );
-	
+
 	wxBoxSizer* bSizer8;
 	bSizer8 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	m_textCtrl1 = new CLengthCtrl( this, ID_POS_X );
 	bSizer8->Add( m_textCtrl1, 0, wxALL, 0 );
-	
+
 	m_textCtrl2 = new CLengthCtrl( this, ID_POS_Y );
 	bSizer8->Add( m_textCtrl2, 0, wxALL, 0 );
-	
+
 	m_textCtrl3 = new CLengthCtrl( this, ID_POS_Z );
 	bSizer8->Add( m_textCtrl3, 0, wxALL, 0 );
-	
+
 	bSizer6->Add( bSizer8, 0, wxEXPAND, 0 );
-	
+
 	wxBoxSizer* bSizer11;
 	bSizer11 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	m_staticText12 = new wxStaticText( this, wxID_ANY, wxT("Secondary point on axis"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText12->Wrap( -1 );
 	bSizer11->Add( m_staticText12, 0, wxALL, 5 );
-	
+
 	m_button2 = new wxButton( this, ID_BUTTON_PICK_POS2, wxT("Select"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer11->Add( m_button2, 0, wxALL, 5 );
-	
+
 	bSizer6->Add( bSizer11, 1, wxEXPAND, 5 );
-	
+
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	m_staticText9 = new wxStaticText( this, wxID_ANY, wxT("X"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText9->Wrap( -1 );
 	bSizer9->Add( m_staticText9, 1, wxLEFT|wxRIGHT, 5 );
-	
+
 	m_staticText10 = new wxStaticText( this, wxID_ANY, wxT("Y"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText10->Wrap( -1 );
 	bSizer9->Add( m_staticText10, 1, wxLEFT|wxRIGHT, 5 );
-	
+
 	m_staticText11 = new wxStaticText( this, wxID_ANY, wxT("Z"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText11->Wrap( -1 );
 	bSizer9->Add( m_staticText11, 1, wxLEFT|wxRIGHT, 5 );
-	
+
 	bSizer6->Add( bSizer9, 0, wxEXPAND, 0 );
-	
+
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	m_textCtrl4 = new CLengthCtrl( this, ID_POS2_X );
 	bSizer10->Add( m_textCtrl4, 0, wxALL, 0 );
-	
+
 	m_textCtrl5 = new CLengthCtrl( this, ID_POS2_Y );
 	bSizer10->Add( m_textCtrl5, 0, wxALL, 0 );
-	
+
 	m_textCtrl6 = new CLengthCtrl( this, ID_POS2_Z );
 	bSizer10->Add( m_textCtrl6, 0, wxALL, 0 );
-	
+
 	bSizer6->Add( bSizer10, 0, wxEXPAND, 0 );
-	
+
 	bSizer2->Add( bSizer6, 1, wxEXPAND, 5 );
-	
+
 	bSizer1->Add( bSizer2, 0, wxEXPAND, 5 );
-	
+
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxHORIZONTAL );
-	
+
 	m_staticText13 = new wxStaticText( this, wxID_ANY, wxT("Angle of plane"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText13->Wrap( -1 );
 	bSizer3->Add( m_staticText13, 0, wxALL, 5 );
-	
+
 	m_textCtrl7 = new CDoubleCtrl( this, ID_ANGLE );
 	bSizer3->Add( m_textCtrl7, 0, wxALL, 5 );
-	
+
 	bSizer1->Add( bSizer3, 0, wxEXPAND, 5 );
 
 	// add OK and Cancel
 	wxBoxSizer *sizerOKCancel = MakeOkAndCancel(wxHORIZONTAL);
 	bSizer1->Add( sizerOKCancel, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, control_border );
-	
+
 	this->SetSizer( bSizer1 );
 	this->Layout();
 	bSizer1->Fit( this );
@@ -443,7 +443,7 @@ static void SectionObjectsWithDialog(std::list<HeeksObj*> list)
 				if(CShape::IsTypeAShape(object->GetType()) == false)continue;
 				TopoDS_Shape new_shape = BRepAlgoAPI_Cut(((CShape*)object)->Shape(), cuboid);
 				if(new_shape.IsNull())continue;
-				HeeksObj* new_object = CShape::MakeObject(new_shape, _("Sectioned Solid"), SOLID_TYPE_UNKNOWN, ((CShape*)object)->m_color, ((CShape*)object)->GetOpacity());
+				HeeksObj* new_object = CShape::MakeObject(new_shape, _("Sectioned Solid"), SOLID_TYPE_UNKNOWN, ((CShape*)object)->GetColor(), ((CShape*)object)->GetOpacity());
 				wxGetApp().Add(new_object, NULL);
 				wxGetApp().Remove(object);
 				wxGetApp().m_marked_list->Add(new_object, false);

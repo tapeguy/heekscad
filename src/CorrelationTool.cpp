@@ -70,11 +70,11 @@ bool CCorrelationTool::SimilarScale(
 /**
 	Get a set of correlation points that represent a single object.
  */
-CCorrelationTool::CorrelationData_t CCorrelationTool::CorrelationData(      HeeksObj *sample_object,
-                                                HeeksObj *reference_object,
-                                                const int number_of_sample_points,
-                                                const double max_scale_threshold,
-                                                const bool correlate_by_color ) const
+CCorrelationTool::CorrelationData_t CCorrelationTool::CorrelationData( HeeksObj *sample_object,
+                                                                       HeeksObj *reference_object,
+                                                                       const int number_of_sample_points,
+                                                                       const double max_scale_threshold,
+                                                                       const bool correlate_by_color ) const
 {
 	CorrelationData_t results;
 	double required_scaling = 1.0;	// How much do we need to scale the sample object to make it the same
@@ -93,7 +93,7 @@ CCorrelationTool::CorrelationData_t CCorrelationTool::CorrelationData(      Heek
 		return(results);	// return an empty data set.
 	} // End if - then
 
-	if ((correlate_by_color) && (! ColorsMatch(reference_object, sample_object)))
+	if((correlate_by_color) && (! ColorsMatch((CShape *)reference_object, (CShape *)sample_object)))
     {
 		return(results);	// return an empty data set.
 	} // End if - then
@@ -368,7 +368,7 @@ std::list<HeeksObj *> CCorrelationTool::ListAllChildren( HeeksObj *parent ) cons
 
 
 
-bool CCorrelationTool::ColorsMatch( HeeksObj *obj1, HeeksObj *obj2 ) const
+bool CCorrelationTool::ColorsMatch( CShape *obj1, CShape *obj2 ) const
 {
     if (obj1 == NULL) return(true);
     if (obj2 == NULL) return(true);
@@ -424,7 +424,7 @@ std::list<HeeksObj *> CCorrelationTool::SimilarSymbols( HeeksObj *pReference ) c
 		    HeeksObj *ob = *itObject;
 			if (ob->GetType() == PointType)
 			{
-			    if (((m_correlate_by_color) && (ColorsMatch(pReference, ob))) || (m_correlate_by_color == false))
+			    if (((m_correlate_by_color) && (ColorsMatch((CShape *)pReference, (CShape *)ob))) || (m_correlate_by_color == false))
 			    {
                     result_set.push_back( ob );
 			    }
@@ -441,7 +441,7 @@ std::list<HeeksObj *> CCorrelationTool::SimilarSymbols( HeeksObj *pReference ) c
     {
         HeeksObj *ob = *itObject;
 
-		if ((ob->GetType() == pReference->GetType()) && (ob->m_id == pReference->m_id))
+		if ((ob->GetType() == pReference->GetType()) && (ob->GetID() == pReference->GetID()))
 		{
 			// Include this in the result set.  Otherwise we would be selecting everything except what
 			// we pointed to.
@@ -460,7 +460,7 @@ std::list<HeeksObj *> CCorrelationTool::SimilarSymbols( HeeksObj *pReference ) c
 
 		if (Score( sample_correlation_data, reference_correlation_data ) >= m_min_correlation_factor)
 		{
-		    if (((m_correlate_by_color) && (ColorsMatch(pReference, ob))) || (m_correlate_by_color == false))
+		    if (((m_correlate_by_color) && (ColorsMatch((CShape *)pReference, (CShape *)    ob))) || (m_correlate_by_color == false))
 		    {
                 result_set.push_back( ob );
 		    }

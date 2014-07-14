@@ -8,8 +8,8 @@
 #include "../interface/TransientObject.h"
 
 #ifdef USE_UNDO_ENGINE
-//This code attempt to determine what can be undone/redone by analyzing the heekscad graph and an 
-//internal graph of the previous state. 
+//This code attempt to determine what can be undone/redone by analyzing the heekscad graph and an
+//internal graph of the previous state.
 
 UndoEvent::UndoEvent(EventType type, ObjList* parent, HeeksObj* object)
 {
@@ -30,7 +30,7 @@ UndoEngine::UndoEngine(ObjList* tree)
 {
 	m_tree.m_tree = tree;
 	m_oldtree.m_tree = new ObjList();
-	m_oldtree.m_tree->m_id = tree->m_id;
+	m_oldtree.m_tree->SetID(tree->GetID());
 }
 
 UndoEngine::~UndoEngine()
@@ -42,14 +42,14 @@ void UndoEngine::ClearHistory()
 {
 	delete m_oldtree.m_tree;
 	m_oldtree.m_tree = new ObjList();
-	m_oldtree.m_tree->m_id = m_tree.m_tree->m_id;
+	m_oldtree.m_tree->SetID(m_tree.m_tree->GetID());
 	m_undo_events.clear();
 	m_redo_events.clear();
 }
 
 HeeksObjId UndoEngine::GetHeeksObjId(HeeksObj* obj)
 {
-	return HeeksObjId(obj->GetType(),obj->m_id);
+	return HeeksObjId(obj->GetType(),obj->GetID());
 }
 
 std::vector<UndoEvent> UndoEngine::GetModifications()
@@ -64,26 +64,7 @@ void UndoEngine::RecalculateMapsRecursive(std::map<HeeksObjId,HeeksObj*> &treema
 	HeeksObj *new_obj = obj->GetFirstChild();
 	while(new_obj)
 	{
-		//Check the owner for debugging
-		//TODO: This is fubar, WTF is causing objects to get copied with no owners
-		//only happens when they objects are > 2 levels deep. 
-#ifdef MULTIPLE_OWNERS
-		bool found=false;
-		HeeksObj* owner = new_obj->GetFirstOwner();
-		while(owner)
-		{
-			if(owner == obj)
-				found=true;
-			owner = new_obj->GetNextOwner();
-		}
-		if(!found)
-		{
-			new_obj->AddOwner(obj);
-		}
-#else
 		new_obj->SetOwner(obj);
-
-#endif
 		HeeksObjId id = GetHeeksObjId(new_obj);
 		treemap[id] = new_obj;
 		if(new_obj->IsList())
@@ -196,7 +177,7 @@ void UndoEngine::GetModificationsRecursive(std::vector<UndoEvent> &ret,ObjList* 
 void UndoEngine::DealWithTransients(std::map<HeeksObjId,HeeksObj*> &treemap)
 {
 	std::map<HeeksObj*,std::list<HeeksObj*> >& map = wxGetApp().GetTransients();
-	
+
 	std::map<HeeksObj*,std::list<HeeksObj*> >::iterator it;
 	std::list<HeeksObj*> needupdate;
 	for(it = map.begin(); it!= map.end(); it++)
@@ -211,11 +192,8 @@ void UndoEngine::DealWithTransients(std::map<HeeksObjId,HeeksObj*> &treemap)
 			if(it3 == treemap.end())
 			{
 				HeeksObj* nobj = obj->MakeACopyWithID();
-#ifdef MULTIPLE_OWNERS
-				nobj->RemoveOwners();
-#else
 				nobj->RemoveOwner();
-#endif
+
 				needupdate.push_back(nobj);
 				treemap[GetHeeksObjId(nobj)] = nobj;
 				tobj->Owner()->Add(nobj,NULL);
@@ -236,21 +214,12 @@ void UndoEngine::DealWithTransients(std::map<HeeksObjId,HeeksObj*> &treemap)
 	for(it2 = needupdate.begin(); it2 != needupdate.end(); it2++)
 	{
 		HeeksObj *obj = *it2;
-#ifdef MULTIPLE_OWNERS
-		HeeksObj *owner = obj->GetFirstOwner();
-		while(owner)
-		{
-			owner->ReloadPointers();
-			owner = obj->GetNextOwner();
-		}
-#else
 		if(obj->Owner())
 			obj->Owner()->ReloadPointers();
-#endif
 		obj->ReloadPointers();
 	}
 
-	wxGetApp().ClearTransients();	
+	wxGetApp().ClearTransients();
 }
 
 bool UndoEngine::IsModified()
@@ -338,7 +307,7 @@ void UndoEngine::SetLikeNewFile()
 void UndoEngine::Undo()
 {
 	//First try to rollback to the last savepoint
-	std::vector<UndoEvent> events = GetModifications();	
+	std::vector<UndoEvent> events = GetModifications();
 	if(events.size() > 0)
 	{
 		UndoEvents(events, &m_tree);
@@ -374,7 +343,7 @@ void UndoEngine::Redo()
 
 void UndoEngine::CreateUndoPoint()
 {
-	std::vector<UndoEvent> events = GetModifications();	
+	std::vector<UndoEvent> events = GetModifications();
 	if(events.size() == 0)
 		return;
 
@@ -413,7 +382,7 @@ void UndoEngine::PrintTree(HeeksObj *tree, std::stringstream &cstr,int level)
 {
 /*
 	tab(cstr,level);
-    cstr << "ID: " << tree->m_id << endl;
+    cstr << "ID: " << tree->GetID() << endl;
 	tab(cstr,level);
 	cstr << "Type: " << wxString(tree->GetTypeString()).mb_str() << endl;
 	tab(cstr,level);

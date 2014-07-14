@@ -12,8 +12,8 @@ PropertyList::PropertyList()
 {
 }
 
-PropertyList::PropertyList(const wxChar* t, MutableObject* object)
-:PropertyTmpl<std::list< Property* > >(t, std::list<Property*>(), object)
+PropertyList::PropertyList(const wxChar* name, const wxChar* title, DomainObject* owner)
+:PropertyTmpl<std::list< Property* > >(name, title, owner)
 {
 }
 
@@ -41,26 +41,35 @@ void PropertyList::SetReadOnly(bool value)
 
 void PropertyList::AddProperty(Property *prop)
 {
-	m_value.push_back(prop);
-	MutableObject::AddProperty(prop);
+	m_value.push_back((Property *)prop);
+	DomainObject::AddProperty(prop);
 }
 
-void PropertyList::OnPropertySet(Property *prop)
+bool PropertyList::OnPropertySet(Property& prop)
 {
-	if(m_object) m_object->OnPropertySet(prop);
+    DomainObject * owner = this->GetOwner();
+    if (owner)
+        return owner->OnPropertySet(*this);
+    return TRUE;
 }
 
-void PropertyList::OnPropertyEdit(Property *prop)
+void PropertyList::OnPropertyEdit(Property& prop)
 {
-	if(m_object) m_object->OnPropertyEdit(prop);
+    DomainObject * owner = this->GetOwner();
+    if (owner)
+        return owner->OnPropertyEdit(*this);
 }
 
-void PropertyList::OnPropertySelect(Property *prop)
+
+void PropertyList::operator = ( const Property& prop )
 {
-	if(m_object) m_object->OnPropertySelect(prop);
+    const PropertyList * value = &(const PropertyList&)prop;
+    SetValue(value->m_value);
 }
 
-void PropertyList::OnPropertiesApply()
+Property * PropertyList::Clone ( ) const
 {
-	if(m_object) m_object->OnPropertiesApply();
+    PropertyList * prop = new PropertyList();
+    *prop = *this;
+    return (Property *)prop;
 }

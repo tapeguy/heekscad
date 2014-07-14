@@ -123,7 +123,7 @@ static unsigned int DecimalPlaces( const double value )
 }
 
 // wxGetApp().GetAppName()
-HeeksCADapp::HeeksCADapp(): wxApp(), ObjList()
+HeeksCADapp::HeeksCADapp(): wxApp(), ObjList(), m_view_units(1.0)
 {
 #if 0
 	_CrtSetAllocHook(MyAllocHook);
@@ -133,7 +133,6 @@ HeeksCADapp::HeeksCADapp(): wxApp(), ObjList()
 	m_geom_tol = 0.000001;
 	TiXmlBase::SetRequiredDecimalPlaces( DecimalPlaces(m_geom_tol) );	 // Ensure we write XML in enough accuracy to be useful when re-read.
 
-	m_view_units = 1.0;
 	for(int i = 0; i<NUM_BACKGROUND_COLORS; i++)background_color[i] = HeeksColor(0, 0, 0);
 	m_background_mode = BackgroundModeOneColor;
 	current_color = HeeksColor(0, 0, 0);
@@ -150,21 +149,21 @@ HeeksCADapp::HeeksCADapp(): wxApp(), ObjList()
 	viewpanning = new ViewPanning;
 	m_select_mode = new CSelectMode();
 	m_digitizing = new DigitizeMode();
-	digitize_end = false;
-	digitize_inters = false;
-	digitize_centre = false;
-	digitize_midpoint = false;
-	digitize_nearest = false;
-	digitize_tangent = false;
-	digitize_coords = true;
-	digitize_screen = false;
+	digitize_end.SetValue(false);
+	digitize_inters.SetValue(false);
+	digitize_centre.SetValue(false);
+	digitize_midpoint.SetValue(false);
+	digitize_nearest.SetValue(false);
+	digitize_tangent.SetValue(false);
+	digitize_coords.SetValue(true);
+	digitize_screen.SetValue(false);
 	digitizing_radius = 5.0;
 	draw_to_grid = true;
 	digitizing_grid = 1.0;
 	grid_mode = 3;
 	m_rotate_mode = 1;
-	m_antialiasing = false;
-	m_light_push_matrix = true;
+	m_antialiasing.SetValue(false);
+	m_light_push_matrix.SetValue(true);
 	m_marked_list = new MarkedList;
 	m_marked_list->SetFilters(MarkedList::all_filters);
 
@@ -172,12 +171,12 @@ HeeksCADapp::HeeksCADapp(): wxApp(), ObjList()
 	history = new UndoEngine(this);
 #endif
 	m_doing_rollback = false;
-	mouse_wheel_forward_away = true;
-	ctrl_does_rotate = false;
+	mouse_wheel_forward_away.SetValue(true);
+	ctrl_does_rotate.SetValue(false);
 	m_ruler = new HRuler();
-	m_show_ruler = false;
-	m_datum_coords_system_visible = true;
-	m_datum_coords_system_solid_arrows = true;
+	m_show_ruler.SetValue(false);
+	m_datum_coords_system_visible.SetValue(true);
+	m_datum_coords_system_solid_arrows.SetValue(true);
 	m_filepath = wxString(_("Untitled")) + _T(".heeks");
 	m_untitled = true;
 	m_in_OpenFile = false;
@@ -185,8 +184,8 @@ HeeksCADapp::HeeksCADapp(): wxApp(), ObjList()
 	m_current_coordinate_system = NULL;
 	m_mark_newly_added_objects = false;
 	m_show_grippers_on_drag = true;
-	m_extrude_removes_sketches = false;
-	m_loft_removes_sketches = false;
+	m_extrude_removes_sketches.SetValue(false);
+	m_loft_removes_sketches.SetValue(false);
 	m_font_tex_number = 0;
 	m_graphics_text_mode = GraphicsTextModeNone;
 	m_locale_initialised = false;
@@ -200,8 +199,8 @@ HeeksCADapp::HeeksCADapp(): wxApp(), ObjList()
 	m_number_of_sample_points = 10;
 	m_property_grid_validation = false;
 	m_solid_view_mode = SolidViewFacesAndEdges;
-	m_input_uses_modal_dialog = false;
-	m_dragging_moves_objects = false;
+	m_input_uses_modal_dialog.SetValue(false);
+	m_dragging_moves_objects.SetValue(false);
 	m_no_creation_mode = false;
 
 	m_font_paths = _T("/usr/share/qcad/fonts");
@@ -839,9 +838,9 @@ static HeeksObj* ReadSTEPFileFromXMLElement(TiXmlElement* pElem)
 void HeeksCADapp::InitializeXMLFunctions()
 {
 	// Hide HeeksObj properties
-	m_type.SetVisible(false);
-	m_title.SetVisible(false);
-	m_visible.SetVisible(false);
+	GetTypeProperty().SetVisible(false);
+	GetTitleProperty().SetVisible(false);
+	GetVisibleProperty().SetVisible(false);
 
 	// set up function map
 	if(xml_read_fn_map.size() == 0)
@@ -902,7 +901,7 @@ HeeksObj* HeeksCADapp::ReadXMLElement(TiXmlElement* pElem)
 
 		HeeksObj *existing = NULL;
 
-		existing = GetIDObject(object->GetIDGroupType(), object->m_id);
+		existing = GetIDObject(object->GetIDGroupType(), object->GetID());
 
 		if ((existing != NULL) && (existing != object))
 		{
@@ -922,8 +921,10 @@ HeeksObj* HeeksCADapp::ReadXMLElement(TiXmlElement* pElem)
 
 void HeeksCADapp::ObjectWriteBaseXML(HeeksObj *object, TiXmlElement *element)
 {
-	if(object->UsesID())element->SetAttribute("id", object->m_id);
-	if(!object->m_visible)element->SetAttribute("vis", 0);
+	if(object->UsesID())
+	    element->SetAttribute("id", object->GetID());
+	if(!object->IsVisible())
+	    element->SetAttribute("vis", 0);
 }
 
 void HeeksCADapp::ObjectReadBaseXML(HeeksObj *object, TiXmlElement* element)
@@ -933,7 +934,7 @@ void HeeksCADapp::ObjectReadBaseXML(HeeksObj *object, TiXmlElement* element)
 	{
 		std::string name(a->Name());
 		if(object->UsesID() && name == "id"){object->SetID(a->IntValue());}
-		if(name == "vis"){object->m_visible = (a->IntValue() != 0);}
+		if(name == "vis"){object->SetVisible ( (a->IntValue() != 0) );}
 	}
 }
 
@@ -962,7 +963,7 @@ HeeksObj *HeeksCADapp::MergeCommonObjects( ObjectReferences_t & unique_set, Heek
 	if(object->UsesID())
 	{
 		HeeksObj *unique_reference = object;
-		ObjectReference_t object_reference(object->GetIDGroupType(),object->m_id);
+		ObjectReference_t object_reference(object->GetIDGroupType(),object->GetID());
 
 		if (unique_set.find(object_reference) == unique_set.end())
 		{
@@ -973,23 +974,12 @@ HeeksObj *HeeksCADapp::MergeCommonObjects( ObjectReferences_t & unique_set, Heek
 		{
 			// We've seen an object like this one before.  Use the old one.
 			unique_reference = unique_set[ object_reference ];
-#ifdef MULTIPLE_OWNERS
-			std::list<HeeksObj *> owners = object->Owners();
-			for (std::list<HeeksObj *>::iterator itOwner = owners.begin(); itOwner != owners.end(); itOwner++)
-			{
-				if (unique_reference != object)
-				{
-					(*itOwner)->Remove(object);
-					(*itOwner)->Add( unique_reference, NULL );
-				}
-			}
-#else
+
 			if(object->Owner())
 			{
 				object->Owner()->Remove(object);
 				object->Owner()->Add( unique_reference, NULL );
 			}
-#endif
 
 			unique_set[ object_reference ] = unique_reference;
 			object = unique_reference;
@@ -1360,7 +1350,7 @@ static void WriteDXFEntity(HeeksObj* object, CDxfWrite& dxf_file, const wxString
 
     if (parent_layer_name.Len() == 0)
     {
-        layer_name << object->m_id;
+        layer_name << object->GetID();
     }
     else
     {
@@ -1429,7 +1419,7 @@ static void WriteDXFEntity(HeeksObj* object, CDxfWrite& dxf_file, const wxString
                 }
                 else
                 {
-                    layer_name << object->m_id;   // Use the ID as a layer name so that it's unique.
+                    layer_name << object->GetID();   // Use the ID as a layer name so that it's unique.
                 }
 		    }
 		    else
@@ -1924,7 +1914,7 @@ void HeeksCADapp::glCommandsAll(const CViewPoint &view_point)
 	for(std::list<HeeksObj*>::iterator It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
 		HeeksObj* object = *It;
-		if(object->OnVisibleLayer() && object->m_visible)
+		if(object->OnVisibleLayer() && object->IsVisible())
 		{
 			if(object->DrawAfterOthers())after_others_objects.push_back(object);
 			else
@@ -1961,7 +1951,7 @@ void HeeksCADapp::glCommandsAll(const CViewPoint &view_point)
 	}
 
 	// draw the ruler
-	if(m_show_ruler && m_ruler->m_visible)
+	if(m_show_ruler && m_ruler->IsVisible())
 	{
 		m_ruler->glCommands(false, false, false);
 	}
@@ -2036,7 +2026,7 @@ void HeeksCADapp::glCommands(bool select, bool marked, bool no_color)
 		for(It=m_objects.begin(); It!=m_objects.end() ;It++)
 		{
 			HeeksObj* object = *It;
-			if(object->OnVisibleLayer() && object->m_visible)
+			if(object->OnVisibleLayer() && object->IsVisible())
 			{
 				if(select)glPushName(object->GetIndex());
 				object->glCommands(select, marked || m_marked_list->ObjectMarked(object), no_color);
@@ -2237,7 +2227,7 @@ public:
 						verbose << _T(",") << *itValue;
 						itValue++;
 
-						HPoint *new_point = new HPoint( location, wxGetApp().ConstructionColor() );
+						HPoint *new_point = new HPoint ( location, wxGetApp().ConstructionColor() );
 						wxGetApp().Add(new_point, NULL);
 					}
 
@@ -2444,20 +2434,6 @@ bool HeeksCADapp::Add(HeeksObj *object, HeeksObj* prev_object)
 
 void HeeksCADapp::Remove(HeeksObj* object)
 {
-#ifdef MULTIPLE_OWNERS
-	HeeksObj* owner = object->GetFirstOwner();
-	while(owner)
-	{
-		if(owner != this)
-		{
-			owner->Remove(object);
-			owner->ReloadPointers();
-		}
-		else
-			ObjList::Remove(object);
-		owner = object->GetNextOwner();
-	}
-#else
 	if(object->Owner())
 	{
 		if(object->Owner() != this)
@@ -2468,8 +2444,6 @@ void HeeksCADapp::Remove(HeeksObj* object)
 		else
 			ObjList::Remove(object);
 	}
-#endif
-	if(object == m_current_coordinate_system)m_current_coordinate_system = NULL;
 }
 
 void HeeksCADapp::Remove(std::list<HeeksObj*> objects)
@@ -3599,10 +3573,10 @@ void HeeksCADapp::SetObjectID(HeeksObj* object, int id)
 {
 	if(object->UsesID())
 	{
-		if (object->m_id != id)
+		if (object->GetID() != id)
 		{
 			// HeeksObj::OnSetID will redrive this method call
-			object->m_id = id;
+			object->SetID(id);
 			return;
 		}
 		GroupId_t id_group_type = object->GetIDGroupType();
@@ -3670,12 +3644,12 @@ void HeeksCADapp::RemoveID(HeeksObj* object)
 	IdsToObjects_t &map = FindIt1->second;
 	if (FindIt2 != next_id_map.end())
 	{
-		IdsToObjects_t::iterator FindIt3 = map.find(object->m_id);
+		IdsToObjects_t::iterator FindIt3 = map.find(object->GetID());
 		if(FindIt3 != map.end())
 		{
 			std::list<HeeksObj*> &list = FindIt3->second;
 			list.remove(object);
-			if(list.size() == 0)map.erase(object->m_id);
+			if(list.size() == 0)map.erase(object->GetID());
 		}
 	} // End if - then
 }

@@ -29,6 +29,12 @@ void CCone::InitializeProperties()
 	m_height.Initialize(_("height"), this);
 }
 
+void CCone::GetProperties(std::list<Property *> *list)
+{
+    // CoordinateSystem::GetAx2Properties(list, m_pos);
+    CSolid::GetProperties(list);
+}
+
 const wxBitmap &CCone::GetIcon()
 {
 	static wxBitmap* icon = NULL;
@@ -168,11 +174,6 @@ void CCone::MakeTransformedShape(const gp_Trsf &mat)
 
 wxString CCone::StretchedName(){ return _("Stretched Cone");}
 
-void CCone::GetProperties(std::list<Property *> *list)
-{
-	// CoordinateSystem::GetAx2Properties(list, m_pos);
-	CSolid::GetProperties(list);
-}
 
 void CCone::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 {
@@ -192,9 +193,9 @@ void CCone::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	list->push_back(GripData(GripperTypeRotateObject,pmx.X(),pmx.Y(),pmx.Z(),NULL));
 }
 
-void CCone::OnPropertyEdit(Property *prop)
+void CCone::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_r1 || prop == &m_r2 || prop == &m_height) {
+	if (prop == m_r1 || prop == m_r2 || prop == m_height) {
 		CCone* new_object = new CCone(m_pos, m_r1, m_r2, m_height, m_title.c_str(), m_color, m_opacity);
 		new_object->CopyIDsFrom(this);
 		Owner()->Add(new_object, NULL);

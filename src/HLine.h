@@ -18,8 +18,11 @@ public:
 
 	const HLine& operator=(const HLine &b);
 
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+    void GetProperties(std::list<Property *> *list);
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	int GetType()const{return LineType;}
 	int GetMarkingFilter()const{return LineMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
@@ -30,8 +33,6 @@ public:
 	const wxBitmap &GetIcon();
 	bool GetMidPoint(double* pos);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property *prop);
-	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);
 	void GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point = true)const;
@@ -41,7 +42,7 @@ public:
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
-	bool UsesID(){return true;} 
+	bool UsesID(){return true;}
 	gp_Lin GetLine()const;
 	bool Intersects(const gp_Pnt &pnt)const;
 	gp_Vec GetSegmentVector(double fraction);

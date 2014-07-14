@@ -74,7 +74,7 @@ public:
 	void OnKeyUp(wxKeyEvent& event);
 	void set_cursor(void);
 	void GetTools(std::list<Tool*> *f_list, const wxPoint *p);
-	void OnPropertyEdit(Property *prop);
+	void OnPropertyEdit(Property& prop);
 	bool OnModeChange(void);
 
 	// Drawing's virtual functions

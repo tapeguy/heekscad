@@ -206,12 +206,12 @@ void HLine::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 	EndedObject::GetGripperPositions(list,just_for_endof);
 }
 
-void HLine::OnPropertyEdit(Property *prop)
+void HLine::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_start) {
+	if (prop == m_start) {
 		A->m_p = m_start;
 	}
-	else if (prop == &m_end) {
+	else if (prop == m_end) {
 		B->m_p = m_end;
 	}
 	else {

@@ -7,31 +7,30 @@
 
 #include "Property.h"
 
-class PropertyList : public PropertyTmpl<std::list< Property* > >, public MutableObject
+class PropertyList : public PropertyTmpl<std::list< Property* > >, public DomainObject
 {
 public:
 	PropertyList();
-	PropertyList(const wxChar* t, MutableObject* object);
+	PropertyList(const wxChar* name, const wxChar* title, DomainObject* owner);
 
-        const PropertyList& operator=(const PropertyList& value) { SetValue(value.m_value); return *this; }
-        const std::list<Property*>& operator=(const std::list<Property*>& value) { SetValue(value); return m_value; }
+    const std::list<Property*>& operator=(const std::list<Property*>& value) { SetValue(value); return m_value; }
 
 	// Property's virtual functions
 	void SetHighlighted(bool value);
 	void SetReadOnly(bool value);
 
-	int GetPropertyType(){return ListOfPropertyType;}
+	int GetPropertyType(){return PropertyListType;}
 	bool PropertyEditable() const {return false;}
 	void CallSetFunction() { }
-	void CallEditFunction() { }
-	void CallSelectFunction() { }
 
-	// MutableObject virtual functions - call thru to the owner object
-	void AddProperty(Property *prop);	// Add to both the PropertyList and the Mutable list
-	void OnPropertySet(Property *prop);
-	void OnPropertyEdit(Property *prop);
-	void OnPropertySelect(Property *prop);
-	void OnPropertiesApply();
+	// DomainObject virtual functions - call thru to the owner object
+	void AddProperty(Property *prop);	// Add to both the PropertyList and the DomainObject list
+
+	bool OnPropertySet(Property&);      // Assignment via the equals operator
+	void OnPropertyEdit(Property&);
+
+    void operator = ( const Property& prop );
+    Property * Clone ( ) const;
 };
 
 #endif

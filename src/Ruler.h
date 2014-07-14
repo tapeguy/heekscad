@@ -16,13 +16,13 @@ struct RulerMark{
 };
 
 class HRuler: public HeeksObj{
-	//      ___________________________________________________________________  
-	//     |   |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||   | 
-	//     |   |    |    |    |    |    |    |    |    |    |    |    |    |   | 
-	//     |   |cm      1|        2|        3|        4|         |         |   | 
-	//     |                                                                   | 
-	//     |                                                                   | 
-	//     ¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬  
+	//      ___________________________________________________________________
+	//     |   |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||   |
+	//     |   |    |    |    |    |    |    |    |    |    |    |    |    |   |
+	//     |   |cm      1|        2|        3|        4|         |         |   |
+	//     |                                                                   |
+	//     |                                                                   |
+	//      ___________________________________________________________________
 	//
 
 	int m_gl_list;
@@ -55,7 +55,7 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property *prop);
+	void OnPropertyEdit(Property& prop);
 	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	bool GetScaleAboutMatrix(double *m);

@@ -9,22 +9,13 @@
 
 EndedObject::EndedObject(const HeeksColor& color){
 	m_color = color;
-	A = new HPoint(gp_Pnt(),color);
-	B = new HPoint(gp_Pnt(),color);
-#ifdef MULTIPLE_OWNERS
-	A->m_draw_unselected = false;
-	B->m_draw_unselected = false;
+	A = new HPoint(gp_Pnt(), color);
+	B = new HPoint(gp_Pnt(), color);
+
 	A->SetSkipForUndo(true);
 	B->SetSkipForUndo(true);
-	Add(A,NULL);
-	Add(B,NULL);
-#else
-	A->SetSkipForUndo(true);
-	B->SetSkipForUndo(true);
-#endif
 }
 
-#ifndef MULTIPLE_OWNERS
 EndedObject::EndedObject(const EndedObject& e)
 {
 	A = new HPoint(gp_Pnt(), e.A->GetColor());
@@ -33,37 +24,22 @@ EndedObject::EndedObject(const EndedObject& e)
 	B->SetSkipForUndo(true);
 	operator=(e);
 }
-#endif
 
 EndedObject::~EndedObject(){
 }
 
 const EndedObject& EndedObject::operator=(const EndedObject &b){
-#ifdef MULTIPLE_OWNERS
-	ObjList::operator=(b);
-	std::list<HeeksObj*>::iterator it = m_objects.begin();
-	A = (HPoint*)(*it++);
-	B = (HPoint*)(*it);
-	A->SetSkipForUndo(true);
-	B->SetSkipForUndo(true);
-#else
+
 	HeeksObj::operator=(b);
 	*A = *b.A;
 	*B = *b.B;
-#endif
 	m_color = b.m_color;
 	return *this;
 }
 
 HeeksObj* EndedObject::MakeACopyWithID()
 {
-#ifdef MULTIPLE_OWNERS
-	EndedObject* pnew = (EndedObject*)ObjList::MakeACopyWithID();
-	pnew->A = (HPoint*)pnew->GetFirstChild();
-	pnew->B = (HPoint*)pnew->GetNextChild();
-#else
 	EndedObject* pnew = (EndedObject*)HeeksObj::MakeACopyWithID();
-#endif
 	pnew->m_color = m_color;
 	return pnew;
 }
@@ -79,20 +55,6 @@ bool EndedObject::IsDifferent(HeeksObj *other)
 
 	return HeeksObj::IsDifferent(other);
 }
-
-#ifdef MULTIPLE_OWNERS
-void EndedObject::LoadToDoubles()
-{
-	A->LoadToDoubles();
-	B->LoadToDoubles();
-}
-
-void EndedObject::LoadFromDoubles()
-{
-	A->LoadFromDoubles();
-	B->LoadFromDoubles();
-}
-#endif
 
 void EndedObject::ModifyByMatrix(const double* m){
 	gp_Trsf mat = make_matrix(m);
@@ -134,29 +96,5 @@ bool EndedObject::GetEndPoint(double* pos)
 void EndedObject::glCommands(bool select, bool marked, bool no_color)
 {
 	HeeksObj::glCommands(select, marked, no_color);
-#ifdef MULTIPLE_OWNERS
-	std::list<HeeksObj*>::iterator It;
-	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
-	{
-		HeeksObj* object = *It;
-		if(object->OnVisibleLayer() && object->m_visible)
-		{
-			bool object_marked = wxGetApp().m_marked_list->ObjectMarked(object);
-			if(object->GetType() == PointType && !select && !object_marked)continue; // don't show points unless the point object is selected.
-			if(select)glPushName(object->GetIndex());
-#ifdef HEEKSCAD
-			(*It)->glCommands(select, marked || wxGetApp().m_marked_list->ObjectMarked(object), no_color);
-#else
-			(*It)->glCommands(select, marked || heeksCAD->ObjectMarked(object), no_color);
-#endif
-			if(select)glPopName();
-		}
-	}
-#endif
 }
-
-/*void EndedObject::WriteBaseXML(TiXmlElement *element)
-{
-	HeeksObj::WriteBaseXML(element);
-}*/
 

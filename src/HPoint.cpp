@@ -17,7 +17,7 @@ HPoint::~HPoint(void)
 }
 
 HPoint::HPoint(const gp_Pnt &p, const HeeksColor& col)
-:m_p(_("position"), p, this)
+:m_p(_("position"), _("Position"), this)
 {
 	m_p = p;
 	m_color = col;
@@ -25,18 +25,14 @@ HPoint::HPoint(const gp_Pnt &p, const HeeksColor& col)
 }
 
 HPoint::HPoint(const HPoint &p)
-:m_p(_("position"), gp_Pnt(), this)
+:m_p(_("position"), _("Position"), this)
 {
 	operator=(p);
 }
 
 const HPoint& HPoint::operator=(const HPoint &b)
 {
-#ifdef MULTIPLE_OWNERS
-	ObjList::operator=(b);
-#else
 	HeeksObj::operator =(b);
-#endif
 	m_p = b.m_p;
 	m_color = b.m_color;
 	m_draw_unselected = b.m_draw_unselected;
@@ -160,7 +156,7 @@ public:
 
 			wxString value = wxGetTextFromUser(message, caption, default_value);
 			wxStringTokenizer tokens(value,_T(" :,\t\n"));
-			
+
 			gp_Pnt location(which->m_p);
 			for (int i=0; i<3; i++)
 			{
@@ -173,7 +169,7 @@ public:
 						offset *= wxGetApp().m_view_units;
 						switch(i)
 						{
-						case 0: 
+						case 0:
 							location.SetX( location.X() + offset );
 							break;
 
@@ -185,7 +181,7 @@ public:
 							location.SetZ( location.Z() + offset );
 							break;
 						}
-						
+
 					}
 				}
 			}
@@ -232,7 +228,7 @@ void HPoint::WriteXML(TiXmlNode *root)
 {
 	TiXmlElement * element;
 	element = new TiXmlElement( "Point" );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 	element->SetAttribute("col", m_color.COLORREF_color());
 	element->SetDoubleAttribute("x", m_p.X());
 	element->SetDoubleAttribute("y", m_p.Y());

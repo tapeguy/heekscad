@@ -1126,11 +1126,7 @@ void GroupSelected::Run(){
 
 	std::list<HeeksObj*>::iterator it;
 	for(it = copy_of_marked_list.begin(); it != copy_of_marked_list.end(); it++)
-#ifdef MULTIPLE_OWNERS
-		(*it)->RemoveOwners();
-#else
 		(*it)->RemoveOwner();
-#endif
 
 	new_group->Add(copy_of_marked_list);
 	wxGetApp().Add(new_group, NULL);

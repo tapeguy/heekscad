@@ -15,7 +15,6 @@ BEGIN_EVENT_TABLE(CObjPropsCanvas, wxScrolledWindow)
 
 	// This occurs when a property value changes
 	EVT_PG_CHANGED( -1, CObjPropsCanvas::OnPropertyGridChange )
-	EVT_PG_SELECTED( -1, CObjPropsCanvas::OnPropertyGridSelect )
 END_EVENT_TABLE()
 
 
@@ -50,10 +49,6 @@ void CObjPropsCanvas::OnSize(wxSizeEvent& event)
 
 void CObjPropsCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 	CPropertiesCanvas::OnPropertyGridChange(event);
-}
- 
-void CObjPropsCanvas::OnPropertyGridSelect( wxPropertyGridEvent& event ) {
-	CPropertiesCanvas::OnPropertyGridSelect(event);
 }
 
 void CObjPropsCanvas::RefreshByMerging(){
@@ -93,11 +88,11 @@ void CObjPropsCanvas::RefreshByMerging(){
 		// get the desired property list
 		std::list<Property *> list;
 		wxGetApp().m_marked_list->GetProperties(&list);
-		for(std::list<Property*>::iterator It = list.begin(); It != list.end(); It++)
+		for(std::list<Property *>::iterator It = list.begin(); It != list.end(); It++)
 		{
-			Property* property = *It;
+		    Property * property = *It;
 			if(current.find(property) == current.end()) {
-				AddProperty(property);
+				AddProperty((Property *)property);
 			}
 			else {
 				current.erase(property);
@@ -107,8 +102,8 @@ void CObjPropsCanvas::RefreshByMerging(){
 		// Anything left in the current set is to be removed
 		for(std::set<Property*>::iterator It = current.begin(); It != current.end(); It++)
 		{
-			Property* property = *It;
-			RemoveProperty(property);
+		    Property* property = *It;
+			RemoveProperty((Property *)property);
 		}
 
 		// add toolbar buttons
@@ -161,8 +156,8 @@ void CObjPropsCanvas::RefreshByRemovingAndAddingAll(){
 		wxGetApp().m_marked_list->GetProperties(&list);
 		for(std::list<Property*>::iterator It = list.begin(); It != list.end(); It++)
 		{
-			Property* property = *It;
-			AddProperty(property);
+		    Property* property = *It;
+			AddProperty((Property *)property);
 		}
 
 		// add toolbar buttons

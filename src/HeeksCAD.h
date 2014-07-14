@@ -116,6 +116,8 @@ public:
 	HeeksCADapp();
 	~HeeksCADapp();
 
+    double m_view_units; // units to display to the user ( but everything is stored as mm ), 1.0 for mm, 25.4 for inches
+
 	// View option properties
 	PropertyList view_options;
 	PropertyChoice m_rotate_mode;
@@ -138,7 +140,6 @@ public:
 	PropertyColor face_selection_color;
 	PropertyCheck m_perspective;
 	PropertyChoice m_tool_icon_size;
-	double m_view_units; // units to display to the user ( but everything is stored as mm ), 1.0 for mm, 25.4 for inches
 	PropertyCheck m_draw_flat;
 	PropertyCheck m_allow_opengl_stippling;
 	PropertyChoice m_solid_view_mode;
@@ -296,6 +297,8 @@ public:
 	//WxApp override
 	int OnRun();
 	bool OnExceptionInMainLoop();
+    bool OnInit();
+    int OnExit();
 
 	// HeeksObj's virtual functions
 	void GetBox(CBox &box);
@@ -303,8 +306,6 @@ public:
 	bool CanAdd(HeeksObj* object){return true;}
 	int GetType()const{return DocumentType;}
 
-	virtual bool OnInit();
-	int OnExit();
 	HeeksConfig& GetConfig();
 	void WriteConfig();
 	void CreateLights(void);

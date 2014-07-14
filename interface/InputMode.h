@@ -10,7 +10,7 @@
 class HeeksObj;
 class Tool;
 
-class CInputMode : public MutableObject {
+class CInputMode : public DomainObject {
 public:
 	virtual ~CInputMode() {}
 

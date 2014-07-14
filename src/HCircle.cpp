@@ -23,7 +23,7 @@ HCircle::HCircle(const gp_Circ &c, const HeeksColor& col)
 	m_color = col;
 	m_axis = c.Axis();
 	m_radius = c.Radius();
-	C = new HPoint(c.Location(),col);
+	C = new HPoint(c.Location(), col);
 	C->SetSkipForUndo(true);
 	Add(C,NULL);
 }
@@ -32,12 +32,8 @@ HCircle::~HCircle(){
 }
 
 const HCircle& HCircle::operator=(const HCircle &c){
-#ifdef MULTIPLE_OWNERS
-	ObjList::operator=(c);
-#else
-	HeeksObj::operator=(c);
-#endif
-	m_axis = c.m_axis;
+    InitializeProperties();
+    m_axis = c.m_axis;
 	m_radius = c.m_radius;
 	m_color = c.m_color;
 	C = new HPoint(c.C->m_p, m_color);
@@ -48,9 +44,9 @@ const HCircle& HCircle::operator=(const HCircle &c){
 
 void HCircle::InitializeProperties()
 {
-	m_centre.Initialize(_("centre"), this);
-	m_axis_direction.Initialize(_("axis"), this);
-	m_radius.Initialize(_("radius"), this); 
+	m_centre.Initialize(_("Centre"), this);
+	m_axis_direction.Initialize(_("Axis"), this);
+	m_radius.Initialize(_("Radius"), this);
 }
 
 const wxBitmap &HCircle::GetIcon()
@@ -200,12 +196,12 @@ void HCircle::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	}
 }
 
-void HCircle::OnPropertyEdit(Property *prop)
+void HCircle::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_centre)
-		C->m_p = *(PropertyVertex *)prop;
-	else if (prop == &m_axis_direction)
-		m_axis.SetDirection(((PropertyVector *)prop)->Normalize());
+	if (prop == m_centre)
+		C->m_p = m_centre;
+	else if (prop == m_axis_direction)
+		m_axis.SetDirection(m_axis_direction.Normalize());
 	else
 		HeeksObj::OnPropertyEdit(prop);
 }
@@ -914,7 +910,7 @@ public:
 		CBox box;
 		object_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(centre[0], box.MaxY(), centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
@@ -938,7 +934,7 @@ public:
 		CBox box;
 		object_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(centre[0], box.MinY(), centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
@@ -962,7 +958,7 @@ public:
 		CBox box;
 		object_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(box.MaxX(), centre[1], centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
@@ -986,7 +982,7 @@ public:
 		CBox box;
 		object_for_tools->GetBox(box);
 		double centre[3];
-		box.Centre(centre);		
+		box.Centre(centre);
 
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(gp_Pnt(box.MinX(), centre[1], centre[2]), DigitizeInputType);
 		Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);

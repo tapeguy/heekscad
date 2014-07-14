@@ -275,9 +275,9 @@ void LineArcDrawing::AddPoint()
 							}
 							break;
 						}
-					
+
 				}
-			} 
+			}
 
 			Drawing::AddPoint();
 
@@ -403,7 +403,7 @@ bool LineArcDrawing::calculate_item(DigitizedPoint &end){
 		{
 			gp_Elips elip;
 			DigitizedPoint::GetEllipse(GetBeforeStartPos(), GetStartPos(), end,elip);
-					
+
 			temp_object = new HEllipse(elip, wxGetApp().ConstructionColor());
 			if(temp_object)temp_object_in_list.push_back(temp_object);
 
@@ -414,7 +414,7 @@ bool LineArcDrawing::calculate_item(DigitizedPoint &end){
 			DigitizedPoint::GetEllipse(GetBeforeStartPos(), GetStartPos(), end,elip);
 			((HEllipse*)temp_object)->SetEllipse(elip);
 		}
-		return true;	
+		return true;
 
 	case SplineDrawingMode:
 		{
@@ -455,7 +455,7 @@ bool LineArcDrawing::calculate_item(DigitizedPoint &end){
 				temp_object = NULL;
 				temp_object_in_list.clear();
 			}
-			
+
 			switch(circle_mode)
 			{
 			case CentreAndPointCircleMode:
@@ -600,18 +600,18 @@ const wxChar* LineArcDrawing::GetTitle()
 		str_for_GetTitle.Append(wxString(_("center and 2 points mode")));
 		str_for_GetTitle.Append(wxString(_T("\n  ")));
 		if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on center point")));
-		else if(GetDrawStep() == 1) 
+		else if(GetDrawStep() == 1)
 		{
 			str_for_GetTitle.Append(wxString(_("click on point on ellipse")));
 			str_for_GetTitle.Append(wxString(_T("\n  ")));
 			str_for_GetTitle.Append(wxString(_("(colinear or orthogonal to axis)")));
 		}
 		else str_for_GetTitle.Append(wxString(_("click on another point on ellipse")));
-		
+
 		return str_for_GetTitle;
 
 	case SplineDrawingMode:
-		
+
 		str_for_GetTitle = wxString(_("Spline drawing mode"));
 		str_for_GetTitle.Append(wxString(_T(" : ")));
 
@@ -633,12 +633,12 @@ const wxChar* LineArcDrawing::GetTitle()
 				break;
 			case RationalSplineMode:
 				str_for_GetTitle.Append(wxString(_("rational spline mode")));
-				str_for_GetTitle.Append(wxString(_T("\n  ")));	
+				str_for_GetTitle.Append(wxString(_T("\n  ")));
 				if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on start point")));
 				else if(GetDrawStep() == 1) str_for_GetTitle.Append(wxString(_("click on first control point")));
 				else if(GetDrawStep() == 2) str_for_GetTitle.Append(wxString(_("click on second control point")));
 				else str_for_GetTitle.Append(wxString(_("click on next control point or endpoint")));
-	
+
 				break;
 		}
 
@@ -731,17 +731,17 @@ void LineArcDrawing::OnKeyUp(wxKeyEvent& event)
 void LineArcDrawing::set_cursor(void){
 }
 
-void LineArcDrawing::OnPropertyEdit(Property *prop)
+void LineArcDrawing::OnPropertyEdit(Property& prop)
 {
-	if (prop == &drawing_mode) {
+	if (prop == drawing_mode) {
 		m_save_drawing_mode.clear();
 		arc_mode.SetVisible ( drawing_mode == ArcDrawingMode );
 		circle_mode.SetVisible ( drawing_mode == CircleDrawingMode );
 		radius_for_circle.SetVisible ( drawing_mode == CircleDrawingMode );
 	}
-	else if (prop == &radius_for_circle) {
+	else if (prop == radius_for_circle) {
 		HeeksConfig& config = wxGetApp().GetConfig();
-		config.Write(_T("RadiusForCircle"), (double)radius_for_circle);
+		config.Write(_T("RadiusForCircle"), radius_for_circle);
 	}
 	else {
 		Drawing::OnPropertyEdit(prop);

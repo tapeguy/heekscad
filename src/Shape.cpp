@@ -27,15 +27,15 @@ bool CShape::m_solids_found = false;
 CShape::CShape()
  : m_face_gl_list(0), m_edge_gl_list(0), m_calc_volume(false), m_opacity(1.0), m_title(_T("")), m_picked_face(NULL)
 {
+    m_color = wxGetApp().CurrentColor();
 	InitializeProperties();
 	Init();
 }
 
 CShape::CShape(const TopoDS_Shape &shape, const wxChar* title, const HeeksColor& col, float opacity)
- : m_face_gl_list(0), m_edge_gl_list(0), m_shape(shape), m_calc_volume(false), m_opacity(opacity), m_title(title), m_picked_face(NULL)
+ : m_face_gl_list(0), m_edge_gl_list(0), m_shape(shape), m_color(col), m_calc_volume(false), m_opacity(opacity), m_title(title), m_picked_face(NULL)
 {
 	InitializeProperties();
-	m_color = col;
 	Init();
 }
 
@@ -43,6 +43,7 @@ CShape::CShape(const CShape& s):m_face_gl_list(0), m_edge_gl_list(0), m_calc_vol
 {
 	InitializeProperties();
 
+    m_color = s.m_color;
 	// the faces, edges, vertices children are not copied, because we don't need them for copies in the undo engine
 	m_faces = NULL;
 	m_edges = NULL;
@@ -66,6 +67,7 @@ const CShape& CShape::operator=(const CShape& s)
 	m_shape = s.m_shape;
 	m_title = s.m_title;
 	m_creation_time = s.m_creation_time;
+	m_color = s.m_color;
 	m_opacity = s.m_opacity;
 	m_calc_volume = s.m_calc_volume;
 	if(m_calc_volume) {
@@ -79,11 +81,12 @@ const CShape& CShape::operator=(const CShape& s)
 
 void CShape::InitializeProperties()
 {
-	m_opacity.Initialize(_("opacity"), this);
-	m_calc_volume.Initialize(_("calculate volume"), this);
-	m_volume.Initialize(_("volume"), this);
+    m_color.Initialize(_("Color"), this);
+	m_opacity.Initialize(_("Opacity"), this);
+	m_calc_volume.Initialize(_("Calculate Volume"), this);
+	m_volume.Initialize(_("Volume"), this);
 	m_volume.SetReadOnly(true);
-	m_centre_of_mass.Initialize(_("centre of gravity"), this);
+	m_centre_of_mass.Initialize(_("Centre of Gravity"), this);
 	m_centre_of_mass.SetReadOnly(true);
 }
 
@@ -289,7 +292,7 @@ public:
 				BRepMesh::Mesh(new_shape, 1.0);
 #endif
 
-				HeeksObj* new_object = CShape::MakeObject(new_shape, _("Result of 'Offset Shape'"), SOLID_TYPE_UNKNOWN, shape_for_tools->m_color, shape_for_tools->GetOpacity());
+				HeeksObj* new_object = CShape::MakeObject(new_shape, _("Result of 'Offset Shape'"), SOLID_TYPE_UNKNOWN, shape_for_tools->GetColor(), shape_for_tools->GetOpacity());
 				shape_for_tools->Owner()->Add(new_object, NULL);
 				shape_for_tools->Owner()->Remove(shape_for_tools);
 				config.Write(_T("OffsetShapeValue"), offset_value);
@@ -425,7 +428,7 @@ static HeeksObj* Fuse(HeeksObj* s1, HeeksObj* s2){
 		if(wxGetApp().useOldFuse)new_shape = BRepAlgo_Fuse(((CShape*)s1)->Shape(), ((CShape*)s2)->Shape());
 		else new_shape = BRepAlgoAPI_Fuse(((CShape*)s1)->Shape(), ((CShape*)s2)->Shape());
 
-		HeeksObj* new_object = CShape::MakeObject(new_shape, _("Result of Fuse Operation"), SOLID_TYPE_UNKNOWN, ((CShape*)s1)->m_color, ((CShape*)s1)->GetOpacity());
+		HeeksObj* new_object = CShape::MakeObject(new_shape, _("Result of Fuse Operation"), SOLID_TYPE_UNKNOWN, ((CShape*)s1)->GetColor(), ((CShape*)s1)->GetOpacity());
 		wxGetApp().Add(new_object, NULL);
 		wxGetApp().Remove(s1);
 		wxGetApp().Remove(s2);
@@ -450,7 +453,7 @@ static HeeksObj* Common(HeeksObj* s1, HeeksObj* s2){
 		TopoDS_Shape sh1, sh2;
 		TopoDS_Shape new_shape = BRepAlgoAPI_Common(((CShape*)s1)->Shape(), ((CShape*)s2)->Shape());
 
-		HeeksObj* new_object = CShape::MakeObject(new_shape, _("Result of Common Operation"), SOLID_TYPE_UNKNOWN, ((CShape*)s1)->m_color, ((CShape*)s1)->GetOpacity());
+		HeeksObj* new_object = CShape::MakeObject(new_shape, _("Result of Common Operation"), SOLID_TYPE_UNKNOWN, ((CShape*)s1)->GetColor(), ((CShape*)s1)->GetOpacity());
 		wxGetApp().Add(new_object, NULL);
 		wxGetApp().Remove(s1);
 		wxGetApp().Remove(s2);
@@ -528,21 +531,21 @@ bool CShape::GetExtents(double* extents, const double* orig, const double* xdir,
 
 void CShape::CopyIDsFrom(const CShape* shape_from)
 {
-	SetID(shape_from->m_id);
+	SetID(shape_from->GetID());
 	HeeksObj* face_from = shape_from->m_faces->GetFirstChild();
 	for(HeeksObj* face_to = m_faces->GetFirstChild(); face_from && face_to; face_from = shape_from->m_faces->GetNextChild(), face_to = m_faces->GetNextChild())
 	{
-		face_to->SetID(face_from->m_id);
+		face_to->SetID(face_from->GetID());
 	}
 	HeeksObj* edge_from = shape_from->m_edges->GetFirstChild();
 	for(HeeksObj* edge_to = m_edges->GetFirstChild(); edge_from && edge_to; edge_from = shape_from->m_edges->GetNextChild(), edge_to = m_edges->GetNextChild())
 	{
-		edge_to->SetID(edge_from->m_id);
+		edge_to->SetID(edge_from->GetID());
 	}
 	HeeksObj* v_from = shape_from->m_vertices->GetFirstChild();
 	for(HeeksObj* v_to = m_vertices->GetFirstChild(); v_from && v_to; v_from = shape_from->m_vertices->GetNextChild(), v_to = m_vertices->GetNextChild())
 	{
-		v_to->SetID(v_from->m_id);
+		v_to->SetID(v_from->GetID());
 	}
 }
 
@@ -715,7 +718,7 @@ void CShape::FilletOrChamferEdges(std::list<HeeksObj*> &list, double radius, boo
 					}
 				}
 				TopoDS_Shape new_shape = chamfer.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), solid->GetColor(), ((CShape*)solid)->m_opacity), NULL);
+				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), ((CShape*)solid)->GetColor(), ((CShape*)solid)->m_opacity), NULL);
 				wxGetApp().Remove(solid);
 			}
 			else
@@ -726,7 +729,7 @@ void CShape::FilletOrChamferEdges(std::list<HeeksObj*> &list, double radius, boo
 					fillet.Add(radius, TopoDS::Edge(((CEdge*)(*It2))->Edge()));
 				}
 				TopoDS_Shape new_shape = fillet.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), solid->GetColor(), ((CShape*)solid)->m_opacity), NULL);
+				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), ((CShape*)solid)->GetColor(), ((CShape*)solid)->m_opacity), NULL);
 				wxGetApp().Remove(solid);
 			}
 		}

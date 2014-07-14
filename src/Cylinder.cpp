@@ -40,6 +40,30 @@ void CCylinder::InitializeProperties()
 	m_height.Initialize(_("height"), this);
 }
 
+void CCylinder::GetProperties(std::list<Property *> *list)
+{
+//      CoordinateSystem::GetAx2Properties(list, m_pos);
+    CSolid::GetProperties(list);
+}
+
+void CCylinder::OnPropertyEdit(Property& prop)
+{
+    if (prop == m_diameter || prop == m_height) {
+        CCylinder* new_object = new CCylinder(m_pos, m_diameter, m_height, m_title.c_str(), m_color, m_opacity);
+        new_object->CopyIDsFrom(this);
+        Owner()->Add(new_object, NULL);
+        Owner()->Remove(this);
+        if(wxGetApp().m_marked_list->ObjectMarked(this))
+        {
+            wxGetApp().m_marked_list->Remove(this,false);
+            wxGetApp().m_marked_list->Add(new_object, true);
+        }
+    }
+    else {
+        CSolid::OnPropertyEdit(prop);
+    }
+}
+
 const wxBitmap &CCylinder::GetIcon()
 {
 	static wxBitmap* icon = NULL;
@@ -60,7 +84,7 @@ bool CCylinder::IsDifferent(HeeksObj* other)
 
 	if(!IsEqual(cyl->m_pos,m_pos))
 		return true;
-	
+
 	return CShape::IsDifferent(other);
 }
 
@@ -75,12 +99,6 @@ void CCylinder::MakeTransformedShape(const gp_Trsf &mat)
 
 wxString CCylinder::StretchedName(){ return _("Stretched Cylinder");}
 
-void CCylinder::GetProperties(std::list<Property *> *list)
-{
-//      CoordinateSystem::GetAx2Properties(list, m_pos);
-	CSolid::GetProperties(list);
-}
-
 void CCylinder::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 {
 	gp_Pnt o = m_pos.Location();
@@ -94,24 +112,6 @@ void CCylinder::GetGripperPositions(std::list<GripData> *list, bool just_for_end
 	list->push_back(GripData(GripperTypeRotateObject,pyz.X(),pyz.Y(),pyz.Z(),NULL));
 	list->push_back(GripData(GripperTypeRotateObject,pmxz.X(),pmxz.Y(),pmxz.Z(),NULL));
 	list->push_back(GripData(GripperTypeObjectScaleZ,pz.X(),pz.Y(),pz.Z(),NULL));
-}
-
-void CCylinder::OnPropertyEdit(Property* prop)
-{
-	if (prop == &m_diameter || prop == &m_height) {
-		CCylinder* new_object = new CCylinder(m_pos, m_diameter, m_height, m_title.c_str(), m_color, m_opacity);
-		new_object->CopyIDsFrom(this);
-		Owner()->Add(new_object, NULL);
-		Owner()->Remove(this);
-		if(wxGetApp().m_marked_list->ObjectMarked(this))
-		{
-			wxGetApp().m_marked_list->Remove(this,false);
-			wxGetApp().m_marked_list->Add(new_object, true);
-		}
-	}
-	else {
-		CSolid::OnPropertyEdit(prop);
-	}
 }
 
 int CCylinder::GetCentrePoints(double* pos, double* pos2)

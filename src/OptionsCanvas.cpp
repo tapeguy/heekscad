@@ -54,8 +54,8 @@ void COptionsCanvas::RefreshProperties2(){
 	std::list<Property *>::iterator It;
 	for(It = list.begin(); It != list.end(); It++)
 	{
-		Property* property = *It;
-		AddProperty(property);
+	    Property* property = *It;
+		AddProperty((Property *)property);
 	}
 }
 

@@ -43,9 +43,9 @@ void COrientationModifierParams::write_values_to_config()
 	config.Write(_T("OrientationModifier_justification"), m_justification);
 }
 
-void COrientationModifierParams::OnPropertyEdit(Property* prop)
+void COrientationModifierParams::OnPropertyEdit(Property& prop)
 {
-	if (prop == &m_justification)
+	if (prop == m_justification)
 	{
 		if (m_parent->SketchIsClosed() == false)
 		{
@@ -154,7 +154,7 @@ void COrientationModifierParams::ReadParametersFromXMLElement(TiXmlElement* pEle
 	}
 	else
 	{
-	    m_sketch_rotates_text = false;
+	    m_sketch_rotates_text.SetValue(false);
 	}
 
 	if (pElem->Attribute("m_justification")) pElem->Attribute("m_justification", (int *) &m_justification);

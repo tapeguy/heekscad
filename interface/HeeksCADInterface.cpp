@@ -1202,7 +1202,7 @@ bool CHeeksCADInterface::BodyGetExtents(HeeksObj* body, double* extents, const d
 long CHeeksCADInterface::BodyGetColor(HeeksObj* body)
 {
 	// returns a COLORREF style long for the color of the body
-	return ((CShape*)body)->m_color.COLORREF_color();
+	return ((CShape*)body)->GetColor().COLORREF_color();
 }
 
 float CHeeksCADInterface::BodyGetOpacity(HeeksObj* body)

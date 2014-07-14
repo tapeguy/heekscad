@@ -33,6 +33,8 @@ public:
 	bool operator!=( const ObjList & rhs ) const { return(! (*this == rhs)); }
 	bool IsDifferent(HeeksObj *other) { return( *this != (*(ObjList *)other) ); }
 
+    void GetProperties(std::list<Property *> *list);
+
 	void ClearUndoably(void);
 	void Clear();
 	void Clear(std::set<HeeksObj*> &to_delete);
@@ -54,18 +56,9 @@ public:
 	void KillGLLists(void);
 	void WriteBaseXML(TiXmlElement *element);
 	void ReadBaseXML(TiXmlElement* element);
-#ifdef CONSTRAINT_TESTER
-    //JT
-	virtual void AuditHeeksObjTree4Constraints(HeeksObj * SketchPtr ,HeeksObj * mom,int level,bool ShowMsgInConsole,bool * ConstraintsAreOk);
-	virtual void FindConstrainedObj(HeeksObj * CurrentObject,HeeksObj * ObjectToFind,int * occurences,int FromLevel,int level,bool ShowMsgInConsole);
-#endif
 	void ModifyByMatrix(const double *m);
 	void GetTriangles(void(*callbackfunc)(const double* x, const double* n), double cusp, bool just_one_average_normal = true);
-#ifdef MULTIPLE_OWNERS
-	void Disconnect(std::list<HeeksObj*>parents);
-#endif
 	bool IsList(){return true;}
-	void GetProperties(std::list<Property*> *list);
 	void ReloadPointers();
 	void OnChangeViewUnits(const double units);
 

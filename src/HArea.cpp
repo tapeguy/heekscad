@@ -71,7 +71,7 @@ public:
 			{
 				object_for_tool->m_area.m_curves.erase(It);
 				break;
-			}		
+			}
 		}
 	}
 	const wxChar* GetTitle(){ return _("Delete Curve");}
@@ -204,7 +204,8 @@ static void render_curve(const CCurve& curve)
 	glEnd();
 }
 
-void HArea::glCommands(bool select, bool marked, bool no_color){
+void HArea::glCommands(bool select, bool marked, bool no_color)
+{
 	if(!no_color){
 		wxGetApp().glColorEnsuringContrast(HeeksColor(0));
 	}
@@ -220,7 +221,7 @@ void HArea::glCommands(bool select, bool marked, bool no_color){
 	{
 		CCurve& curve = *It;
 		if(select)glPushName(i);
-	
+
 		if(marked && (&curve == m_selected_curve))glColor3ub(0, 255, 0);
 		render_curve(curve);
 		if(marked && (&curve == m_selected_curve))wxGetApp().glColorEnsuringContrast(HeeksColor(0));
@@ -243,7 +244,8 @@ HeeksObj *HArea::MakeACopy(void)const
 	return new_object;
 }
 
-void HArea::ModifyByMatrix(const double* m){
+void HArea::ModifyByMatrix(const double* m)
+{
 	gp_Trsf mat = make_matrix(m);
 
 	for(std::list<CCurve>::iterator It = m_area.m_curves.begin(); It != m_area.m_curves.end(); It++)
@@ -265,23 +267,27 @@ void HArea::ModifyByMatrix(const double* m){
 	}
 }
 
-void HArea::GetBox(CBox &box){
+void HArea::GetBox(CBox &box)
+{
 	CBox2D b2;
 	m_area.GetBox(b2);
 	box.Insert(b2.m_minxy.x, b2.m_minxy.y, 0.0);
 	box.Insert(b2.m_maxxy.x, b2.m_maxxy.y, 0.0);
 }
 
-void HArea::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
+void HArea::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
+{
 	//list->push_back(GripData(GripperTypeStretch,C->m_p.X(),C->m_p.Y(),C->m_p.Z(),C));
 }
 
-void HArea::GetProperties(std::list<Property *> *list){
+void HArea::GetProperties(std::list<Property *> *list)
+{
 	m_number_curves = m_area.m_curves.size();
 	HeeksObj::GetProperties(list);
 }
 
-bool HArea::Stretch(const double *p, const double* shift, void* data){
+bool HArea::Stretch(const double *p, const double* shift, void* data)
+{
 #if 0
 	gp_Pnt vp = make_point(p);
 	gp_Vec vshift = make_vector(shift);
@@ -306,7 +312,7 @@ bool HArea::Stretch(const double *p, const double* shift, void* data){
 void HArea::WriteVertex(const CVertex& vertex, TiXmlNode *root)
 {
 	TiXmlElement* element = new TiXmlElement( "vertex" );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 
 	element->SetAttribute("type", vertex.m_type);
 	element->SetDoubleAttribute("x", vertex.m_p.x);
@@ -335,7 +341,7 @@ void HArea::ReadVertex(CVertex& vertex, TiXmlElement *root)
 void HArea::WriteCurve(const CCurve& curve, TiXmlNode *root)
 {
 	TiXmlElement* element = new TiXmlElement( "curve" );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 	for(std::list<CVertex>::const_iterator It = curve.m_vertices.begin(); It != curve.m_vertices.end(); It++)
 	{
 		const CVertex& vertex = *It;
@@ -358,7 +364,7 @@ void HArea::ReadCurve(CCurve& curve, TiXmlElement *root)
 void HArea::WriteArea(const CArea& area, TiXmlNode *root)
 {
 	TiXmlElement* element = new TiXmlElement( "area" );
-	root->LinkEndChild( element );  
+	root->LinkEndChild( element );
 	for(std::list<CCurve>::const_iterator It = area.m_curves.begin(); It != area.m_curves.end(); It++)
 	{
 		const CCurve& curve = *It;

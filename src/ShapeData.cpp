@@ -15,26 +15,26 @@ CShapeData::CShapeData(): m_xml_element("")
 
 CShapeData::CShapeData(CShape* shape): m_xml_element("")
 {
-	m_id = shape->m_id;
+	m_id = shape->GetID();
 	m_title = shape->m_title;
-	m_visible = shape->m_visible;
+	m_visible = shape->IsVisible();
 	m_solid_type = SOLID_TYPE_UNKNOWN;
 	if(shape->GetType() == SolidType)m_solid_type = ((CSolid*)shape)->GetSolidType();
 	shape->SetXMLElement(&m_xml_element);
 
 	for(HeeksObj* object = shape->m_faces->GetFirstChild(); object; object = shape->m_faces->GetNextChild())
 	{
-		m_face_ids.push_back(object->m_id);
+		m_face_ids.push_back(object->GetID());
 	}
 
 	for(HeeksObj* object = shape->m_edges->GetFirstChild(); object; object = shape->m_edges->GetNextChild())
 	{
-		m_edge_ids.push_back(object->m_id);
+		m_edge_ids.push_back(object->GetID());
 	}
 
 	for(HeeksObj* object = shape->m_vertices->GetFirstChild(); object; object = shape->m_vertices->GetNextChild())
 	{
-		m_vertex_ids.push_back(object->m_id);
+		m_vertex_ids.push_back(object->GetID());
 	}
 
 }
@@ -43,7 +43,7 @@ void CShapeData::SetShape(CShape* shape)
 {
 	if(m_id != -1)shape->SetID(m_id);
 	if(m_title.length() > 0)shape->m_title = m_title;
-	shape->m_visible = m_visible;
+	shape->SetVisible ( m_visible );
 	shape->SetFromXMLElement(&m_xml_element);
 
 	{

@@ -18,8 +18,11 @@ public:
 
 	const HILine& operator=(const HILine &b);
 
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+    void GetProperties(std::list<Property *> *list);
+
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	int GetType()const{return ILineType;}
 	int GetMarkingFilter()const{return ILineMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
@@ -28,8 +31,6 @@ public:
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property *prop);
-	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);
 	int Intersects(const HeeksObj *object, std::list< double > *rl)const;

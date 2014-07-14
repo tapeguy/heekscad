@@ -11,8 +11,10 @@
 class Gripper;
 class PointOrWindow;
 
-class MarkedList : public MutableObject {
+class MarkedList : public DomainObject
+{
 private:
+
 	std::list<HeeksObj*> m_list;
 	std::set<HeeksObj*> m_set;
 	std::set<HeeksObj*> m_ignore_set;
@@ -39,11 +41,13 @@ public:
 	MarkedList();
 	virtual ~MarkedList(void);
 
+    void InitializeProperties();
+    void GetProperties(std::list<Property *> *list);
+
 	std::set<MarkingFilter> GetFilters();
 	void SetFilters(const std::set<MarkingFilter>& filters);
 
 	void create_grippers();
-	void InitializeProperties();
 	void Add(std::list<HeeksObj *> &obj_list, bool call_OnChanged);
 	void Add(HeeksObj *object, bool call_OnChanged);
 	void Remove(const std::list<HeeksObj *> &obj_list, bool call_OnChanged);
@@ -58,7 +62,6 @@ public:
 	void OnChanged(bool selection_cleared, const std::list<HeeksObj *>* added, const std::list<HeeksObj *>* removed);
 	void set_ignore_onoff(HeeksObj* object, bool b);
 	bool get_ignore(HeeksObj* object);
-	void GetProperties(std::list<Property *> *list);
 	void GetTools(MarkedObject* clicked_object, std::list<Tool*>& t_list, const wxPoint* p, bool copy_and_paste_tools);
 	void CutSelectedItems();
 	void CopySelectedItems();

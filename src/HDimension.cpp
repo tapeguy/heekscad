@@ -15,7 +15,7 @@ HDimension::HDimension(const gp_Trsf &trsf, const gp_Pnt &p0, const gp_Pnt &p1, 
  : EndedObject(col), m_trsf(trsf), m_mode((int)mode), m_units((int)units), m_scale(1.0)
 {
 	InitializeProperties();
-	m_p2 = new HPoint(p2,col);
+	m_p2 = new HPoint(p2, col);
 	m_p2->m_draw_unselected = false;
 	m_p2->SetSkipForUndo(true);
 	Add(m_p2,NULL);
@@ -179,7 +179,7 @@ gp_Pnt HDimension::GetC2()
 void HDimension::glCommands(bool select, bool marked, bool no_color)
 {
 	gp_Pnt b = GetB2();
-	
+
 	if(A->m_p.IsEqual(b, wxGetApp().m_geom_tol))return;
 
 	if(!no_color)wxGetApp().glColorEnsuringContrast(m_color);

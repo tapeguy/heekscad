@@ -21,14 +21,8 @@ void ObjList::Clear()
 	std::list<HeeksObj*>::iterator It;
 	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
-#ifdef MULTIPLE_OWNERS
-		(*It)->RemoveOwner(this);
-		if(!(*It)->GetFirstOwner())
-			delete *It;
-#else
 		(*It)->RemoveOwner();
 		delete *It;
-#endif
 	}
 	m_objects.clear();
 	m_index_list.clear();
@@ -42,11 +36,7 @@ void ObjList::Clear(std::set<HeeksObj*> &to_delete)
 	{
 		if(to_delete.find(*It) != to_delete.end())
 		{
-#ifdef MULTIPLE_OWNERS
-			(*It)->RemoveOwners();
-#else
 			(*It)->RemoveOwner();
-#endif
 			It = m_objects.erase(It);
 		}
 		else
@@ -120,7 +110,7 @@ void ObjList::GetBox(CBox &box)
 	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
 		HeeksObj* object = *It;
-		if(object->OnVisibleLayer() && object->m_visible)
+		if(object->OnVisibleLayer() && object->IsVisible())
 		{
 			object->GetBox(box);
 		}
@@ -129,14 +119,14 @@ void ObjList::GetBox(CBox &box)
 
 void ObjList::glCommands(bool select, bool marked, bool no_color)
 {
-	if(!m_visible)
+	if(!IsVisible())
 		return;
 	HeeksObj::glCommands(select, marked, no_color);
 	std::list<HeeksObj*>::iterator It;
 	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
 		HeeksObj* object = *It;
-		if(object->OnVisibleLayer() && object->m_visible)
+		if(object->OnVisibleLayer() && object->IsVisible())
 		{
 			if(select)glPushName(object->GetIndex());
 #ifdef HEEKSCAD
@@ -155,7 +145,7 @@ void ObjList::Draw(wxDC& dc){
 	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
 	{
 		HeeksObj* object = *It;
-		if(object->OnVisibleLayer() && object->m_visible)
+		if(object->OnVisibleLayer() && object->IsVisible())
 		{
 			object->Draw(dc);
 		}
@@ -245,7 +235,8 @@ bool ObjList::Add(HeeksObj* object, HeeksObj* prev_object)
 	HeeksObj::Add(object, prev_object);
 
 #ifdef HEEKSCAD
-	if(((!wxGetApp().m_in_OpenFile || wxGetApp().m_file_open_or_import_type != FileOpenTypeHeeks || wxGetApp().m_inPaste) && object->UsesID() && (object->m_id == 0 || (wxGetApp().m_file_open_or_import_type == FileImportTypeHeeks && wxGetApp().m_in_OpenFile))))
+	if(((!wxGetApp().m_in_OpenFile || wxGetApp().m_file_open_or_import_type != FileOpenTypeHeeks || wxGetApp().m_inPaste) &&
+	     object->UsesID() && (object->GetID() == 0 || (wxGetApp().m_file_open_or_import_type == FileImportTypeHeeks && wxGetApp().m_in_OpenFile))))
 	{
 		object->SetID(wxGetApp().GetNextID(object->GetIDGroupType()));
 	}
@@ -268,16 +259,6 @@ std::list<HeeksObj *> ObjList::GetChildren() const
 }
 
 
-#ifdef MULTIPLE_OWNERS
-void ObjList::Disconnect(std::list<HeeksObj*> parents)
-{
-	parents.push_back(this);
-	for(LoopIt = m_objects.begin(); LoopIt != m_objects.end(); LoopIt++){
-		(*LoopIt)->Disconnect(parents);
-	}
-}
-#endif
-
 void ObjList::Remove(HeeksObj* object)
 {
 	if (object==NULL) return;
@@ -298,7 +279,7 @@ void ObjList::Remove(HeeksObj* object)
 #ifdef HEEKSCAD
 	if( (!wxGetApp().m_in_OpenFile || wxGetApp().m_file_open_or_import_type != FileOpenTypeHeeks) &&
 		object->UsesID() &&
-		(object->m_id == 0 || (wxGetApp().m_file_open_or_import_type == FileImportTypeHeeks && wxGetApp().m_in_OpenFile))
+		(object->GetID() == 0 || (wxGetApp().m_file_open_or_import_type == FileImportTypeHeeks && wxGetApp().m_in_OpenFile))
 		)
 	{
 		wxGetApp().RemoveID(object);
@@ -403,9 +384,9 @@ void ObjList::ReadBaseXML(TiXmlElement* element)
 #ifdef HEEKSCAD
 		HeeksObj* object = wxGetApp().ReadXMLElement(pElem);
 
-		if ((object != NULL) && (object->GetType() != 0) && (object->m_id != 0))
+		if ((object != NULL) && (object->GetType() != 0) && (object->GetID() != 0))
 		{
-			existing = wxGetApp().GetIDObject( object->GetType(), object->m_id );
+			existing = wxGetApp().GetIDObject( object->GetType(), object->GetID() );
 		}
 #else
 		HeeksObj* object = heeksCAD->ReadXMLElement(pElem);

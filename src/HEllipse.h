@@ -4,17 +4,15 @@
 
 #pragma once
 
-#ifdef MULTIPLE_OWNERS
-#include "../interface/ObjList.h"
-class HPoint;
-class HEllipse: public ObjList{
-#else
 #include "HPoint.h"
-class HEllipse: public HeeksObj{
-#endif
+class HEllipse: public ObjList {
+private:
+
+    PropertyColor m_color;
 
 public:
-	HPoint* C;
+
+    HPoint* C;
 	PropertyVertex m_centre;
 	PropertyVector m_axis;
 	PropertyLength m_majr;
@@ -36,9 +34,11 @@ public:
 	void SetEllipse(gp_Elips e);
 	gp_Elips GetEllipse() const;
 
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+    void GetProperties(std::list<Property *> *list);
 
 	// HeeksObj's virtual functions
-	void InitializeProperties();
 	int GetType()const{return EllipseType;}
 	int GetMarkingFilter()const{return CircleMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
@@ -48,8 +48,6 @@ public:
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property *prop);
-	void GetProperties(std::list<Property *> *list);
 	bool FindNearPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);
 	bool Stretch(const double *p, const double* shift, void* data);

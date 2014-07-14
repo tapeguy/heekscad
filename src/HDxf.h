@@ -8,8 +8,10 @@
 
 class CSketch;
 
-class HeeksDxfRead : public CDxfRead{
+class HeeksDxfRead : public CDxfRead
+{
 private:
+
     typedef wxString LayerName_t;
 	typedef std::map< LayerName_t, CSketch * > Sketches_t;
 	Sketches_t m_sketches;
