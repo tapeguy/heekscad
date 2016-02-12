@@ -5,12 +5,14 @@
 #pragma once
 
 #include "HPoint.h"
-class HEllipse: public ObjList {
-private:
+#include "../interface/IdNamedObjList.h"
+#include "../interface/HeeksColor.h"
 
-    PropertyColor m_color;
-
+class HEllipse: public IdNamedObjList
+{
 public:
+
+    static const int ObjType = EllipseType;
 
     HPoint* C;
 	PropertyVertex m_centre;
@@ -20,9 +22,10 @@ public:
 	PropertyDouble m_rot;
 	PropertyDouble m_start;
 	PropertyDouble m_end;
-	gp_Dir m_zdir;
-	gp_Dir m_xdir;
+	PropertyVector m_zdir;
+	PropertyVector m_xdir;
 
+	HEllipse();
 	HEllipse(const gp_Elips &c, const HeeksColor& col);
 	HEllipse(const gp_Elips &c, double start, double end, const HeeksColor& col);
 	HEllipse(const HEllipse &c);
@@ -34,16 +37,14 @@ public:
 	void SetEllipse(gp_Elips e);
 	gp_Elips GetEllipse() const;
 
+    // HeeksObj's virtual functions
+	virtual bool UsesColor() { return true; }
     void InitializeProperties();
-    void OnPropertyEdit(Property& prop);
+    void OnPropertySet(Property& prop);
     void GetProperties(std::list<Property *> *list);
-
-	// HeeksObj's virtual functions
-	int GetType()const{return EllipseType;}
 	int GetMarkingFilter()const{return CircleMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Ellipse");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
@@ -53,12 +54,8 @@ public:
 	bool Stretch(const double *p, const double* shift, void* data);
 	void GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point = true)const;
 	bool GetCentrePoint(double* pos);
-	void WriteXML(TiXmlNode *root);
 	int Intersects(const HeeksObj *object, std::list< double > *rl)const;
 	void ReloadPointers();
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
-	void LoadToDoubles();
-	void LoadFromDoubles();
-
 };
 

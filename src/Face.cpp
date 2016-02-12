@@ -3,6 +3,7 @@
 // This program is released under the BSD license. See the file COPYING for details.
 #include "stdafx.h"
 #include "Face.h"
+#include "Vertex.h"
 #include "../interface/NurbSurfaceParams.h"
 #include "FaceTools.h"
 #include "Sketch.h"
@@ -10,16 +11,21 @@
 #include "HeeksFrame.h"
 #include "InputModeCanvas.h"
 #include "ConversionTools.h"
+#include <ShapeBuild_ReShape.hxx>
+#include <BRepLib_FindSurface.hxx>
 
 
 CFace::CFace()
- : m_surface(_("surface_type"), _("Surface Type"), NULL), m_temp_attr(0)
+ : HeeksObj(ObjType), m_temp_attr(0)
 {
+    InitializeProperties();
 }
 
 CFace::CFace(const TopoDS_Face &face)
- : m_topods_face(face), m_surface(_("surface_type"), _("Surface Type"), NULL), m_temp_attr(0)
+ : HeeksObj(ObjType), m_topods_face(face), m_temp_attr(0)
 {
+    InitializeProperties();
+
 #if _DEBUG
 	gp_Pnt pos;
 	gp_Dir norm = GetMiddleNormal(&pos);
@@ -35,7 +41,15 @@ CFace::CFace(const TopoDS_Face &face)
 	m_marking_gl_list = 0;
 }
 
-CFace::~CFace(){
+CFace::~CFace()
+{
+}
+
+void CFace::InitializeProperties()
+{
+    m_surface.Initialize(_("Surface Type"), this);
+    m_surface.SetReadOnly(true);
+    m_surface.SetTransient(true);
 }
 
 void CFace::glCommands(bool select, bool marked, bool no_color){
@@ -87,7 +101,8 @@ const wxBitmap &CFace::GetIcon()
 	return *icon;
 }
 
-void CFace::GetBox(CBox &box){
+void CFace::GetBox(CBox &box)
+{
 //	if(!m_box.m_valid)
 	{
 		// there must be a better way than re-using the render code
@@ -103,7 +118,8 @@ void CFace::GetBox(CBox &box){
 	box.Insert(m_box);
 }
 
-void CFace::ModifyByMatrix(const double *m){
+void CFace::ModifyByMatrix(const double *m)
+{
 	if(GetParentBody() == NULL)
 	{
 		gp_Trsf mat = make_matrix(m);
@@ -144,7 +160,8 @@ void best_triangle_for_face(double *x, double *n)
 	}
 }
 
-gp_Dir CFace::GetMiddleNormal(gp_Pnt *pos)const{
+gp_Dir CFace::GetMiddleNormal(gp_Pnt *pos) const
+{
 	// get bounds of face
 	Standard_Real umin, umax, vmin, vmax;
 	BRepTools::UVBounds(m_topods_face, umin, umax, vmin, vmax);
@@ -167,7 +184,8 @@ bool CFace::GetUVAtPoint(const gp_Pnt &pos, double *u, double *v)const{
 	return false;
 }
 
-bool CFace::GetClosestPoint(const gp_Pnt &pos, gp_Pnt &closest_pnt)const{
+bool CFace::GetClosestPoint(const gp_Pnt &pos, gp_Pnt &closest_pnt) const
+{
 	BRepPrimAPI_MakeBox cuboid(gp_Ax2(pos, gp_Vec(1, 0, 0), gp_Vec(0, 1, 0)), 0.0001, 0.0001, 0.0001);
 
 	BRepExtrema_DistShapeShape extrema(m_topods_face, cuboid.Shape());
@@ -189,7 +207,8 @@ bool CFace::GetClosestSurfacePoint(const gp_Pnt &pos, gp_Pnt &closest_pnt)const{
 	return false;
 }
 
-double CFace::Area()const{
+double CFace::Area() const
+{
 	GProp_GProps System;
 	BRepGProp::SurfaceProperties(m_topods_face,System);
 	return System.Mass();
@@ -203,16 +222,16 @@ void CFace::WriteXML(TiXmlNode *root)
 void CFace::GetProperties(std::list<Property *> *list)
 {
 	m_surface.SetValue(this->GetSurfaceTypeStr());
-	list->push_back(&m_surface);
 	HeeksObj::GetProperties(list);
 }
 
 static CFace* face_for_tools = NULL;
 
-void FaceToSketchTool::Run(){
+void FaceToSketchTool::Run()
+{
 	CSketch* new_object = new CSketch();
 	ConvertFaceToSketch2(face_for_tools->Face(), new_object, deviation);
-	wxGetApp().Add(new_object, NULL);
+	wxGetApp().AddUndoably(new_object, NULL, NULL);
 }
 
 PropertyDouble FaceToSketchTool::deviation = 0.1;
@@ -237,7 +256,7 @@ public:
 			x_direction = plane.YAxis().Direction();
 		}
 		CoordinateSystem* new_object = new CoordinateSystem(_("Face Coordinate System"), plane.Location(), x_direction, y_direction);
-		wxGetApp().Add(new_object, NULL);
+		wxGetApp().AddUndoably(new_object, NULL, NULL);
 		wxGetApp().m_marked_list->Clear(true);
 		wxGetApp().m_marked_list->Add(new_object, true);
 		wxGetApp().Repaint();
@@ -246,40 +265,7 @@ public:
 
 static MakeCoordSystem make_coordsys;
 
-class SketchOnFace:public Tool
-{
-	// only use this if GetSurfaceType() == GeomAbs_Plane
-public:
-	const wxChar* GetTitle(){return _("Sketch On Face");}
-	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/sketchmode.png");}
-	void Run(){
-		gp_Pln plane;
-		face_for_tools->GetPlaneParams(plane);
-		gp_Dir x_direction = plane.XAxis().Direction();
-		gp_Dir y_direction = plane.YAxis().Direction();
-		if(!face_for_tools->Face().Orientation())
-		{
-			// swap the axes to invert the normal
-			y_direction = plane.XAxis().Direction();
-			x_direction = plane.YAxis().Direction();
-		}
-		CoordinateSystem* coord_sys = new CoordinateSystem(_("Face Coordinate System"), plane.Location(), x_direction, y_direction);
-		CSketch* sketch = new CSketch();
-		sketch->Add(coord_sys,NULL);
-		sketch->ReloadPointers();
-		//TODO: should be faces solids parent
-		wxGetApp().Add(sketch, NULL);
-		wxGetApp().m_marked_list->Clear(true);
-		wxGetApp().m_marked_list->Add(sketch, true);
-		wxGetApp().EnterSketchMode(sketch);
-		wxGetApp().Repaint();
-		wxGetApp().m_frame->RefreshInputCanvas();
-	}
-};
-
-static SketchOnFace sketch_on_face;
-
-class ExtrudeFace:public Tool
+class ExtrudeFace : public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Extrude Face");}
@@ -293,7 +279,7 @@ public:
 
 static ExtrudeFace extrude_face;
 
-class RotateToFace:public Tool
+class RotateToFace :public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Rotate to Face");}
@@ -310,8 +296,8 @@ public:
 			x_direction = plane.YAxis().Direction();
 		}
 		gp_Trsf face_matrix = make_matrix(plane.Location(), x_direction, y_direction);
-		gp_Trsf inv_matrix = face_matrix.Inverted();
 
+		wxGetApp().StartHistory();
 		double m[16];
 		extract(face_matrix.Inverted(), m);
 		// if any objects are selected, move them
@@ -320,15 +306,17 @@ public:
 			for(std::list<HeeksObj *>::iterator It = wxGetApp().m_marked_list->list().begin(); It != wxGetApp().m_marked_list->list().end(); It++)
 			{
 				HeeksObj* object = *It;
-				object->ModifyByMatrix(m);
+				wxGetApp().TransformUndoably(object, m);
 			}
 		}
 		else
 		{
 			// move the solid
 			HeeksObj* parent_body = face_for_tools->GetParentBody();
-			if(parent_body)parent_body->ModifyByMatrix(m);
+			if(parent_body)
+			    wxGetApp().TransformUndoably(parent_body, m);
 		}
+		wxGetApp().EndHistory();
 	}
 };
 
@@ -340,7 +328,6 @@ void CFace::GetTools(std::list<Tool*>* t_list, const wxPoint* p){
 	if(IsAPlane(NULL))
 	{
 		if(!wxGetApp().m_no_creation_mode)t_list->push_back(&make_coordsys);
-		if(!wxGetApp().m_no_creation_mode)t_list->push_back(&sketch_on_face);
 		t_list->push_back(&rotate_to_face);
 	}
 	if(!wxGetApp().m_no_creation_mode)t_list->push_back(&extrude_face);
@@ -409,9 +396,9 @@ bool CFace::IsAPlane(gp_Pln *returned_plane)
 
 			// define plane from three corners
 			gp_Pnt p00, pN0, pNN;
-			gp_Dir n00 = GetNormalAtUV(u[0], v[0], &p00);
-			gp_Dir nN0 = GetNormalAtUV(u[GRID], v[0], &pN0);
-			gp_Dir nNN = GetNormalAtUV(u[GRID], v[GRID], &pNN);
+//			gp_Dir n00 = GetNormalAtUV(u[0], v[0], &p00);
+//			gp_Dir nN0 = GetNormalAtUV(u[GRID], v[0], &pN0);
+//			gp_Dir nNN = GetNormalAtUV(u[GRID], v[GRID], &pNN);
 
 			gp_Trsf m;
 			try
@@ -421,9 +408,9 @@ bool CFace::IsAPlane(gp_Pln *returned_plane)
 			catch(...)
 			{
 				// matrix failed, probably two points in the same place. Try again 0.1 inwards from the edges
-				gp_Dir n00 = GetNormalAtUV(uv_box[0] + U * 0.1, uv_box[2] + V * 0.1, &p00);
-				gp_Dir nN0 = GetNormalAtUV(uv_box[0] + U * 0.9, uv_box[2] + V * 0.1, &pN0);
-				gp_Dir nNN = GetNormalAtUV(uv_box[0] + U * 0.9, uv_box[2] + V * 0.9, &pNN);
+//				gp_Dir n00 = GetNormalAtUV(uv_box[0] + U * 0.1, uv_box[2] + V * 0.1, &p00);
+//				gp_Dir nN0 = GetNormalAtUV(uv_box[0] + U * 0.9, uv_box[2] + V * 0.1, &pN0);
+//				gp_Dir nNN = GetNormalAtUV(uv_box[0] + U * 0.9, uv_box[2] + V * 0.9, &pNN);
 				m = make_matrix(p00, make_vector(p00, pN0), make_vector(p00, pNN));
 			}
 			gp_Pln plane(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1));
@@ -435,7 +422,7 @@ bool CFace::IsAPlane(gp_Pln *returned_plane)
 				for(int j = 0; j <= GRID; j++)
 				{
 					gp_Pnt p;
-					gp_Dir n = GetNormalAtUV(u[i], v[j], &p);
+//					gp_Dir n = GetNormalAtUV(u[i], v[j], &p);
 
 					// check the point lies on the plane
 					double d = fabs(plane.Distance(p));
@@ -675,7 +662,6 @@ bool CFace::GetNurbSurfaceParams(CNurbSurfaceParams* params)
 						params->vertex[++aCounter] = aBSplineSurface->Weight(i, j);
 					}
 				}
-
 			}
 			break;
 		default:
@@ -692,33 +678,197 @@ bool CFace::GetNurbSurfaceParams(CNurbSurfaceParams* params)
 	return true;
 }
 
+void CFace::ReplaceEdges(ShapeBuild_ReShape& reshaper, HVertex * common_vertex, std::list<CEdge*>& edges, std::list<TopoDS_Face>& added_faces)
+{
+    BRepAdaptor_Surface surface(m_topods_face);
+
+    switch(surface.GetType())
+    {
+    case GeomAbs_Plane:
+        ReplaceEdgesOnPlane(reshaper, common_vertex, edges, added_faces);
+        break;
+
+    case GeomAbs_Cylinder:
+        ReplaceEdgesOnCylinder(reshaper, common_vertex, edges, added_faces);
+        break;
+
+    default:
+        break;
+    }
+}
+
+void CFace::ReplaceEdgesOnPlane(ShapeBuild_ReShape& reshaper, HVertex * common_vertex, std::list<CEdge*>& edges, std::list<TopoDS_Face>& added_faces)
+{
+    TopoDS_Face new_face;
+    BRepBuilderAPI_MakeWire wireMaker;
+
+    for (CEdge* obj = GetFirstEdge(); obj; obj = GetNextEdge())
+    {
+        wireMaker.Add(obj->Edge());
+    }
+
+    if (m_edges.size() > 3)
+    {
+        // Possibility exists that the edges are no longer co-planar.
+        BRepLib_FindSurface find_surface(wireMaker.Wire(), -1, true);
+        std::vector<gp_Pnt> edge_points;
+        if (!find_surface.Found())
+        {
+            // Split this face in two and add the new face
+            BRepBuilderAPI_MakeWire wireMaker_face1;
+            BRepBuilderAPI_MakeWire wireMaker_face2;
+            for (CEdge* obj = GetFirstEdge(); obj; obj = GetNextEdge())
+            {
+                const TopoDS_Edge& cursor = obj->Edge();
+                std::list<CEdge*>::iterator findIter = std::find(edges.begin(), edges.end(), obj);
+                if (findIter == edges.end())
+                {
+                    // Edge not found, therefore not modified.
+                    wireMaker_face1.Add(cursor);
+                }
+                else
+                {
+                    // One of the two modified edges, find there common point and add the other end.
+                    wireMaker_face2.Add(cursor);
+
+                    if (obj->GetVertex0() == common_vertex)
+                    {
+                        edge_points.push_back(obj->GetVertex1()->m_p);
+                    }
+                    else if (obj->GetVertex1() == common_vertex)
+                    {
+                        edge_points.push_back(obj->GetVertex0()->m_p);
+                    }
+                }
+            }
+
+            if (edge_points.size() != 2)
+            {
+                // unable to split plane, something wicked happened
+                return;
+            }
+            TopoDS_Edge common_edge = BRepBuilderAPI_MakeEdge(edge_points[0], edge_points[1]);
+            wireMaker_face1.Add(common_edge);
+            BRepBuilderAPI_MakeFace faceMaker1(wireMaker_face1.Wire());
+            m_topods_face = faceMaker1.Face();
+
+            wireMaker_face2.Add(common_edge);
+            BRepBuilderAPI_MakeFace faceMaker2(wireMaker_face2.Wire());
+            added_faces.push_back(faceMaker2.Face());
+            return;
+        }
+    }
+
+    BRepBuilderAPI_MakeFace faceMaker(wireMaker.Wire());
+    new_face = faceMaker.Face();
+    reshaper.Replace(m_topods_face, new_face);
+    m_topods_face = new_face;
+}
+
+
+void CFace::ReplaceEdgesOnCylinder(ShapeBuild_ReShape& reshaper, HVertex * common_vertex, std::list<CEdge*>& edges, std::list<TopoDS_Face>& added_faces)
+{
+    BRepAdaptor_Surface surface(m_topods_face);
+    TopoDS_Face new_face;
+    BRepBuilderAPI_MakeWire wireMaker;
+
+    // Cylinder edges should be 2 circles and a line.
+    // if a circle was modified, this surface is now a cone
+    // otherwise the cylinder length changed.
+    gp_Cylinder cyl = surface.Cylinder();
+    double angle;
+    double max_radius = 0.0;
+    CEdge * line;
+    gp_Ax3 pos = cyl.Position();
+    TopoDS_Shape vtx_on_circle;
+
+    for (CEdge* obj = GetFirstEdge(); obj; obj = GetNextEdge())
+    {
+        const TopoDS_Edge& cursor = obj->Edge();
+        BRepAdaptor_Curve curve(cursor);
+
+        if (curve.GetType() == GeomAbs_Line)
+        {
+            line = obj;
+        }
+        else if (curve.GetType() == GeomAbs_Circle)
+        {
+            gp_Circ circle = curve.Circle();
+            if (circle.Radius() > max_radius)
+            {
+                max_radius = circle.Radius();
+                pos.SetLocation(circle.Location());
+            }
+
+            std::list<CEdge*>::iterator findIter = std::find(edges.begin(), edges.end(), obj);
+            if (findIter != edges.end())
+            {
+                TopExp_Explorer expl ( cursor, TopAbs_VERTEX );
+                vtx_on_circle = expl.Current();
+            }
+        }
+        // Edge not found, therefore not modified.
+        printf ("Face cylinder to cone - adding edge: %s\n", TopoDS_ToString(cursor).mb_str().data());
+        wireMaker.Add(cursor);
+    }
+    common_vertex->Vertex().Move(vtx_on_circle.Location());
+
+    BRepAdaptor_Curve curve(line->Edge());
+    angle = cyl.Axis().Angle(curve.Line().Position());
+    if (angle > M_PI/2)
+    {
+        angle = M_PI - angle;
+    }
+    gp_Cone cone(pos, angle, max_radius);
+
+    try {
+        const TopoDS_Wire& wire = wireMaker.Wire();
+        BRepBuilderAPI_MakeFace faceMaker(cone, wire);
+        new_face = faceMaker.Face();
+        reshaper.Replace(m_topods_face, new_face);
+    }
+    catch (Standard_Failure) {
+//        BRepBuilderAPI_WireError error = wireMaker.Error();
+        Handle_Standard_Failure e = Standard_Failure::Caught();
+        wxMessageBox(wxString(_("Error making cone from cylinder")) + _T(": ") + Ctt(e->GetMessageString()));
+        return;
+    }
+    m_topods_face = new_face;
+}
+
 CEdge* CFace::GetFirstEdge()
 {
-	if (m_edges.size()==0) return NULL;
+	if (m_edges.size()==0)
+	    return NULL;
 	m_edgeIt = m_edges.begin();
 	return *m_edgeIt;
 }
 
 CEdge* CFace::GetNextEdge()
 {
-	if (m_edges.size()==0 || m_edgeIt==m_edges.end()) return NULL;
+	if (m_edges.size()==0 || m_edgeIt==m_edges.end())
+	    return NULL;
 	m_edgeIt++;
-	if (m_edgeIt==m_edges.end()) return NULL;
+	if (m_edgeIt==m_edges.end())
+	    return NULL;
 	return *m_edgeIt;
 }
 
 CLoop* CFace::GetFirstLoop()
 {
-	if (m_loops.size()==0) return NULL;
+	if (m_loops.size()==0)
+	    return NULL;
 	m_loopIt = m_loops.begin();
 	return *m_loopIt;
 }
 
 CLoop* CFace::GetNextLoop()
 {
-	if (m_loops.size()==0 || m_loopIt==m_loops.end()) return NULL;
+	if (m_loops.size()==0 || m_loopIt==m_loops.end())
+	    return NULL;
 	m_loopIt++;
-	if (m_loopIt==m_loops.end()) return NULL;
+	if (m_loopIt==m_loops.end())
+	    return NULL;
 	return *m_loopIt;
 }
 
@@ -748,10 +898,13 @@ void CFace::GetSurfaceUVPeriod(double *uv, bool *isUPeriodic, bool *isVPeriodic)
 
 CShape* CFace::GetParentBody()
 {
-	if(Owner() == NULL)return NULL;
-	if(Owner()->Owner() == NULL)return NULL;
-	if(Owner()->Owner()->GetType() != SolidType)return NULL;
-	return (CShape*)(Owner()->Owner());
+    if ( this->GetOwner() == NULL )
+        return NULL;
+    if ( this->GetOwner()->GetOwner() == NULL )
+        return NULL;
+    if ( this->GetOwner()->GetOwner()->GetType() != SolidType )
+        return NULL;
+    return (CShape*) ( this->GetOwner()->GetOwner() );
 }
 
 void CFace::MakeSureMarkingGLListExists()

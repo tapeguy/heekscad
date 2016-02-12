@@ -43,7 +43,7 @@ void COrientationModifierParams::write_values_to_config()
 	config.Write(_T("OrientationModifier_justification"), m_justification);
 }
 
-void COrientationModifierParams::OnPropertyEdit(Property& prop)
+void COrientationModifierParams::OnPropertySet(Property& prop)
 {
 	if (prop == m_justification)
 	{

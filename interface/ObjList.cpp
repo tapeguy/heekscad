@@ -10,11 +10,18 @@
 #include "HeeksCADInterface.h"
 #endif
 
-#include "TransientObject.h"
 #include <algorithm>
 
+ObjList::ObjList(int obj_type)
+: HeeksObj(obj_type), did_remove(false), m_index_list_valid(true)
+{
+}
 
-ObjList::ObjList(const ObjList& objlist): HeeksObj(objlist), m_index_list_valid(true) {copy_objects(objlist);}
+ObjList::ObjList(const ObjList& objlist)
+: HeeksObj(objlist), did_remove(false), m_index_list_valid(true)
+{
+    operator=(objlist);
+}
 
 void ObjList::Clear()
 {
@@ -46,41 +53,23 @@ void ObjList::Clear(std::set<HeeksObj*> &to_delete)
 	m_index_list_valid = false;
 }
 
-void ObjList::copy_objects(const ObjList& objlist)
-{
-	Clear();
-
-	std::list<HeeksObj*>::const_iterator It;
-	for (It=objlist.m_objects.begin();It!=objlist.m_objects.end();It++)
-	{
-		HeeksObj* new_op;
-		if(objlist.m_preserving_id)
-		{
-			if(dynamic_cast<TransientObject*>(*It))
-			{
-				TransientObject* tobj = (TransientObject*)(*It)->MakeACopyWithID();
-				//wxGetApp().WentTransient(tobj->m_object,tobj);
-				new_op = tobj;
-			}
-			else
-				if((*It)->IsTransient())
-					new_op = new TransientObject((*It)->MakeACopyWithID());
-				else
-					new_op = (*It)->MakeACopyWithID();
-		}
-		else
-			new_op = (*It)->MakeACopy();
-		if(new_op)Add(new_op, NULL);
-	}
-}
-
 const ObjList& ObjList::operator=(const ObjList& objlist)
 {
-	HeeksObj::operator=(objlist);
-
-	copy_objects(objlist);
-
-	return *this;
+    HeeksObj::operator=(objlist);
+    Clear();
+    std::list<HeeksObj*>::const_iterator It;
+    for (It=objlist.m_objects.begin(); It!=objlist.m_objects.end(); It++)
+    {
+        if(!(*It)->OneOfAKind())
+        {
+            HeeksObj* new_op = m_copy_id ? (*It)->MakeACopyWithSameID() : (*It)->MakeACopy();
+            if(new_op)
+            {
+                Add(new_op, NULL);
+            }
+        }
+    }
+    return *this;
 }
 
 void ObjList::ClearUndoably(void)
@@ -91,9 +80,9 @@ void ObjList::ClearUndoably(void)
 	for (It=objects_to_delete.begin();It!=objects_to_delete.end();It++)
 	{
 #ifdef HEEKSCAD
-		wxGetApp().Remove(*It);
+		wxGetApp().DeleteUndoably(*It);
 #else
-		heeksCAD->Remove(*It);
+		heeksCAD->DeleteUndoably(*It);
 #endif
 	}
 	m_objects.clear();
@@ -102,7 +91,22 @@ void ObjList::ClearUndoably(void)
 	m_index_list_valid = true;
 }
 
-HeeksObj* ObjList::MakeACopy(void) const { return new ObjList(*this); }
+void ObjList::SetColor(const HeeksColor &col)
+{
+    std::list<HeeksObj*>::iterator It;
+    for(It=m_objects.begin(); It!=m_objects.end() ;It++)
+    {
+        HeeksObj* object = *It;
+        if (object->UsesColor())
+            object->SetColor(col);
+    }
+    HeeksObj::SetColor(col);
+}
+
+HeeksObj* ObjList::MakeACopy(void) const
+{
+    return new ObjList(*this);
+}
 
 void ObjList::GetBox(CBox &box)
 {
@@ -128,18 +132,17 @@ void ObjList::glCommands(bool select, bool marked, bool no_color)
 		HeeksObj* object = *It;
 		if(object->OnVisibleLayer() && object->IsVisible())
 		{
-			if(select)glPushName(object->GetIndex());
-#ifdef HEEKSCAD
+			if(select)
+			    glPushName(object->GetIndex());
 			(*It)->glCommands(select, marked || wxGetApp().m_marked_list->ObjectMarked(object), no_color);
-#else
-			(*It)->glCommands(select, marked || heeksCAD->ObjectMarked(object), no_color);
-#endif
-			if(select)glPopName();
+			if(select)
+			    glPopName();
 		}
 	}
 }
 
-void ObjList::Draw(wxDC& dc){
+void ObjList::Draw(wxDC& dc)
+{
 	HeeksObj::Draw(dc);
 	std::list<HeeksObj*>::iterator It;
 	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
@@ -154,16 +157,21 @@ void ObjList::Draw(wxDC& dc){
 
 HeeksObj* ObjList::GetFirstChild()
 {
-	if (m_objects.size()==0) return NULL;
+	if (m_objects.size()==0)
+	    return NULL;
 	LoopIt = m_objects.begin();
+	did_remove = false;
 	return *LoopIt;
 }
 
 HeeksObj* ObjList::GetNextChild()
 {
-	if (m_objects.size()==0 || LoopIt==m_objects.end()) return NULL;
-	LoopIt++;
-	if (LoopIt==m_objects.end()) return NULL;
+	if (m_objects.size()==0 || LoopIt==m_objects.end())
+	    return NULL;
+	if (!did_remove)
+	    LoopIt++;
+	if (LoopIt==m_objects.end())
+	    return NULL;
 	return *LoopIt;
 }
 
@@ -214,11 +222,14 @@ void ObjList::Remove(std::list<HeeksObj*> objects)
 	}
 }
 
-bool ObjList::Add(HeeksObj* object, HeeksObj* prev_object)
+bool ObjList::Add(HeeksObj* object, HeeksObj* prev_object /* = NULL */)
 {
-	if (object==NULL) return false;
-	if (!CanAdd(object)) return false;
-	if (std::find(m_objects.begin(), m_objects.end(), object) != m_objects.end()) return true; // It's already here.
+	if (object==NULL)
+	    return false;
+	if (!CanAdd(object))
+	    return false;
+	if (std::find(m_objects.begin(), m_objects.end(), object) != m_objects.end())
+	    return true; // It's already here.
 
 	if (m_objects.size()==0 || prev_object==NULL)
 	{
@@ -228,24 +239,25 @@ bool ObjList::Add(HeeksObj* object, HeeksObj* prev_object)
 	}
 	else
 	{
-		for(LoopIt = m_objects.begin(); LoopIt != m_objects.end(); LoopIt++) { if (*LoopIt==prev_object) break; }
+		for(LoopIt = m_objects.begin(); LoopIt != m_objects.end(); LoopIt++)
+		{
+		    if (*LoopIt==prev_object)
+		        break;
+		}
 		m_objects.insert(LoopIt, object);
 	}
+    did_remove = false;
 	m_index_list_valid = false;
 	HeeksObj::Add(object, prev_object);
 
-#ifdef HEEKSCAD
-	if(((!wxGetApp().m_in_OpenFile || wxGetApp().m_file_open_or_import_type != FileOpenTypeHeeks || wxGetApp().m_inPaste) &&
-	     object->UsesID() && (object->GetID() == 0 || (wxGetApp().m_file_open_or_import_type == FileImportTypeHeeks && wxGetApp().m_in_OpenFile))))
+	if(((!wxGetApp().m_in_OpenFile ||
+	      wxGetApp().m_file_open_or_import_type != FileOpenTypeHeeks ||
+	      wxGetApp().m_inPaste) &&
+	     object->UsesID() && (object->GetID() == 0 ||
+	       (wxGetApp().m_file_open_or_import_type == FileImportTypeHeeks && wxGetApp().m_in_OpenFile))))
 	{
 		object->SetID(wxGetApp().GetNextID(object->GetIDGroupType()));
 	}
-#else
-	if(((!heeksCAD->InOpenFile() || !heeksCAD->FileOpenTypeHeeks() || heeksCAD->InPaste()) && object->UsesID() && (object->m_id == 0 || (heeksCAD->FileOpenTypeHeeks() && heeksCAD->InOpenFile()))))
-	{
-		object->SetID(heeksCAD->GetNextID(object->GetIDGroupType()));
-	}
-#endif
 
 	return true;
 }
@@ -261,13 +273,17 @@ std::list<HeeksObj *> ObjList::GetChildren() const
 
 void ObjList::Remove(HeeksObj* object)
 {
-	if (object==NULL) return;
-	for(LoopIt = m_objects.begin(); LoopIt != m_objects.end(); LoopIt++){
-		if(*LoopIt==object)break;
+	if (object==NULL)
+	    return;
+	for(LoopIt = m_objects.begin(); LoopIt != m_objects.end(); LoopIt++)
+	{
+		if(*LoopIt==object)
+		    break;
 	}
 	if(LoopIt != m_objects.end())
 	{
-		m_objects.erase(LoopIt);
+	    LoopIt = m_objects.erase(LoopIt);
+        did_remove = true;
 	}
 	m_index_list_valid = false;
 	HeeksObj::Remove(object);
@@ -276,7 +292,6 @@ void ObjList::Remove(HeeksObj* object)
 	parents.push_back(this);
 	object->Disconnect(parents);
 
-#ifdef HEEKSCAD
 	if( (!wxGetApp().m_in_OpenFile || wxGetApp().m_file_open_or_import_type != FileOpenTypeHeeks) &&
 		object->UsesID() &&
 		(object->GetID() == 0 || (wxGetApp().m_file_open_or_import_type == FileImportTypeHeeks && wxGetApp().m_in_OpenFile))
@@ -284,132 +299,62 @@ void ObjList::Remove(HeeksObj* object)
 	{
 		wxGetApp().RemoveID(object);
 	}
-#else
-	if((!heeksCAD->InOpenFile() || !heeksCAD->FileOpenTypeHeeks()) && object->UsesID() && (object->m_id == 0 || (heeksCAD->FileOpenTypeHeeks() && heeksCAD->InOpenFile())))
-	{
-		heeksCAD->RemoveID(object);
-	}
-#endif
 }
 
 void ObjList::KillGLLists(void)
 {
 	std::list<HeeksObj*>::iterator It;
-	for(It=m_objects.begin(); It!=m_objects.end() ;It++) (*It)->KillGLLists();
+	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
+    {
+	    (*It)->KillGLLists();
+    }
 }
 
 void ObjList::WriteBaseXML(TiXmlElement *element)
 {
 	std::list<HeeksObj*>::iterator It;
-	for(It=m_objects.begin(); It!=m_objects.end() ;It++) (*It)->WriteXML((TiXmlNode*)element);
+	for(It=m_objects.begin(); It!=m_objects.end() ;It++)
+    {
+	    (*It)->WriteXML((TiXmlNode*)element);
+    }
 	HeeksObj::WriteBaseXML(element);
 }
-
-#ifdef CONSTRAINT_TESTER
-//JT
-void ObjList::AuditHeeksObjTree4Constraints(HeeksObj * SketchPtr ,HeeksObj * mom, int level,bool ShowMsgInConsole,bool *ConstraintsAreOk  )
-{
-    wxString message=wxT("");
-    message.Pad(level*3,' ',true);
-    message+=wxString::Format(wxT("%s ID=%d  ") ,GetTypeString(),m_id);
-
-    if (GetNumChildren() > 0)message+=wxString::Format(wxT("  (Kids:%d)") ,GetNumChildren());
-        if (ShowMsgInConsole)wxPuts(message);
-
-//At this point need to get some info about mom whether or not shee has kids
-//What's you lastman
-
-//How about your first name_id
-//Where to you really reside in memory
-
-
-    if (GetNumChildren() > 0)
-    {
-        std::list<HeeksObj*>::iterator It;
-        for(It=m_objects.begin(); It!=m_objects.end() ;It++)
-        {
-            if(((*It)==NULL)||((*It)==0))
-            wxMessageBox(wxT("this is a problem 201011260146"));
-            (*It)->AuditHeeksObjTree4Constraints(SketchPtr ,this,level+1,ShowMsgInConsole,ConstraintsAreOk);
-        }
-
-    }
-}
-
-void ObjList::FindConstrainedObj(HeeksObj * CurrentObject,HeeksObj * ObjectToFind,int * occurrences,int FromLevel,int Level,bool ShowMsgInConsole)
-{
-    //if we hit this it's the end of the line
-    wxString searchmessage;
-
-
-    //Moving the next two line inside the if,but it will reduce the output to view on big projectes
-       searchmessage.Pad((FromLevel+1)*3+9+Level,' ');
-    searchmessage += wxString::Format(wxT("%s  ID=%d  ") ,GetTypeString(),m_id);//I
-
-    if (this == ObjectToFind)
-    {
-       //Originally had the next two lines outside the if,but it generated too much output to view on big projectes
-       (*occurrences)++;
-        searchmessage += wxT(" $$$ MATCH $$$");
-
-    }
-        if (ShowMsgInConsole)wxPuts(searchmessage);
-
-    if (GetNumChildren() > 0)
-    {
-        std::list<HeeksObj*>::iterator It;
-        for(It=m_objects.begin(); It!=m_objects.end() ;It++)
-        {
-            (*It)->FindConstrainedObj((*It),ObjectToFind, occurrences,FromLevel,Level+1,ShowMsgInConsole);
-        }
-
-    }
-
-
-}
-#endif
-
 
 void ObjList::ReadBaseXML(TiXmlElement* element)
 {
 	// loop through all the objects
-#ifdef HEEKSCAD
-	for(TiXmlElement* pElem = TiXmlHandle(element).FirstChildElement().Element(); pElem;	pElem = pElem->NextSiblingElement())
-#else
-	for(TiXmlElement* pElem = heeksCAD->FirstXMLChildElement(element); pElem;	pElem = heeksCAD->NextXMLSiblingElement(pElem))
-#endif
+	for(TiXmlElement* pElem = TiXmlHandle(element).FirstChildElement().Element(); pElem; pElem = pElem->NextSiblingElement())
 	{
 	    HeeksObj *existing = NULL;
 
-#ifdef HEEKSCAD
 		HeeksObj* object = wxGetApp().ReadXMLElement(pElem);
 
-		if ((object != NULL) && (object->GetType() != 0) && (object->GetID() != 0))
-		{
-			existing = wxGetApp().GetIDObject( object->GetType(), object->GetID() );
-		}
-#else
-		HeeksObj* object = heeksCAD->ReadXMLElement(pElem);
-
-		if ((object != NULL) && (object->GetType() != 0) && (object->m_id != 0))
-		{
-			existing = heeksCAD->GetIDObject( object->GetType(), object->m_id );
-		}
-#endif
-
-        // Check to see if this object has not already been read into memory (duplicate child of two parents)
-        // If so, use the existing object rather than this one.
-
-        if ((existing != NULL) && (existing != object))
+        wxString name = pElem->Value ( );
+        Property * my_prop = this->GetProperty ( name );
+        if ( my_prop )
         {
-            Add(existing,NULL); // Add the pre-existing object as a child of this object.
-            if (object != NULL) delete object;
+            my_prop->ReadFromXmlElement ( pElem );
         }
-        else
-        {
-            // Add the new object.
-            if(object)Add(object, NULL);
-        }
+        else if ( object )
+		{
+            if ((object->GetType() != 0) && (object->GetID() != 0))
+            {
+                existing = wxGetApp().GetIDObject( object->GetType(), object->GetID() );
+            }
+
+            // Check to see if this object has not already been read into memory (duplicate child of two parents)
+            // If so, use the existing object rather than this one.
+            if ((existing != NULL) && (existing != object))
+            {
+                Add(existing, NULL); // Add the pre-existing object as a child of this object.
+                delete object;
+            }
+            else
+            {
+                // Add the new object.
+                Add(object, NULL);
+            }
+		}
 	}
 
 	HeeksObj::ReadBaseXML(element);
@@ -448,21 +393,6 @@ HeeksObj *ObjList::Find( const int type, const unsigned int id )
 	return(NULL);
 }
 
-void ObjList::GetProperties(std::list<Property *> *list)
-{
-	HeeksObj::GetProperties(list);
-}
-
-/* virtual */ void ObjList::SetIdPreservation(const bool flag)
-{
-	for(std::list<HeeksObj*>::const_iterator It=m_objects.begin(); It!=m_objects.end() ;It++)
-	{
-		(*It)->SetIdPreservation(flag);
-	}
-
-	HeeksObj::SetIdPreservation(flag);
-}
-
 void ObjList::ReloadPointers()
 {
 	for (std::list<HeeksObj*>::iterator itObject = m_objects.begin(); itObject != m_objects.end(); itObject++)
@@ -497,7 +427,7 @@ bool ObjList::operator==( const ObjList & rhs ) const
 	return(sorted_lhs == sorted_rhs);
 }
 
-void ObjList::OnChangeViewUnits(const double units)
+void ObjList::OnChangeViewUnits(const EnumUnitType units)
 {
 	for (std::list<HeeksObj*>::iterator itObject = m_objects.begin(); itObject != m_objects.end(); itObject++)
 	{
@@ -505,4 +435,33 @@ void ObjList::OnChangeViewUnits(const double units)
 	}
 
 	HeeksObj::OnChangeViewUnits(units);
+}
+
+
+wxString ObjList::ToString() const
+{
+    wxString rtn = HeeksObj::ToString();
+
+    for (std::list<HeeksObj*>::const_iterator itObject = m_objects.begin(); itObject != m_objects.end(); itObject++)
+    {
+        rtn += _("\tchild: ") + (*itObject)->ToString();
+    }
+    return rtn;
+}
+
+ReorderTool::ReorderTool(ObjList* object, std::list<HeeksObj *> &new_order)
+{
+    m_object = object;
+    m_original_order = object->m_objects;
+    m_new_order = new_order;
+}
+
+void ReorderTool::Run(bool redo)
+{
+    m_object->m_objects = m_new_order;
+}
+
+void ReorderTool::RollBack()
+{
+    m_object->m_objects = m_original_order;
 }

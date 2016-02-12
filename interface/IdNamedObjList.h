@@ -28,7 +28,7 @@ public:
 
 	// HeeksObj's virtual functions
     // HeeksObj's virtual functions
-    void OnSetID(int id);
+    void OnSetID(ObjectId_t id);
     void OnSetTitle(const wxString& title);
     bool CanEditString(void)const{return true;}
     void OnEditString(const wxChar* str);

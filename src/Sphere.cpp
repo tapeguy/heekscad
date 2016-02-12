@@ -42,8 +42,8 @@ CSphere & CSphere::operator= ( const CSphere & rhs )
 
 void CSphere::InitializeProperties()
 {
-	m_pos.Initialize(_("centre"), this);
-	m_radius.Initialize(_("radius"), this);
+	m_pos.Initialize(_("centre"), this, true);
+	m_radius.Initialize(_("radius"), this, true);
 }
 
 HeeksObj *CSphere::MakeACopy(void)const
@@ -83,21 +83,16 @@ void CSphere::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	list->push_back(GripData(GripperTypeScale,m_pos.X() + m_radius,m_pos.Y(),m_pos.Z(),NULL));
 }
 
-void CSphere::OnPropertyEdit(Property& prop)
+void CSphere::OnPropertySet(Property& prop)
 {
 	if (prop == m_pos || prop == m_radius) {
-		CSphere* new_object = new CSphere(m_pos, m_radius, m_title.c_str(), m_color, m_opacity);
-		new_object->CopyIDsFrom(this);
-		Owner()->Add(new_object, NULL);
-		Owner()->Remove(this);
-		if(wxGetApp().m_marked_list->ObjectMarked(this))
-		{
-			wxGetApp().m_marked_list->Remove(this,false);
-			wxGetApp().m_marked_list->Add(new_object, true);
-		}
+	    m_shape = BRepPrimAPI_MakeSphere(m_pos, m_radius).Shape();
+        delete_faces_and_edges();
+        KillGLLists();
+        create_faces_and_edges();
 	}
 	else {
-		CSolid::OnPropertyEdit(prop);
+		CSolid::OnPropertySet(prop);
 	}
 }
 

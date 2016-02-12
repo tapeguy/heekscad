@@ -9,12 +9,12 @@
 #include "HeeksFrame.h"
 #include "ObjPropsCanvas.h"
 
-void RulerMark::glCommands(double units)
+void RulerMark::glCommands(EnumUnitType units)
 {
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	double half_width = width/2;
 	double dpos = (double)pos;
-	if(units > 25.0)
+	if(units == UnitTypeInch)
 	{
 		dpos *= 2.54; // position of the tenth of an inch, in mm
 	}
@@ -54,8 +54,12 @@ void RulerMark::glCommands(double units)
 	// draw text
 	if(pos == 0)
 	{
-		wxString str = _T("cm");
-		if(units > 25.0)str = _T("inches");
+		wxString str;
+		if(units == UnitTypeInch)
+		    str = _T("inches");
+		else
+		    str = _T("cm");
+
 		glPushMatrix();
 		glTranslated(dpos + half_width, -length + 2.05, 0.0);
 		glColor4ub(0, 0, 0, 255);
@@ -75,17 +79,19 @@ void RulerMark::glCommands(double units)
 	glEnable(GL_POLYGON_OFFSET_FILL);
 }
 
-HRuler::HRuler(): m_gl_list(0)
+HRuler::HRuler()
+ : HeeksObj(ObjType), m_gl_list(0)
 {
 	InitializeProperties();
 	m_use_view_units = true;
-	m_units = 1.0;
+	m_units = UnitTypeMillimeter;
 	m_width = 25;
 	m_length = 312; // long enough for 12 inches
 	m_empty_length = 3;
 }
 
-HRuler::HRuler(const HRuler& copy) : m_gl_list(0)
+HRuler::HRuler(const HRuler& copy)
+ : HeeksObj(copy), m_gl_list(0)
 {
 	InitializeProperties();
 	operator=(copy);
@@ -109,8 +115,8 @@ void HRuler::InitializeProperties()
 	m_units_choice.Initialize(_("units"), this);
 	m_units_choice.m_choices.push_back ( wxString ( _("mm") ) );
 	m_units_choice.m_choices.push_back ( wxString ( _("inch") ) );
-	m_width.Initialize(_("width"), this);
-	m_length.Initialize(_("length"), this);
+	m_width.Initialize(_("width"), this, true);
+	m_length.Initialize(_("length"), this, true);
 	m_empty_length.Initialize(_("empty_length"), this);
 }
 
@@ -122,15 +128,16 @@ void HRuler::GetFourCorners(gp_Pnt *point)
 	point[3] = gp_Pnt(-m_empty_length, 0, 0);
 }
 
-double HRuler::GetUnits()
+EnumUnitType HRuler::GetUnits()
 {
-	if(m_use_view_units)return wxGetApp().m_view_units;
+	if(m_use_view_units)
+	    return wxGetApp().GetViewUnits();
 	return m_units;
 }
 
 void HRuler::CalculateMarks(std::list<RulerMark> &marks)
 {
-	if(GetUnits() > 25.0)
+	if(GetUnits() == UnitTypeInch)
 	{
 		// inches
 		int num_tenths = (int)(m_length / 2.54 - 2 * m_empty_length / 2.54 + 0.0001);
@@ -310,18 +317,21 @@ public:
 
 static ResetRulerTool reset_ruler_tool;
 
-void HRuler::OnPropertyEdit(Property& prop)
+void HRuler::OnPropertySet(Property& prop)
 {
 	if (prop == m_units_choice) {
-		m_units = (m_units_choice == 0) ? 1.0 : 25.4;
+		m_units = (m_units_choice == 0) ? UnitTypeMillimeter : UnitTypeInch;
+	    KillGLLists();
 	}
-	KillGLLists();
+	else {
+	    HeeksObj::OnPropertySet(prop);
+	}
 }
 
 void HRuler::GetProperties(std::list<Property *> *list)
 {
-	if(!m_use_view_units){
-		m_units_choice = (m_units > 25.0) ? 1 : 0;
+	if (!m_use_view_units) {
+		m_units_choice = (m_units == UnitTypeMillimeter) ? 0 : 1;
 	}
 	HeeksObj::GetProperties(list);
 }
@@ -374,10 +384,13 @@ void HRuler::ReadFromConfig(HeeksConfig& config)
 	config.Read(_T("RulerTrsf32"), &m32, 0.0);
 	config.Read(_T("RulerTrsf33"), &m33, 1.0);
 	config.Read(_T("RulerTrsf34"), &m34, 0.0);
-	m_trsf.SetValues(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, 0.0001, 0.00000001);
+	m_trsf.SetValues(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34);
 
 	config.Read(_T("RulerUseViewUnits"), m_use_view_units);
-	config.Read(_T("RulerUnits"), &m_units);
+
+	int units;
+	config.Read(_T("RulerUnits"), &units);
+	m_units = (EnumUnitType)units;
 	config.Read(_T("RulerWidth"), m_width);
 	config.Read(_T("RulerLength"), m_length);
 	config.Read(_T("RulerEmptyLength"), m_empty_length);

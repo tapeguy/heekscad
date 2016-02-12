@@ -20,8 +20,8 @@ static double vertical_angle_for_property;
 static double horizontal_angle_for_property;
 static double twist_angle_for_property;
 
-CoordinateSystem::CoordinateSystem(const wxString& str, const gp_Pnt &o, const gp_Dir &x, const gp_Dir &y) :
-	m_o(o), m_x(x), m_y(y)
+CoordinateSystem::CoordinateSystem(const wxString& str, const gp_Pnt &o, const gp_Dir &x, const gp_Dir &y)
+: HeeksObj(ObjType), m_o(o), m_x(x), m_y(y)
 {
 	InitializeProperties();
 	m_title = str;
@@ -33,6 +33,7 @@ CoordinateSystem::CoordinateSystem(const wxString& str, const gp_Pnt &o, const g
 
 
 CoordinateSystem::CoordinateSystem(const CoordinateSystem &c)
+: HeeksObj(c)
 {
 	InitializeProperties();
 	operator=(c);
@@ -1218,12 +1219,7 @@ void CoordinateSystem::GetBox(CBox &box)
 	box.Insert(p);
 }
 
-void CoordinateSystem::OnEditString(const wxChar* str){
-	m_title.assign(str);
-	wxGetApp().Changed();
-}
-
-HeeksObj *CoordinateSystem::MakeACopy(void)const
+HeeksObj *CoordinateSystem::MakeACopy(void) const
 {
 	return new CoordinateSystem(*this);
 }
@@ -1236,7 +1232,7 @@ void CoordinateSystem::ModifyByMatrix(const double *m)
 	m_y.Transform(mat);
 }
 
-void CoordinateSystem::OnPropertyEdit(Property& prop) {
+void CoordinateSystem::OnPropertySet(Property& prop) {
 
 	if (prop == m_x || prop == m_y) {
 		AxesToAngles(m_x.Normalize(), m_y.Normalize(), vertical_angle_for_property, horizontal_angle_for_property, twist_angle_for_property);
@@ -1258,8 +1254,9 @@ void CoordinateSystem::OnPropertyEdit(Property& prop) {
 		m_x = x;
 		m_y = y;
 	}
-	else
-		HeeksObj::OnPropertyEdit(prop);
+	else {
+		HeeksObj::OnPropertySet(prop);
+	}
 }
 
 static CoordinateSystem* coord_system_for_Tool = NULL;
@@ -1299,14 +1296,13 @@ public:
 		extract(coord_system_for_Tool->GetMatrix().Inverted(), m);
 
 		// move any selected objects
-		wxGetApp().CreateUndoPoint();
 		for(std::list<HeeksObj *>::iterator It = wxGetApp().m_marked_list->list().begin(); It != wxGetApp().m_marked_list->list().end(); It++)
 		{
 			HeeksObj* object = *It;
-			if(object == coord_system_for_Tool)continue;
-			object->ModifyByMatrix(m);
+			if(object == coord_system_for_Tool)
+			    continue;
+			wxGetApp().TransformUndoably(object, m);
 		}
-		wxGetApp().Changed();
 	}
 	const wxChar* GetTitle(){return _("Transform selected items to world coordinates");}
 	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/trsfw.png");}
@@ -1512,7 +1508,7 @@ static void OnGlCommandsForPickFrom3Points()
 	CoordinateSystem::rendering_current = false;
 }
 
-void CoordinateSystem::PickFrom3Points()
+bool CoordinateSystem::PickFrom3Points()
 {
 	CoordinateSystem temp = *this;
 	coordinate_system_for_PickFrom3Points = &temp;
@@ -1523,11 +1519,13 @@ void CoordinateSystem::PickFrom3Points()
 
 	double pos[3];
 
+	bool result = false;
+
 	if(wxGetApp().PickPosition(_("Pick the location"), pos, on_set_origin))
 	{
 		if(wxGetApp().PickPosition(_("Pick a point on the x-axis"), pos, on_set_x))
 		{
-			wxGetApp().PickPosition(_("Pick a point where y > 0"), pos, on_set_y);
+		    result = wxGetApp().PickPosition(_("Pick a point where y > 0"), pos, on_set_y);
 		}
 	}
 
@@ -1535,9 +1533,11 @@ void CoordinateSystem::PickFrom3Points()
 	wxGetApp().RemoveOnGLCommands(OnGlCommandsForPickFrom3Points);
 
 	wxGetApp().Repaint();
+
+    return result;
 }
 
-void CoordinateSystem::PickFrom1Point()
+bool CoordinateSystem::PickFrom1Point()
 {
 	CoordinateSystem temp = *this;
 	coordinate_system_for_PickFrom3Points = &temp;
@@ -1548,11 +1548,13 @@ void CoordinateSystem::PickFrom1Point()
 
 	double pos[3];
 
-	wxGetApp().PickPosition(_("Pick the location"), pos, on_set_origin);
+	bool result = wxGetApp().PickPosition(_("Pick the location"), pos, on_set_origin);
 
 	*this = temp;
 	wxGetApp().RemoveOnGLCommands(OnGlCommandsForPickFrom3Points);
 
 	wxGetApp().Repaint();
+
+	return result;
 }
 

@@ -18,8 +18,10 @@ void intersect(const gp_Circ& c1, const gp_Circ& c2, std::list<gp_Pnt> &list);
 void extract(const gp_Pnt &p, double *m);
 void extract(const gp_Vec &v, double *m);
 void extract(const gp_XYZ &xyz, double *m);
+void extract(const gp_GTrsf& tr, double *m);
 void extract(const gp_Trsf& tr, double *m);
 void extract_transposed(const gp_Trsf& tr, double *m);
+void matrix_transpose(double* in, double* out);
 
 #define TwoCircleType 100000
 
@@ -84,6 +86,7 @@ gp_Lin make_line(const gp_Pnt &p1, const gp_Pnt &p2);
 gp_Lin make_line(const gp_Pnt &p, const gp_Vec &v);
 gp_Trsf make_matrix(const double* m);
 gp_Trsf make_matrix(const gp_Pnt &origin, const gp_Vec &x_axis, const gp_Vec &y_axis);
+gp_GTrsf make_general_matrix(const double* m);
 
 std::string AsString(const gp_XYZ& xyz);
 std::string AsString(const gp_Pnt& p);
@@ -98,4 +101,46 @@ int convert_gripdata_to_pnts(const std::list<GripData> &dlist, std::list<gp_Pnt>
 
 bool IsEqual(gp_Ax2 ax1, gp_Ax2 ax2);
 bool IsEqual(gp_Ax1 ax1, gp_Ax1 ax2);
+
+bool IsZeroVector(const gp_Vec &vec);
+
+inline unsigned int min ( unsigned int a, unsigned int b )
+{
+    return ( a < b ) ? a : b;
+}
+
+inline unsigned int max ( unsigned int a, unsigned int b )
+{
+    return ( a > b ) ? a : b;
+}
+
+inline unsigned int min ( unsigned int a, unsigned int b, unsigned int c )
+{
+    return min ( min ( a, b ), c );
+}
+
+inline unsigned int max ( unsigned int a, unsigned int b, unsigned int c )
+{
+    return max ( max ( a, b ), c );
+}
+
+inline double min ( double a, double b )
+{
+    return ( a < b ) ? a : b;
+}
+
+inline double max ( double a, double b )
+{
+    return ( a > b ) ? a : b;
+}
+
+inline double min ( double a, double b, double c )
+{
+    return min ( min ( a, b ), c );
+}
+
+inline double max ( double a, double b, double c )
+{
+    return max ( max ( a, b ), c );
+}
 

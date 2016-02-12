@@ -29,38 +29,28 @@ CCylinder::CCylinder(const gp_Ax2& pos, double diameter, double height, const wx
 
 CCylinder::CCylinder(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity)
  : CSolid(solid, title, col, opacity),
- m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)), m_diameter(0.0), m_height(0.0)
+ m_pos(gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0))), m_diameter(0.0), m_height(0.0)
 {
 	InitializeProperties();
 }
 
 void CCylinder::InitializeProperties()
 {
-	m_diameter.Initialize(_("diameter"), this);
-	m_height.Initialize(_("height"), this);
+    m_pos.Initialize(_("coordinates"), this, true);
+	m_diameter.Initialize(_("diameter"), this, true);
+	m_height.Initialize(_("height"), this, true);
 }
 
-void CCylinder::GetProperties(std::list<Property *> *list)
+void CCylinder::OnPropertySet(Property& prop)
 {
-//      CoordinateSystem::GetAx2Properties(list, m_pos);
-    CSolid::GetProperties(list);
-}
-
-void CCylinder::OnPropertyEdit(Property& prop)
-{
-    if (prop == m_diameter || prop == m_height) {
-        CCylinder* new_object = new CCylinder(m_pos, m_diameter, m_height, m_title.c_str(), m_color, m_opacity);
-        new_object->CopyIDsFrom(this);
-        Owner()->Add(new_object, NULL);
-        Owner()->Remove(this);
-        if(wxGetApp().m_marked_list->ObjectMarked(this))
-        {
-            wxGetApp().m_marked_list->Remove(this,false);
-            wxGetApp().m_marked_list->Add(new_object, true);
-        }
+    if (prop == m_pos || prop == m_diameter || prop == m_height) {
+        m_shape = MakeCylinder(m_pos, m_diameter, m_height);
+        delete_faces_and_edges();
+        KillGLLists();
+        create_faces_and_edges();
     }
     else {
-        CSolid::OnPropertyEdit(prop);
+        CSolid::OnPropertySet(prop);
     }
 }
 
@@ -94,7 +84,6 @@ void CCylinder::MakeTransformedShape(const gp_Trsf &mat)
 	double scale = gp_Vec(1, 0, 0).Transformed(mat).Magnitude();
 	m_diameter = fabs(m_diameter * scale);
 	m_height = fabs(m_height * scale);
-	m_shape = MakeCylinder(m_pos, m_diameter, m_height);
 }
 
 wxString CCylinder::StretchedName(){ return _("Stretched Cylinder");}
@@ -141,35 +130,24 @@ bool CCylinder::Stretch(const double *p, const double* shift, void* data)
 	gp_Dir z_dir = m_pos.XDirection() ^ m_pos.YDirection();
 	gp_Pnt pz(o.XYZ() + z_dir.XYZ() * m_height);
 
-	bool make_a_new_cylinder = false;
-
 	if(px.IsEqual(vp, wxGetApp().m_geom_tol)){
 		px = px.XYZ() + vshift.XYZ();
 		double new_x = gp_Vec(px.XYZ()) * gp_Vec(m_pos.XDirection()) - gp_Vec(o.XYZ()) * gp_Vec(m_pos.XDirection());
 		double new_y = gp_Vec(px.XYZ()) * gp_Vec(m_pos.YDirection()) - gp_Vec(o.XYZ()) * gp_Vec(m_pos.YDirection());
-		make_a_new_cylinder = true;
 		m_diameter = sqrt(new_x * new_x + new_y * new_y) * 2;
 	}
 	else if(pz.IsEqual(vp, wxGetApp().m_geom_tol)){
 		pz = pz.XYZ() + vshift.XYZ();
 		double new_height = gp_Vec(pz.XYZ()) * gp_Vec(z_dir) - gp_Vec(o.XYZ()) * gp_Vec(z_dir);
 		if(new_height > 0){
-			make_a_new_cylinder = true;
 			m_height = new_height;
 		}
 	}
+    else {
+        CSolid::Stretch(p, shift, data);
+    }
 
-	if(make_a_new_cylinder)
-	{
-		CCylinder* new_object = new CCylinder(m_pos, m_diameter, m_height, m_title.c_str(), m_color, m_opacity);
-		new_object->CopyIDsFrom(this);
-		Owner()->Add(new_object, NULL);
-		Owner()->Remove(this);
-		wxGetApp().m_marked_list->Clear(true);
-		wxGetApp().m_marked_list->Add(new_object, true);
-	}
-
-	return true;
+	return false;
 }
 
 void CCylinder::SetXMLElement(TiXmlElement* element)

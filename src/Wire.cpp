@@ -37,7 +37,7 @@ public:
 
 			// ask about generation for each edge
 			TopExp_Explorer ex;
-			for ( ex.Init( m_wire->Shape(), TopAbs_EDGE ) ; ex.More(); ex.Next() )
+			for ( ex.Init( m_wire->GetShape(), TopAbs_EDGE ) ; ex.More(); ex.Next() )
 			{
 				TopoDS_Edge E = TopoDS::Edge(ex.Current());
 				if(int extent = make_operation.Generated(E).Extent() > 0){
@@ -52,7 +52,7 @@ public:
 			if(make_operation.IsDeleted(make_operation.Shape())){
 				wxMessageBox(_("Is Deleted"));
 			}
-			wxGetApp().Add(new_object, NULL);
+			wxGetApp().Add(new_object);
 			wxGetApp().Remove(m_wire);
 		}
 		catch (Standard_Failure) {

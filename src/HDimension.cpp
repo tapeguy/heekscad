@@ -10,24 +10,37 @@
 
 bool HDimension::DrawFlat = true;
 
+HDimension::HDimension()
+ : EndedObject(ObjType)
+{
+    InitializeProperties();
+    m_p2 = new HPoint();
+    m_p2->m_draw_unselected = false;
+    m_p2->SetSkipForUndo(true);
+    Add(m_p2);
+}
 
 HDimension::HDimension(const gp_Trsf &trsf, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, DimensionMode mode, DimensionUnits units, const HeeksColor& col)
- : EndedObject(col), m_trsf(trsf), m_mode((int)mode), m_units((int)units), m_scale(1.0)
+ : EndedObject(ObjType, col), m_units((int)units), m_mode((int)mode), m_trsf(trsf), m_scale(1.0)
 {
 	InitializeProperties();
 	m_p2 = new HPoint(p2, col);
 	m_p2->m_draw_unselected = false;
 	m_p2->SetSkipForUndo(true);
-	Add(m_p2,NULL);
+	Add(m_p2);
 	A->m_p = p0;
 	B->m_p = p1;
 }
 
 HDimension::HDimension(const HDimension &b)
- : EndedObject(b.m_color)
+ : EndedObject(b)
 {
-	InitializeProperties();
-	operator=(b);
+    InitializeProperties();
+    HeeksObj::operator=(b);      // my properties only
+    m_p2 = new HPoint(*(b.m_p2));
+    m_p2->m_draw_unselected = false;
+    m_p2->SetSkipForUndo(true);
+    Add(m_p2);
 }
 
 HDimension::~HDimension(void)
@@ -37,23 +50,12 @@ HDimension::~HDimension(void)
 const HDimension& HDimension::operator=(const HDimension &b)
 {
 	EndedObject::operator=(b);
-	m_trsf = b.m_trsf;
-	m_units = b.m_units;
-	m_mode = b.m_mode;
-	m_scale = b.m_scale;
-
-#ifdef MULTIPLE_OWNERS
-	std::list<HeeksObj*>::iterator it = m_objects.begin();
-	it++;it++;
-	m_p2 = (HPoint*)(*it);
-#endif
-
 	return *this;
 }
 
 void HDimension::InitializeProperties()
 {
-	m_trsf.Initialize(_("orientation"), this);
+	m_trsf.Initialize(_("orientation"), this, true);
 	m_mode.Initialize(_("mode"), this);
 	m_mode.m_choices.push_back ( wxString ( _("between two points") ) );
 	m_mode.m_choices.push_back ( wxString ( _("between two points, XY only") ) );
@@ -67,12 +69,14 @@ void HDimension::InitializeProperties()
 	m_scale.Initialize(_("scale"), this);
 	m_dimension.Initialize(_("dimension value"), this);
 	m_dimension.SetReadOnly(true);
+	m_dimension.SetTransient(true);
 }
 
 const wxBitmap &HDimension::GetIcon()
 {
 	static wxBitmap* icon = NULL;
-	if(icon == NULL)icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/dimension.png")));
+	if(icon == NULL)
+	    icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/dimension.png")));
 	return *icon;
 }
 
@@ -80,7 +84,7 @@ bool HDimension::IsDifferent(HeeksObj* other)
 {
 	HDimension* dim = (HDimension*)other;
 
-	if(m_color.COLORREF_color() != dim->m_color.COLORREF_color() || m_mode != dim->m_mode || m_scale != dim->m_scale || m_units != dim->m_units)
+	if(m_mode != dim->m_mode || m_scale != dim->m_scale || m_units != dim->m_units)
 		return true;
 
 	if(m_p2->m_p.Distance(dim->m_p2->m_p) > wxGetApp().m_geom_tol)
@@ -93,23 +97,23 @@ wxString HDimension::MakeText()
 {
 	wxString text;
 
-	double units_factor = wxGetApp().m_view_units;
+	double units_factor;
+	wxString units_str(_T(""));
 	switch(m_units)
 	{
 	case DimensionUnitsInches:
-		units_factor = 25.4;
+		units_factor = Length::Conversion ( UnitTypeInch, UnitTypeMillimeter );
+		 units_str += wxString(_T(" ")) + GetShortString ( UnitTypeInch );
 		break;
 	case DimensionUnitsMM:
-		units_factor = 1.0;
+		units_factor = Length::Conversion ( UnitTypeMillimeter, UnitTypeMillimeter );
+		units_str += wxString(_T(" ")) + GetShortString ( UnitTypeMillimeter );
 		break;
 	case DimensionUnitsGlobal:
-		units_factor = wxGetApp().m_view_units;
+		units_factor = Length::Conversion ( wxGetApp().GetViewUnits(), UnitTypeMillimeter );
+		units_str += wxString(_T(" ")) + GetShortString ( wxGetApp().GetViewUnits() );
 		break;
 	}
-
-	wxString units_str(_T(""));
-	if(fabs(units_factor - 1.0) < 0.0000000001)units_str += wxString(_T(" ")) + _("mm");
-	else if(fabs(units_factor - 25.4) < 0.000000001)units_str += wxString(_T(" ")) + _("inch");
 
 	text = wxString::Format(_T("%lg %s"), A->m_p.Distance(GetB2())/units_factor, units_str.c_str());
 
@@ -180,9 +184,10 @@ void HDimension::glCommands(bool select, bool marked, bool no_color)
 {
 	gp_Pnt b = GetB2();
 
-	if(A->m_p.IsEqual(b, wxGetApp().m_geom_tol))return;
+	if(A->m_p.IsEqual(b, wxGetApp().m_geom_tol))
+	    return;
 
-	if(!no_color)wxGetApp().glColorEnsuringContrast(m_color);
+	if(!no_color)wxGetApp().glColorEnsuringContrast(GetColor());
 
 	gp_Dir xdir = gp_Dir(1, 0, 0).Transformed(m_trsf);
 	gp_Dir ydir = gp_Dir(0, 1, 0).Transformed(m_trsf);
@@ -257,20 +262,6 @@ void HDimension::RenderText(const wxString &text, const gp_Pnt& p, const gp_Dir&
 	glPopMatrix();
 
 }
-
-#ifdef MULTIPLE_OWNERS
-void HDimension::LoadToDoubles()
-{
-	EndedObject::LoadToDoubles();
-	m_p2->LoadToDoubles();
-}
-
-void HDimension::LoadFromDoubles()
-{
-	EndedObject::LoadFromDoubles();
-	m_p2->LoadFromDoubles();
-}
-#endif
 
 HDimension* dimension_for_tool = NULL;
 
@@ -356,96 +347,11 @@ bool HDimension::Stretch(const double *p, const double* shift, void* data)
 	return false;
 }
 
-void HDimension::WriteXML(TiXmlNode *root)
-{
-	TiXmlElement * element;
-	element = new TiXmlElement( "Dimension" );
-	root->LinkEndChild( element );
-
-	double m[16];
-	extract(m_trsf, m);
-
-	element->SetAttribute("col", m_color.COLORREF_color());
-	element->SetDoubleAttribute("m0", m[0] );
-	element->SetDoubleAttribute("m1", m[1] );
-	element->SetDoubleAttribute("m2", m[2] );
-	element->SetDoubleAttribute("m3", m[3] );
-	element->SetDoubleAttribute("m4", m[4] );
-	element->SetDoubleAttribute("m5", m[5] );
-	element->SetDoubleAttribute("m6", m[6] );
-	element->SetDoubleAttribute("m7", m[7] );
-	element->SetDoubleAttribute("m8", m[8] );
-	element->SetDoubleAttribute("m9", m[9] );
-	element->SetDoubleAttribute("ma", m[10]);
-	element->SetDoubleAttribute("mb", m[11]);
-	element->SetDoubleAttribute("scale",m_scale);
-	element->SetAttribute("mode", m_mode);
-	switch(m_units)
-	{
-	case DimensionUnitsMM:
-		element->SetAttribute("units", "mm");
-		break;
-	case DimensionUnitsInches:
-		element->SetAttribute("units", "inches");
-		break;
-	default:
-		element->SetAttribute("units", "global");
-		break;
-	}
-
-	WriteBaseXML(element);
-}
-
 // static
 HeeksObj* HDimension::ReadFromXMLElement(TiXmlElement* pElem)
 {
-	double m[16];
-	wxString text;
-	HeeksColor c;
-	double p0[3] = {0, 0, 0};
-	double p1[3] = {0, 0, 0};
-	double p2[3] = {0, 0, 0};
-	double scale=1;
-
-	DimensionMode mode = TwoPointsDimensionMode;
-	DimensionUnits units = DimensionUnitsGlobal;
-
-	// get the attributes
-	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
-	{
-		std::string name(a->Name());
-		if(name == "col"){c = HeeksColor((long)(a->IntValue()));}
-		else if(name == "m0"){m[0] = a->DoubleValue();}
-		else if(name == "m1"){m[1] = a->DoubleValue();}
-		else if(name == "m2"){m[2] = a->DoubleValue();}
-		else if(name == "m3"){m[3] = a->DoubleValue();}
-		else if(name == "m4"){m[4] = a->DoubleValue();}
-		else if(name == "m5"){m[5] = a->DoubleValue();}
-		else if(name == "m6"){m[6] = a->DoubleValue();}
-		else if(name == "m7"){m[7] = a->DoubleValue();}
-		else if(name == "m8"){m[8] = a->DoubleValue();}
-		else if(name == "m9"){m[9] = a->DoubleValue();}
-		else if(name == "ma"){m[10]= a->DoubleValue();}
-		else if(name == "mb"){m[11]= a->DoubleValue();}
-		else if(name == "scale"){scale= a->DoubleValue();}
-		else if(name == "mode"){mode = (DimensionMode)(a->IntValue());}
-		else if(name == "units"){
-			const char* str = a->Value();
-			switch(str[0])
-			{
-			case 'm':
-				units = DimensionUnitsMM;
-				break;
-			case 'i':
-				units = DimensionUnitsInches;
-				break;
-			}
-		}
-	}
-
-	HDimension* new_object = new HDimension(make_matrix(m), make_point(p0), make_point(p1), make_point(p2), mode, units, c);
+	HDimension* new_object = new HDimension();
 	new_object->ReadBaseXML(pElem);
-	new_object->m_scale = scale;
 
 	if(new_object->GetNumChildren()>3)
 	{
@@ -466,7 +372,6 @@ HeeksObj* HDimension::ReadFromXMLElement(TiXmlElement* pElem)
 		new_object->B->SetSkipForUndo(true);
 		new_object->m_p2->SetSkipForUndo(true);
 	}
-
 
 	return new_object;
 }

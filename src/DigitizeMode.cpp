@@ -76,6 +76,9 @@ const wxChar* DigitizeMode::GetTitle()
 		case DigitizeTangentType:
 			type_str = _("tangent");
 			break;
+		case DigitizeNoItemType:
+		default:
+		    break;
 		}
 
 		if(type_str)
@@ -165,7 +168,7 @@ static const gp_Trsf& digitizing_matrix(bool calculate = false){
 			global_matrix_relative_to_screen = make_matrix(origin, gp_Vec(po, x1).Normalized(), gp_Vec(po, y1).Normalized());
 		}
 		else{
-			global_matrix_relative_to_screen = wxGetApp().GetDrawMatrix(!wxGetApp().m_sketch_mode);
+			global_matrix_relative_to_screen = wxGetApp().GetDrawMatrix(true);
 		}
 	}
 	return global_matrix_relative_to_screen;
@@ -377,10 +380,7 @@ DigitizedPoint DigitizeMode::DigitizeRay(const gp_Lin& ray, gp_Pln plane) {
 		double extra3 = e > -0.00000001 ? 0.5:-0.5;
 		e = (int)(e / wxGetApp().digitizing_grid + extra3) * wxGetApp().digitizing_grid;
 
-		if(wxGetApp().m_sketch_mode)
-			point.m_point = gp_XYZ(1,0,0) * c + gp_XYZ(0,1,0) * d;
-		else
-			point.m_point = datum.XYZ() + plane_vx.XYZ() * c + plane_vy.XYZ() * d + plane_vz.XYZ() * e;
+		point.m_point = datum.XYZ() + plane_vx.XYZ() * c + plane_vy.XYZ() * d + plane_vz.XYZ() * e;
 	}
 
 	digitized_point = point;
@@ -420,22 +420,21 @@ void DigitizeMode::OnPropertyEdit(Property& prop)
 				wxString token = tokens.GetNextToken();
 				if (token.ToDouble(&offset))
 				{
-					offset *= wxGetApp().m_view_units;
+					offset *= Length::Conversion ( wxGetApp().GetViewUnits(), UnitTypeMillimeter );
 					switch(i)
 					{
 					case 0:
-						wxGetApp().m_digitizing->digitized_point.m_point.SetX( location.X() + offset );
+						wxGetApp().m_digitizing->digitized_point.m_point.SetX ( location.X() + offset );
 						break;
 
 					case 1:
-						wxGetApp().m_digitizing->digitized_point.m_point.SetY( location.Y() + offset );
+						wxGetApp().m_digitizing->digitized_point.m_point.SetY ( location.Y() + offset );
 						break;
 
 					case 2:
-						wxGetApp().m_digitizing->digitized_point.m_point.SetZ( location.Z() + offset );
+						wxGetApp().m_digitizing->digitized_point.m_point.SetZ ( location.Z() + offset );
 						break;
 					}
-
 				}
 			}
 		}
@@ -457,6 +456,8 @@ void DigitizeMode::GetProperties(std::list<Property *> *list){
 	// within the Drawing::AddPoint() method.
 	Drawing *pDrawingMode = dynamic_cast<Drawing *>(wxGetApp().input_mode_object);
 	m_offset.SetVisible(pDrawingMode != NULL);
+
+	CInputMode::GetProperties(list);
 }
 
 class EndPosPicking:public Tool{

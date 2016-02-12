@@ -15,7 +15,7 @@ private:
 
 	void SetProjection2(bool use_depth_testing);
 	int ChooseBestPlane(int plane)const;
-	
+
 public:
 	bool m_section;
 	gp_Pnt m_lens_point;
@@ -23,7 +23,7 @@ public:
 	gp_Vec m_vertical;
 	double m_pixel_scale;  // not valid for perspective
 	double m_view_angle;  // only valid for perspective
-	double m_projm[16], m_modelm[16]; 
+	double m_projm[16], m_modelm[16];
 	int m_window_rect[4];
 	bool m_matrix_valid;
 	double m_near_plane;
@@ -53,12 +53,12 @@ public:
 	void SetProjection(bool use_depth_testing);
 	void SetPickProjection(wxRect &pick_box);
 	void SetModelview(void);
-	void SetView(const gp_Vec &unity, const gp_Vec &unitz);
+	void SetView(const gp_Vec &unity, const gp_Vec &unitz, int margin);
 	gp_Pnt glUnproject(const gp_Pnt &v)const;
 	gp_Pnt glProject(const gp_Pnt &v)const;
 	void SetPolygonOffset(void)const;
 	void WindowMag(wxRect &window_box);
-	void SetViewAroundAllObjects();
+	void SetViewAroundAllObjects(int margin);
 	void SetStartMousePoint(const wxPoint &point){m_initial_pixel_scale = m_pixel_scale; m_initial_point = point;}
 	gp_Lin SightLine(const wxPoint &point);
 	int GetTwoAxes(gp_Vec& vx, gp_Vec& vy, bool flattened_onto_screen, int plane)const;

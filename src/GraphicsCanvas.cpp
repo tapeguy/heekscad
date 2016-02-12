@@ -54,8 +54,10 @@ static int graphics_attrib_list[] = {
 
 
 CGraphicsCanvas::CGraphicsCanvas(wxWindow* parent)
-        : wxGLCanvas(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, _T("some text"), graphics_attrib_list),CViewport(0, 0)
+ : wxGLCanvas(parent, wxID_ANY, graphics_attrib_list, wxDefaultPosition, wxDefaultSize ),
+   CViewport(0, 0)
 {
+    m_context = new wxGLContext(this);
 	m_render_on_front_done = false;
 
 	wxGetApp().RegisterObserver(this);
@@ -205,7 +207,7 @@ void CViewport::glCommands()
 					default:
 						break;
 					}
-					
+
 					if(panel != 4)
 					{
 						c0.glColor();
@@ -222,7 +224,7 @@ void CViewport::glCommands()
 						c1.glColor();
 						glVertex3d(p3.X(), p3.Y(), p3.Z());
 					}
-					
+
 
 				}
 			}
@@ -246,11 +248,7 @@ void CGraphicsCanvas::OnPaint( wxPaintEvent& WXUNUSED(event) )
     /* must always be here */
     wxPaintDC dc(this);
 
-#ifndef __WXMOTIF__
-    if (!GetContext()) return;
-#endif
-
-    SetCurrent();
+    SetCurrent(*m_context);
 
 	glCommands();
 
@@ -293,13 +291,13 @@ void CViewport::FrontRender(void){
 	SetViewport();
 	m_view_point.SetProjection(false);
 	m_view_point.SetModelview();
-	
+
 	SetXOR();
-	
+
 	wxGetApp().input_mode_object->OnFrontRender();
-	
+
 	EndXOR();
-	
+
 	m_render_on_front_done = true;
 }
 
@@ -349,7 +347,7 @@ void CGraphicsCanvas::OnMouse( wxMouseEvent& event )
 	if(wxGetApp().m_property_grid_validation)return;
 
 	if(event.Entering()){
-	    SetCurrent();
+	    SetCurrent(*m_context);
 		SetFocus(); // so middle wheel works
 	}
 
@@ -366,9 +364,7 @@ void CGraphicsCanvas::OnKeyDown(wxKeyEvent& event)
 	if(event.GetKeyCode() == WXK_ESCAPE && wxGetApp().m_frame->IsFullScreen())wxGetApp().m_frame->ShowFullScreen(false);
 	else
 	{
-		if(event.GetKeyCode() == WXK_ESCAPE && wxGetApp().EndSketchMode())
-		{}
-			else wxGetApp().input_mode_object->OnKeyDown(event);
+		wxGetApp().input_mode_object->OnKeyDown(event);
 	}
 	event.Skip();
 }
@@ -485,22 +481,22 @@ void CGraphicsCanvas::RefreshSoon()
 	}
 }
 
-void CViewport::OnMagExtents(bool rotate) 
+void CViewport::OnMagExtents(bool rotate, int margin)
 {
 	m_view_points.clear();
 	if(rotate){
 		m_orthogonal = true;
-		SetViewPoint();
+		SetViewPoint(margin);
 	}
 	else{
-		m_view_point.SetViewAroundAllObjects();
+		m_view_point.SetViewAroundAllObjects(margin);
 		StoreViewPoint();
 	}
 }
 
-void CGraphicsCanvas::OnMagExtents(bool rotate, bool recalculate_gl_lists) 
+void CGraphicsCanvas::OnMagExtents(bool rotate, bool recalculate_gl_lists, int margin)
 {
-	CViewport::OnMagExtents(rotate);
+	CViewport::OnMagExtents(rotate, margin);
 
 	if(recalculate_gl_lists)
 		wxGetApp().RecalculateGLLists();
@@ -512,7 +508,7 @@ void CGraphicsCanvas::OnMagExtents(bool rotate, bool recalculate_gl_lists)
 void CGraphicsCanvas::OnMag(const gp_Vec &unitY, const gp_Vec &unitZ, bool recalculate_gl_lists)
 {
 	m_view_points.clear();
-	m_view_point.SetView(unitY, unitZ);
+	m_view_point.SetView(unitY, unitZ, 6);
 	StoreViewPoint();
 	if(recalculate_gl_lists)
 		wxGetApp().RecalculateGLLists();
@@ -579,17 +575,19 @@ gp_Vec getClosestOrthogonal(const gp_Vec &v)
 	return best_v;
 }
 
-void CViewport::SetViewPoint(void){
+void CViewport::SetViewPoint(int margin){
 	if(m_orthogonal){
-		gp_Vec vz = getClosestOrthogonal(-m_view_point.forwards_vector());
-		gp_Vec vy = getClosestOrthogonal(m_view_point.m_vertical);
-		m_view_point.SetView(vy, vz);
-		StoreViewPoint();
-		return;
+        gp_Vec vz = getClosestOrthogonal(-m_view_point.forwards_vector());
+        gp_Vec v2 = m_view_point.m_vertical;
+        v2 = v2 + vz * (-(v2 * vz)); // remove any component in new vz direction
+        gp_Vec vy = getClosestOrthogonal(v2);
+        m_view_point.SetView(vy, vz, margin);
+        StoreViewPoint();
+        return;
 	}
 
 	gp_Vec vy(0, 1, 0), vz(0, 0, 1);
-	m_view_point.SetView(vy, vz);
+	m_view_point.SetView(vy, vz, margin);
 	StoreViewPoint();
 }
 
@@ -613,7 +611,7 @@ void CViewport::DrawObjectsOnFront(const std::list<HeeksObj*> &list, bool do_dep
 	SetViewport();
 	m_view_point.SetProjection(do_depth_testing);
 	m_view_point.SetModelview();
-	
+
 	glDrawBuffer(GL_FRONT);
 	glDepthFunc(GL_LEQUAL);
 
@@ -712,7 +710,7 @@ void CViewport::DrawWindow(wxRect &rect, bool allow_extra_bits){
 		glVertex2f((GLfloat)x2, (GLfloat)y2 + extra_y);
 		glEnd();
 	}
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
     glMatrixMode(GL_PROJECTION);

@@ -6,16 +6,19 @@
 
 #include "../interface/HeeksObj.h"
 
-class HXml: public HeeksObj{
+class HXml: public HeeksObj
+{
 public:
+
+    static const int ObjType = XmlType;
+
+
 	TiXmlElement m_element;
 
-	~HXml(void);
 	HXml(TiXmlElement* pElem);
+    ~HXml(void);
 
 	// HeeksObj's virtual functions
-	int GetType()const{return XmlType;}
-	const wxChar* GetTypeString(void)const{return _("Xml");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void CopyFrom(const HeeksObj* object){operator=(*((HXml*)object));}

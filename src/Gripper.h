@@ -9,8 +9,13 @@
 #include "../interface/GripperTypes.h"
 #include "../interface/GripData.h"
 
-class Gripper: public HeeksObj{
+class Gripper: public HeeksObj
+{
 public:
+
+    static const int ObjType = GripperType;
+
+
 	GripData m_data;
 	HeeksObj* m_gripper_parent;
 
@@ -18,9 +23,7 @@ public:
 	virtual ~Gripper(){}
 
 	// HeeksObj's virtual functions
-	int GetType()const{return GripperType;}
 	void glCommands(bool select, bool marked, bool no_color);
-	const wxChar* GetTypeString(void)const{return _("Gripper");}
 	void ModifyByMatrix(const double* m);
 
 	//Gripper's virtual functions

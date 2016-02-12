@@ -16,7 +16,10 @@ endif()
 set( BUILD_STARTED_IN_RIGHT_DIR "true" )  #used in src/CMakeLists.txt to print a message
 
 add_definitions ( -Wall )
-FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS core gl propgrid )
+FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS base core gl propgrid )
+
+#set additionnal CMake module path
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 #find OCE or OpenCASCADE
 set( CASCADE_LIBS TKernel )
@@ -35,8 +38,10 @@ else() #look for OpenCASCADE
   find_package ( OpenCASCADE REQUIRED COMPONENTS ${CASCADE_LIBS} )
 endif()
 
+#find libarea
+# find_package( libarea REQUIRED )
+
 if( APPLE )
-#  add_definitions ( -DHAVE_TYPE_TRAITS )
   # Apple includes two different openGL implementations, for Carbon and X11.  We want X11
   set( OSX_INCLUDE_DIRS /usr/X11R6/include )
   set( OSX_LIBS -L/usr/X11R6/lib -lGL -lX11 -lGLU -lglut )
@@ -44,20 +49,25 @@ if( APPLE )
 endif( APPLE )
 
 INCLUDE(${wxWidgets_USE_FILE})
+
 include_directories (
-	${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
-	${wxWidgets_INCLUDE_DIRS} ${OpenCASCADE_INCLUDE_DIR}
+	${CMAKE_SOURCE_DIR}
+	${wxWidgets_INCLUDE_DIRS}
+	${OpenCASCADE_INCLUDE_DIR}
 	${OSX_INCLUDE_DIRS}
 	)
 
+# CMake summary
+message (STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message (STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 
+#-------------------- package generation -------------------------
 IF( CMAKE_SIZEOF_VOID_P EQUAL 4 )
   set(PKG_ARCH i386)
 ELSE( CMAKE_SIZEOF_VOID_P EQUAL 4 )
   set(PKG_ARCH amd64)
 ENDIF( CMAKE_SIZEOF_VOID_P EQUAL 4 )
 
-#-------------------- package generation -------------------------
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "HeeksCAD Developers <heekscad-devel@googlegroups.com>")
 set(CPACK_PACKAGE_NAME "heekscad")

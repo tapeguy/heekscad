@@ -30,15 +30,28 @@ void HeeksColor::glClearColor(GLclampf alpha)const{
 	::glClearColor((float)red/255, (float)green/255, (float)blue/255, alpha);
 }
 
-long HeeksColor::COLORREF_color(void)const{
+long HeeksColor::COLORREF_color() const {
 	return red | (green << 8) | (blue << 16);
 }
 
+wxString HeeksColor::ToHtmlColor() const {
+    wxString rtn;
+    rtn.Printf("#%02hhx%02hhx%02hhx", red, green, blue);
+    return rtn;
+}
+
+bool HeeksColor::FromHtmlColor(const wxChar * color) {
+    wxString col = color;
+    if (col[0] == '#' && col.Length() == 7) {
+        return (sscanf(col.c_str(), "#%02hhx%02hhx%02hhx", &red, &green, &blue) == 3);
+    }
+    return false;
+}
 
 // AutoCad color index -> RGB translate table
 // from http://autolisp.mapcar.net/acifarben.html
 
-typedef struct  {   
+typedef struct  {
 	unsigned char red;
 	unsigned char green;
 	unsigned char blue;

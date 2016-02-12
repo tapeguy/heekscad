@@ -11,42 +11,44 @@
 #include "DigitizeMode.h"
 #include "Drawing.h"
 
+HCircle::HCircle()
+ : IdNamedObj(ObjType)
+{
+    InitializeProperties();
+}
+
 HCircle::HCircle(const HCircle &c)
+ : IdNamedObj(c)
 {
 	InitializeProperties();
 	operator=(c);
 }
 
 HCircle::HCircle(const gp_Circ &c, const HeeksColor& col)
+: IdNamedObj(ObjType)
 {
 	InitializeProperties();
-	m_color = col;
 	m_axis = c.Axis();
 	m_radius = c.Radius();
-	C = new HPoint(c.Location(), col);
-	C->SetSkipForUndo(true);
-	Add(C,NULL);
 }
 
-HCircle::~HCircle(){
+HCircle::~HCircle()
+{
 }
 
-const HCircle& HCircle::operator=(const HCircle &c){
-    InitializeProperties();
-    m_axis = c.m_axis;
-	m_radius = c.m_radius;
-	m_color = c.m_color;
-	C = new HPoint(c.C->m_p, m_color);
-	C->SetSkipForUndo(true);
-	Add(C,NULL);
-	return *this;
+const HCircle& HCircle::operator=(const HCircle &c)
+{
+    IdNamedObj::operator=(c);
+    return *this;
 }
 
 void HCircle::InitializeProperties()
 {
-	m_centre.Initialize(_("Centre"), this);
-	m_axis_direction.Initialize(_("Axis"), this);
-	m_radius.Initialize(_("Radius"), this);
+	m_centre.Initialize(_("centre"), this);
+	m_axis_direction.Initialize(_("direction"), this);
+	m_radius.Initialize(_("radius"), this);
+	m_axis.Initialize(_("axis"), this);
+	m_axis.SetVisible(false);
 }
 
 const wxBitmap &HCircle::GetIcon()
@@ -59,8 +61,9 @@ const wxBitmap &HCircle::GetIcon()
 bool HCircle::IsDifferent(HeeksObj* other)
 {
 	HCircle* cir = (HCircle*)other;
-	if(cir->C->m_p.Distance(C->m_p) > wxGetApp().m_geom_tol)
-		return true;
+
+    if(cir->m_axis.Location().Distance(m_axis.Location()) > wxGetApp().m_geom_tol)
+        return true;
 
 	if(!IsEqual(cir->m_axis,m_axis))
 		return true;
@@ -68,16 +71,16 @@ bool HCircle::IsDifferent(HeeksObj* other)
 	if(cir->m_radius != m_radius)
 		return true;
 
-	return HeeksObj::IsDifferent(other);
+	return IdNamedObj::IsDifferent(other);
 }
 
 //segments - number of segments per full revolution!
 void HCircle::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point)const
 {
-	gp_Ax2 axis(C->m_p,m_axis.Direction());
+    gp_Ax2 axis(m_axis.Location(),m_axis.Direction());
 	gp_Dir x_axis = axis.XDirection();
 	gp_Dir y_axis = axis.YDirection();
-	gp_Pnt centre = C->m_p;
+	gp_Pnt centre = m_axis.Location();
 
 	double radius = m_radius;
 	int segments = (int)(fabs(pixels_per_mm * radius + 1));
@@ -115,7 +118,7 @@ static void glVertexFunction(const double *p){glVertex3d(p[0], p[1], p[2]);}
 
 void HCircle::glCommands(bool select, bool marked, bool no_color){
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(m_color);
+		wxGetApp().glColorEnsuringContrast(this->GetColor());
 		if (wxGetApp().m_allow_opengl_stippling)
 		{
 			glEnable(GL_LINE_STIPPLE);
@@ -155,15 +158,14 @@ HeeksObj *HCircle::MakeACopy(void)const{
 void HCircle::ModifyByMatrix(const double* m){
 	gp_Trsf mat = make_matrix(m);
 	m_axis.Transform(mat);
-	C->m_p.Transform(mat);
 	m_radius = m_radius * mat.ScaleFactor();
 }
 
 void HCircle::GetBox(CBox &box){
-	gp_Ax2 axis(C->m_p,m_axis.Direction());
+    gp_Ax2 axis(m_axis.Location(),m_axis.Direction());
 	gp_Dir x_axis = axis.XDirection();
 	gp_Dir y_axis = axis.YDirection();
-	gp_XYZ c = C->m_p.XYZ();
+	gp_XYZ c = m_axis.Location().XYZ();
 	double r = m_radius;
 	gp_XYZ x = x_axis.XYZ() * r;
 	gp_XYZ y = y_axis.XYZ() * r;
@@ -182,35 +184,38 @@ void HCircle::GetBox(CBox &box){
 	}
 }
 
+gp_Pnt C_for_gripper_posns;
+
 void HCircle::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 	if(!just_for_endof)
 	{
-		gp_Ax2 axis(C->m_p,m_axis.Direction());
-		gp_Dir x_axis = axis.XDirection();
-		gp_XYZ c = C->m_p.XYZ();
-		double r = m_radius;
-		gp_Pnt s(c + x_axis.XYZ() * r);
+        gp_Ax2 axis(m_axis.Location(),m_axis.Direction());
+        gp_Dir x_axis = axis.XDirection();
+        gp_XYZ c = m_axis.Location().XYZ();
+        double r = m_radius;
+        gp_Pnt s(c + x_axis.XYZ() * r);
 
-		list->push_back(GripData(GripperTypeStretch,c.X(),c.Y(),c.Z(),C));
-		list->push_back(GripData(GripperTypeStretch,s.X(),s.Y(),s.Z(),&m_radius));
+        C_for_gripper_posns = m_axis.Location();
+        list->push_back(GripData(GripperTypeStretch,c.X(),c.Y(),c.Z(),&C_for_gripper_posns));
+        list->push_back(GripData(GripperTypeStretch,s.X(),s.Y(),s.Z(),&m_radius));
 	}
 }
 
-void HCircle::OnPropertyEdit(Property& prop)
+void HCircle::OnPropertySet(Property& prop)
 {
 	if (prop == m_centre)
-		C->m_p = m_centre;
+	    m_axis.SetLocation(m_centre);
 	else if (prop == m_axis_direction)
 		m_axis.SetDirection(m_axis_direction.Normalize());
-	else
-		HeeksObj::OnPropertyEdit(prop);
+
+    IdNamedObj::OnPropertySet(prop);
 }
 
 void HCircle::GetProperties(std::list<Property *> *list){
-	m_centre = C->m_p;
+	m_centre = m_axis.Location();
 	m_axis_direction = m_axis.Direction();
 
-	HeeksObj::GetProperties(list);
+	IdNamedObj::GetProperties(list);
 }
 
 bool HCircle::FindNearPoint(const double* ray_start, const double* ray_direction, double *point){
@@ -232,76 +237,39 @@ bool HCircle::FindPossTangentPoint(const double* ray_start, const double* ray_di
 }
 
 bool HCircle::Stretch(const double *p, const double* shift, void* data){
-	gp_Pnt vp = make_point(p);
-	gp_Vec vshift = make_vector(shift);
+    gp_Pnt vp = make_point(p);
+    gp_Vec vshift = make_vector(shift);
 
-	gp_Ax2 axis(C->m_p,m_axis.Direction());
-	gp_Dir x_axis = axis.XDirection();
-	gp_Pnt c = C->m_p.XYZ();
-	double r = m_radius;
-	gp_Pnt s(c.XYZ() + x_axis.XYZ() * r);
+    gp_Ax2 axis(m_axis.Location(),m_axis.Direction());
+    gp_Dir x_axis = axis.XDirection();
+    gp_Pnt c = m_axis.Location().XYZ();
+    double r = m_radius;
+    gp_Pnt s(c.XYZ() + x_axis.XYZ() * r);
 
-	if(data == C){
-		C->m_p = vp.XYZ() + vshift.XYZ();
-	}
-	else if(data == &m_radius)
-	{
-		s = gp_Pnt(vp.XYZ() + vshift.XYZ());
-		m_radius = c.Distance(s);
-	}
-	return false;
+    if(data == &C_for_gripper_posns){
+        C_for_gripper_posns = vp.XYZ() + vshift.XYZ();
+        m_axis.SetLocation(C_for_gripper_posns);
+
+    }
+    else if(data == &m_radius)
+    {
+        s = gp_Pnt(vp.XYZ() + vshift.XYZ());
+        m_radius = c.Distance(s);
+    }
+    return false;
 }
 
 bool HCircle::GetCentrePoint(double* pos)
 {
-	extract(C->m_p, pos);
-	return true;
-}
-
-void HCircle::WriteXML(TiXmlNode *root)
-{
-	TiXmlElement * element;
-	element = new TiXmlElement( "Circle" );
-	root->LinkEndChild( element );
-	element->SetAttribute("col", m_color.COLORREF_color());
-	element->SetDoubleAttribute("r", m_radius);
-	gp_Dir D = m_axis.Direction();
-	element->SetDoubleAttribute("cx", C->m_p.X());
-	element->SetDoubleAttribute("cy", C->m_p.Y());
-	element->SetDoubleAttribute("cz", C->m_p.Z());
-	element->SetDoubleAttribute("ax", D.X());
-	element->SetDoubleAttribute("ay", D.Y());
-	element->SetDoubleAttribute("az", D.Z());
-	WriteBaseXML(element);
+    extract(m_axis.Location(), pos);
+    return true;
 }
 
 // static member function
 HeeksObj* HCircle::ReadFromXMLElement(TiXmlElement* pElem)
 {
-	gp_Pnt centre;
-	double axis[3];
-	double r = 0.0;
-	HeeksColor c;
-
-	// get the attributes
-	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
-	{
-		std::string name(a->Name());
-		if(name == "col"){c = HeeksColor((long)(a->IntValue()));}
-		else if(name == "r"){r = a->DoubleValue();}
-		else if(name == "cx"){centre.SetX(a->DoubleValue());}
-		else if(name == "cy"){centre.SetY(a->DoubleValue());}
-		else if(name == "cz"){centre.SetZ(a->DoubleValue());}
-		else if(name == "ax"){axis[0] = a->DoubleValue();}
-		else if(name == "ay"){axis[1] = a->DoubleValue();}
-		else if(name == "az"){axis[2] = a->DoubleValue();}
-	}
-
-	gp_Circ circle(gp_Ax2(centre, gp_Dir(make_vector(axis))), r);
-
-	HCircle* new_object = new HCircle(circle, c);
+	HCircle* new_object = new HCircle();
 	new_object->ReadBaseXML(pElem);
-
 	return new_object;
 }
 
@@ -855,24 +823,13 @@ bool HCircle::GetArcTangentPoint(const gp_Circ& c, const gp_Pnt& a, const gp_Pnt
 
 gp_Circ HCircle::GetCircle() const
 {
-	return gp_Circ(gp_Ax2(C->m_p,m_axis.Direction()),m_radius);
+    return gp_Circ(gp_Ax2(m_axis.Location(),m_axis.Direction()),m_radius);
 }
 
 void HCircle::SetCircle(gp_Circ c)
 {
 	m_radius = c.Radius();
-	C->m_p = c.Location();
 	m_axis = c.Axis();
-}
-
-void HCircle::LoadFromDoubles()
-{
-	C->LoadFromDoubles();
-}
-
-void HCircle::LoadToDoubles()
-{
-	C->LoadToDoubles();
 }
 
 static HCircle *object_for_tools = NULL;

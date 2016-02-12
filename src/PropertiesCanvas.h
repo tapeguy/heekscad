@@ -44,7 +44,9 @@ protected:
     void ClearProperties();
     void AddProperty(Property* property, wxPGProperty* parent_prop = NULL);
     void RemoveProperty(Property* property);
+    void ReplaceProperty(Property* property);
     Property* GetProperty(wxPGProperty* property);
+    void RefreshByMerging(std::list<Property *>& desired_list);
 
 public:
 	void DeselectProperties();
@@ -53,4 +55,7 @@ public:
 
     DECLARE_NO_COPY_CLASS(CPropertiesCanvas)
     DECLARE_EVENT_TABLE()
+
+private:
+    void RecursiveMerge(std::set<Property *>& prop_set, Property * property);
 };

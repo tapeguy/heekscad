@@ -23,11 +23,6 @@ GripperSelTransform::GripperSelTransform(const GripData& data, HeeksObj* parent)
 
 bool GripperSelTransform::OnGripperGrabbed(const std::list<HeeksObj*>& list, bool show_grippers_on_drag, double* from)
 {
-//    printf ( "GripperSelTransform::OnGripperGrabbed: from: %f,%f,%f\n",
-//                from[0], from[1], from[2] );
-
-    wxGetApp().CreateUndoPoint();
-
 	m_initial_grip_pos[0] = m_data.m_x;
 	m_initial_grip_pos[1] = m_data.m_y;
 	m_initial_grip_pos[2] = m_data.m_z;
@@ -44,11 +39,11 @@ bool GripperSelTransform::OnGripperGrabbed(const std::list<HeeksObj*>& list, boo
 	if ( m_data.m_type <= GripperTypeObjectScaleXY )
 	{
 		wxGetApp().CreateTransformGLList(list, show_grippers_on_drag);
-		wxGetApp().m_drag_matrix = gp_Trsf();
+		extract(gp_Trsf(), wxGetApp().m_drag_matrix);
 		for(It = list.begin(); It != list.end(); It++){
 			HeeksObj* object = *It;
 			if(object->IsVisible())
-			    wxGetApp().m_hidden_for_drag.push_back(object);
+			    wxGetApp().m_hidden_for_drag.insert(object);
 			object->SetVisible(false);
 		}
 	}
@@ -58,9 +53,6 @@ bool GripperSelTransform::OnGripperGrabbed(const std::list<HeeksObj*>& list, boo
 
 void GripperSelTransform::OnGripperMoved ( double* from, const double* to )
 {
-//    printf ( "GripperSelTransform::OnGripperMoved: from: %f,%f,%f   to: %f,%f,%f\n",
-//                from[0], from[1], from[2], to[0], to[1], to[2] );
-
 	if ( m_data.m_type == GripperTypeStretch)
 	{
 		bool stretch_done = false;
@@ -85,7 +77,7 @@ void GripperSelTransform::OnGripperMoved ( double* from, const double* to )
 				if(object)
 				{
 					double p[3] = {m_data.m_x, m_data.m_y, m_data.m_z};
-					stretch_done = object->StretchTemporaryTransformed(p, shift,m_data.m_data);
+					stretch_done = object->StretchTemporary(p, shift,m_data.m_data);
 				}
 			}
 		}
@@ -114,13 +106,7 @@ void GripperSelTransform::OnGripperMoved ( double* from, const double* to )
 	    m_items_marked_at_grab.front()->GetScaleAboutMatrix(object_m);
 	}
 
-	gp_Trsf mat;
 	MakeMatrix ( from, to, object_m, wxGetApp().m_drag_matrix );
-
-	if(wxGetApp().m_sketch_mode && wxGetApp().m_sketch->m_coordinate_system)
-	{
-		wxGetApp().m_drag_matrix = wxGetApp().m_sketch->m_coordinate_system->GetMatrix() * wxGetApp().m_drag_matrix;
-	}
 
 	wxGetApp().Repaint();
 }
@@ -128,6 +114,8 @@ void GripperSelTransform::OnGripperMoved ( double* from, const double* to )
 void GripperSelTransform::OnGripperReleased ( const double* from, const double* to )
 {
 	wxGetApp().DestroyTransformGLList();
+
+	wxGetApp().StartHistory();
 
 	for ( std::list<HeeksObj *>::iterator It = m_items_marked_at_grab.begin(); It != m_items_marked_at_grab.end(); It++ )
 	{
@@ -147,10 +135,7 @@ void GripperSelTransform::OnGripperReleased ( const double* from, const double* 
 			}
 
 			{
-//			    printf ( "GripperSelTransform::OnGripperReleased > GripperTypeScale: from: %f,%f,%f   to: %f,%f,%f\n",
-//			                from[0], from[1], from[2], to[0], to[1], to[2] );
-
-				if(object)wxGetApp().DoToolUndoably(new StretchTool(object, m_initial_grip_pos, shift, m_data.m_data));
+			    if(object)wxGetApp().DoUndoable(new StretchTool(object, m_initial_grip_pos, shift, m_data.m_data));
 			}
 			m_data.m_x += shift[0];
 			m_data.m_y += shift[1];
@@ -160,16 +145,12 @@ void GripperSelTransform::OnGripperReleased ( const double* from, const double* 
 		{
 			gp_Trsf mat;
 			double object_m[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-			if(m_items_marked_at_grab.size() > 0)m_items_marked_at_grab.front()->GetScaleAboutMatrix(object_m);
-
-//            printf ( "GripperSelTransform::OnGripperReleased <= GripperTypeScale: from: %f,%f,%f   to: %f,%f,%f\n",
-//                        from[0], from[1], from[2], to[0], to[1], to[2] );
-
-			MakeMatrix ( from, to, object_m, mat );
-
+			if(m_items_marked_at_grab.size() > 0) {
+			    m_items_marked_at_grab.front()->GetScaleAboutMatrix(object_m);
+			}
 			double m[16];
-			extract(mat, m);
-			object->ModifyByMatrix(m);
+			MakeMatrix ( from, to, object_m, m );
+			wxGetApp().TransformUndoably(object, m);
 		}
 	}
 
@@ -177,7 +158,7 @@ void GripperSelTransform::OnGripperReleased ( const double* from, const double* 
 
 	if ( m_data.m_type <= GripperTypeObjectScaleXY )
 	{
-		for(std::list<HeeksObj*>::iterator It = wxGetApp().m_hidden_for_drag.begin(); It != wxGetApp().m_hidden_for_drag.end(); It++)
+		for(std::set<HeeksObj*>::iterator It = wxGetApp().m_hidden_for_drag.begin(); It != wxGetApp().m_hidden_for_drag.end(); It++)
 		{
 			HeeksObj* object = *It;
 			object->SetVisible(true);
@@ -193,70 +174,71 @@ void GripperSelTransform::OnGripperReleased ( const double* from, const double* 
 		}
 	}
 	wxGetApp().m_marked_list->gripping = false;
-	wxGetApp().Changed();
+	wxGetApp().EndHistory();
 }
 
-void GripperSelTransform::MakeMatrix ( const double* from, const double* to, const double* object_m, gp_Trsf& mat )
+void GripperSelTransform::MakeMatrix ( const double* from, const double* to, const double* object_m, double* output_mat)
 {
-	mat = gp_Trsf();
-	gp_Trsf object_mat = make_matrix(object_m);
-	gp_Pnt centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
+    gp_Trsf object_mat = make_matrix(object_m);
+    gp_Pnt centre_point = gp_Pnt(0, 0, 0).Transformed(object_mat);
 
 	switch ( m_data.m_type )
 	{
 	case GripperTypeTranslate:
-//	    printf ( "GripperSelTransform::MakeMatrix GripperTypeTranslate: from: %f,%f,%f   to: %f,%f,%f\n",
-//	                from[0], from[1], from[2], to[0], to[1], to[2] );
-
-		mat.SetTranslation ( gp_Vec ( make_point ( from ), make_point ( to ) ) );
+	    {
+            gp_Trsf mat = gp_Trsf();
+            mat.SetTranslation ( gp_Vec ( make_point ( from ), make_point ( to ) ) );
+            extract(mat, output_mat);
+	    }
 		break;
 	case GripperTypeScale:
 		{
-//	        printf ( "GripperSelTransform::MakeMatrix GripperTypeScale: from: %f,%f,%f   to: %f,%f,%f\n",
-//	                    from[0], from[1], from[2], to[0], to[1], to[2] );
-
+		    gp_Trsf mat = gp_Trsf();
 			double from_dist = make_point ( from ).Distance ( centre_point );
 			double to_dist = make_point ( to ).Distance ( centre_point );
 			if ( from_dist<0.00000001 || to_dist<0.00000001 )return;
 			double scale = to_dist/from_dist;
 			mat.SetScale( centre_point, scale );
+			extract(mat, output_mat);
 		}
 		break;
 	case GripperTypeObjectScaleX:
 		{
-//            printf ( "GripperSelTransform::MakeMatrix GripperTypeObjectScaleX: from: %f,%f,%f   to: %f,%f,%f\n",
-//                        from[0], from[1], from[2], to[0], to[1], to[2] );
-
+		    gp_GTrsf gen_mat = make_matrix(object_m);
 			gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
 			double old_x = make_vector(from) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
 			double new_x = make_vector(to) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
 			if(fabs(old_x) < 0.000000001)return;
 			if(fabs(new_x) < 0.000000001)return;
 			double scale = new_x/old_x;
-			double m[16] = {scale, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-			mat = object_mat * make_matrix(m) * object_mat.Inverted();
+			double m[16] = {scale, 0, 0, 0,
+			                0, 1, 0, 0,
+			                0, 0, 1, 0,
+			                0, 0, 0, 1};
+			gen_mat = gen_mat.Multiplied(make_general_matrix(m)).Multiplied(gen_mat.Inverted());
+			extract(gen_mat, output_mat);
 		}
 		break;
 	case GripperTypeObjectScaleY:
 		{
-//            printf ( "GripperSelTransform::MakeMatrix GripperTypeObjectScaleY: from: %f,%f,%f   to: %f,%f,%f\n",
-//                        from[0], from[1], from[2], to[0], to[1], to[2] );
-
+		    gp_GTrsf gen_mat = make_matrix(object_m);
 			gp_Vec object_y = gp_Vec(0, 1, 0).Transformed(object_mat).Normalized();
 			double old_y = make_vector(from) * object_y - gp_Vec(centre_point.XYZ()) * object_y;
 			double new_y = make_vector(to) * object_y - gp_Vec(centre_point.XYZ()) * object_y;
 			if(fabs(old_y) < 0.000000001)return;
 			if(fabs(new_y) < 0.000000001)return;
 			double scale = new_y/old_y;
-			double m[16] = {1, 0, 0, 0, 0, scale, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-			mat = object_mat * make_matrix(m) * object_mat.Inverted();
+			double m[16] = {1, 0, 0, 0,
+			                0, scale, 0, 0,
+			                0, 0, 1, 0,
+			                0, 0, 0, 1};
+            gen_mat = gen_mat.Multiplied(make_general_matrix(m)).Multiplied(gen_mat.Inverted());
+            extract(gen_mat, output_mat);
 		}
 		break;
 	case GripperTypeObjectScaleZ:
 		{
-//            printf ( "GripperSelTransform::MakeMatrix GripperTypeObjectScaleZ: from: %f,%f,%f   to: %f,%f,%f\n",
-//                        from[0], from[1], from[2], to[0], to[1], to[2] );
-
+		    gp_GTrsf gen_mat = make_matrix(object_m);
 			gp_Vec object_z = gp_Vec(0, 0, 1).Transformed(object_mat).Normalized();
 			double old_z = make_vector(from) * object_z - gp_Vec(centre_point.XYZ()) * object_z;
 			double new_z = make_vector(to) * object_z - gp_Vec(centre_point.XYZ()) * object_z;
@@ -264,22 +246,28 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			if(fabs(new_z) < 0.000000001)return;
 			double scale = new_z/old_z;
 
-			double m[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, scale, 0, 0, 0, 0, 1};
-			mat = object_mat * make_matrix(m) * object_mat.Inverted();
+			double m[16] = {1, 0, 0, 0,
+			                0, 1, 0, 0,
+			                0, 0, scale, 0,
+			                0, 0, 0, 1};
+            gen_mat = gen_mat.Multiplied(make_general_matrix(m)).Multiplied(gen_mat.Inverted());
+            extract(gen_mat, output_mat);
 		}
 		break;
 	case GripperTypeObjectScaleXY:
 		{
-//            printf ( "GripperSelTransform::MakeMatrix GripperTypeObjectScaleXY: from: %f,%f,%f   to: %f,%f,%f\n",
-//                        from[0], from[1], from[2], to[0], to[1], to[2] );
-
+		    gp_GTrsf gen_mat = make_matrix(object_m);
 			gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
 			double old_x = make_vector(from) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
 			double new_x = make_vector(to) * object_x - gp_Vec(centre_point.XYZ()) * object_x;
 			if(fabs(old_x) < 0.000000001)return;
 			double scale = new_x/old_x;
-			double m[16] = {scale, 0, 0, 0, 0, scale, 0, 0, 0, 0, scale, 0, 0, 0, 0, scale};
-			mat = object_mat * make_matrix(m) * object_mat.Inverted();
+			double m[16] = {scale, 0, 0, 0,
+			                0, scale, 0, 0,
+			                0, 0, 1, 0,
+			                0, 0, 0, 1};
+            gen_mat = gen_mat.Multiplied(make_general_matrix(m)).Multiplied(gen_mat.Inverted());
+            extract(gen_mat, output_mat);
 		}
 		break;
 	case GripperTypeRotate:
@@ -288,6 +276,7 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 	case GripperTypeRotateObjectXZ:
 	case GripperTypeRotateObjectYZ:
 		{
+		    gp_Trsf mat = gp_Trsf();
 			gp_Vec start_to_end_vector(make_point(from), make_point(to));
 			if ( start_to_end_vector.Magnitude() <0.000001 ) return;
 			gp_Vec start_vector ( centre_point, make_point ( from ) );
@@ -302,10 +291,6 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			rot_dir.Normalize();
 
 			if(m_data.m_type == GripperTypeRotateObjectXY){
-
-//	            printf ( "GripperSelTransform::MakeMatrix GripperTypeRotateObjectXY: from: %f,%f,%f   to: %f,%f,%f\n",
-//	                        from[0], from[1], from[2], to[0], to[1], to[2] );
-
 				// use object z axis
 				gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
 				gp_Vec object_y = gp_Vec(0, 1, 0).Transformed(object_mat).Normalized();
@@ -316,10 +301,6 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			}
 
 			else if(m_data.m_type == GripperTypeRotateObjectXZ){
-
-//                printf ( "GripperSelTransform::MakeMatrix GripperTypeRotateObjectXZ: from: %f,%f,%f   to: %f,%f,%f\n",
-//                            from[0], from[1], from[2], to[0], to[1], to[2] );
-
 				// use object y axis
 				gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
 				gp_Vec object_y = gp_Vec(0, 1, 0).Transformed(object_mat).Normalized();
@@ -330,10 +311,6 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			}
 
 			else if(m_data.m_type == GripperTypeRotateObjectYZ){
-
-//                printf ( "GripperSelTransform::MakeMatrix GripperTypeRotateObjectYZ: from: %f,%f,%f   to: %f,%f,%f\n",
-//                            from[0], from[1], from[2], to[0], to[1], to[2] );
-
 				// use object x axis
 				gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
 				gp_Vec object_y = gp_Vec(0, 1, 0).Transformed(object_mat).Normalized();
@@ -344,10 +321,6 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			}
 
 			else if(m_data.m_type == GripperTypeRotateObject){
-
-//                printf ( "GripperSelTransform::MakeMatrix GripperTypeRotateObject: from: %f,%f,%f   to: %f,%f,%f\n",
-//                            from[0], from[1], from[2], to[0], to[1], to[2] );
-
 				// choose the closest object axis to use
 				gp_Vec object_x = gp_Vec(1, 0, 0).Transformed(object_mat).Normalized();
 				gp_Vec object_y = gp_Vec(0, 1, 0).Transformed(object_mat).Normalized();
@@ -383,6 +356,7 @@ void GripperSelTransform::MakeMatrix ( const double* from, const double* to, con
 			double ey = end_vector * vy;
 			double angle = gp_Vec(sx, sy, 0).AngleWithRef(gp_Vec(ex, ey, 0), gp_Vec(0,0,1));
 			mat.SetRotation(rot_axis, angle);
+			extract(mat, output_mat);
 		}
 		break;
 	default:

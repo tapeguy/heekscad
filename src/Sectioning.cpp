@@ -247,8 +247,7 @@ SectioningDlg::SectioningDlg( wxWindow* parent, SectioningData &data ) : HDialog
 	bSizer1->Add( bSizer3, 0, wxEXPAND, 5 );
 
 	// add OK and Cancel
-	wxBoxSizer *sizerOKCancel = MakeOkAndCancel(wxHORIZONTAL);
-	bSizer1->Add( sizerOKCancel, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, control_border );
+	MakeOkAndCancel(wxHORIZONTAL).AddToSizer(bSizer1);
 
 	this->SetSizer( bSizer1 );
 	this->Layout();
@@ -277,9 +276,9 @@ SectioningDlg::~SectioningDlg()
 
 void SectioningDlg::SetPos1(const double* pos)
 {
-	m_textCtrl1->SetValue( pos[0] );
-	m_textCtrl2->SetValue( pos[1] );
-	m_textCtrl3->SetValue( pos[2] );
+	m_textCtrl1->SetValueFromDouble( pos[0] );
+	m_textCtrl2->SetValueFromDouble( pos[1] );
+	m_textCtrl3->SetValueFromDouble( pos[2] );
 }
 
 void SectioningDlg::EnableSecondaryPointControls(bool bEnable)
@@ -301,47 +300,47 @@ void SectioningDlg::SetFromData(SectioningData &data)
 
 	SetPos1(data.m_pos1);
 
-	m_textCtrl4->SetValue( data.m_pos2[0] );
-	m_textCtrl5->SetValue( data.m_pos2[1] );
-	m_textCtrl6->SetValue( data.m_pos2[2] );
+	m_textCtrl4->SetValueFromDouble( data.m_pos2[0] );
+	m_textCtrl5->SetValueFromDouble( data.m_pos2[1] );
+	m_textCtrl6->SetValueFromDouble( data.m_pos2[2] );
 
 	EnableSecondaryPointControls( axis_type == 0 );
 
-	m_textCtrl7->SetValue( data.m_angle );
+	m_textCtrl7->SetValueFromDouble( data.m_angle );
 }
 
 void SectioningDlg::GetData(SectioningData &data)
 {
-	data.m_pos1[0] = m_textCtrl1->GetValue();
-	data.m_pos1[1] = m_textCtrl2->GetValue();
-	data.m_pos1[2] = m_textCtrl3->GetValue();
-	data.m_pos2[0] = m_textCtrl4->GetValue();
-	data.m_pos2[1] = m_textCtrl5->GetValue();
-	data.m_pos2[2] = m_textCtrl6->GetValue();
-	data.m_angle = m_textCtrl7->GetValue();
+	data.m_pos1[0] = m_textCtrl1->GetValueAsDouble();
+	data.m_pos1[1] = m_textCtrl2->GetValueAsDouble();
+	data.m_pos1[2] = m_textCtrl3->GetValueAsDouble();
+	data.m_pos2[0] = m_textCtrl4->GetValueAsDouble();
+	data.m_pos2[1] = m_textCtrl5->GetValueAsDouble();
+	data.m_pos2[2] = m_textCtrl6->GetValueAsDouble();
+	data.m_angle = m_textCtrl7->GetValueAsDouble();
 }
 
 void SectioningDlg::UpdateSecondaryPoint()
 {
 	if(m_radioBtn1->GetValue())
 	{
-		m_textCtrl4->SetValue( m_textCtrl1->GetValue() + 100.0 );
-		m_textCtrl5->SetValue( m_textCtrl2->GetValue() );
-		m_textCtrl6->SetValue( m_textCtrl3->GetValue() );
+		m_textCtrl4->SetValueFromDouble( m_textCtrl1->GetValueAsDouble() + 100.0 );
+		m_textCtrl5->SetValueFromDouble( m_textCtrl2->GetValueAsDouble() );
+		m_textCtrl6->SetValueFromDouble( m_textCtrl3->GetValueAsDouble() );
 		EnableSecondaryPointControls( false );
 	}
 	else if(m_radioBtn2->GetValue())
 	{
-		m_textCtrl4->SetValue( m_textCtrl1->GetValue() );
-		m_textCtrl5->SetValue( m_textCtrl2->GetValue() + 100.0 );
-		m_textCtrl6->SetValue( m_textCtrl3->GetValue() );
+		m_textCtrl4->SetValueFromDouble( m_textCtrl1->GetValueAsDouble() );
+		m_textCtrl5->SetValueFromDouble( m_textCtrl2->GetValueAsDouble() + 100.0 );
+		m_textCtrl6->SetValueFromDouble( m_textCtrl3->GetValueAsDouble() );
 		EnableSecondaryPointControls( false );
 	}
 	else if(m_radioBtn3->GetValue())
 	{
-		m_textCtrl4->SetValue( m_textCtrl1->GetValue() );
-		m_textCtrl5->SetValue( m_textCtrl2->GetValue() );
-		m_textCtrl6->SetValue( m_textCtrl3->GetValue() + 100.0 );
+		m_textCtrl4->SetValueFromDouble( m_textCtrl1->GetValueAsDouble() );
+		m_textCtrl5->SetValueFromDouble( m_textCtrl2->GetValueAsDouble() );
+		m_textCtrl6->SetValueFromDouble( m_textCtrl3->GetValueAsDouble() + 100.0 );
 		EnableSecondaryPointControls( false );
 	}
 	else
@@ -389,9 +388,9 @@ void SectioningDlg::OnPickPos2(wxCommandEvent& event)
 void SectioningDlg::OnButtonZero(wxCommandEvent& event)
 {
 	if(m_ignore_event_functions)return;
-	m_textCtrl1->SetValue( 0.0 );
-	m_textCtrl2->SetValue( 0.0 );
-	m_textCtrl3->SetValue( 0.0 );
+	m_textCtrl1->SetValueFromDouble( 0.0 );
+	m_textCtrl2->SetValueFromDouble( 0.0 );
+	m_textCtrl3->SetValueFromDouble( 0.0 );
 	UpdateSecondaryPoint();
 }
 
@@ -429,7 +428,7 @@ static void SectionObjectsWithDialog(std::list<HeeksObj*> list)
 			p1.Transform(trsf);
 			gp_Ax2 axis(p1, gp_Dir(0, 0, 1).Transformed(trsf), gp_Dir(1, 0, 0).Transformed(trsf));
 
-			wxGetApp().CreateUndoPoint();
+			wxGetApp().StartHistory();
 
 			try{
 
@@ -441,10 +440,10 @@ static void SectionObjectsWithDialog(std::list<HeeksObj*> list)
 			{
 				HeeksObj* object = *It;
 				if(CShape::IsTypeAShape(object->GetType()) == false)continue;
-				TopoDS_Shape new_shape = BRepAlgoAPI_Cut(((CShape*)object)->Shape(), cuboid);
+				TopoDS_Shape new_shape = BRepAlgoAPI_Cut(((CShape*)object)->GetShape(), cuboid);
 				if(new_shape.IsNull())continue;
 				HeeksObj* new_object = CShape::MakeObject(new_shape, _("Sectioned Solid"), SOLID_TYPE_UNKNOWN, ((CShape*)object)->GetColor(), ((CShape*)object)->GetOpacity());
-				wxGetApp().Add(new_object, NULL);
+				wxGetApp().Add(new_object);
 				wxGetApp().Remove(object);
 				wxGetApp().m_marked_list->Add(new_object, false);
 			}
@@ -454,7 +453,7 @@ static void SectionObjectsWithDialog(std::list<HeeksObj*> list)
 				::wxMessageBox(_("Sectioning failed!"));
 			}
 
-			wxGetApp().Changed();
+			wxGetApp().EndHistory();
 
 			break;
 		}

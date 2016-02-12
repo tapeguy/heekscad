@@ -71,12 +71,13 @@ static void RenderGrid(const CViewPoint *view_point, double max_number_across, b
 
 	}
 	else{
-		double l = log10(widest_spacing / wxGetApp().m_view_units);
+	    double conversion = Length::Conversion ( wxGetApp().GetViewUnits(), UnitTypeMillimeter );
+		double l = log10(widest_spacing / conversion);
 
 		double intl = (int)l;
 		if(l>0)intl++;
 
-		spacing = pow(10.0, intl) * wxGetApp().m_view_units;
+		spacing = pow(10.0, intl) * conversion;
 	}
 
 	if(wxGetApp().grid_mode == 3){

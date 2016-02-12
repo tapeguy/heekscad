@@ -6,6 +6,7 @@
 #include "Face.h"
 #include "ShapeTools.h"
 #include "Vertex.h"
+#include <BRepAdaptor_Curve.hxx>
 
 const wxBitmap &CFaceList::GetIcon()
 {
@@ -79,7 +80,7 @@ void CreateFacesAndEdges(TopoDS_Shape shape, CFaceList* faces, CEdgeList* edges,
 	{
 		const TopoDS_Shape &s = faceMap(i);
 		CFace* new_face_object = new CFace(TopoDS::Face(s));
-		faces->Add(new_face_object, NULL);
+		faces->Add(new_face_object);
 		face_array[i] = new_face_object;
 
 		// create the loop objects
@@ -107,7 +108,7 @@ void CreateFacesAndEdges(TopoDS_Shape shape, CFaceList* faces, CEdgeList* edges,
 				// add the edge
 				if(edges_added.find(e) == edges_added.end())
 				{
-					edges->Add(e, NULL);
+					edges->Add(e);
 					edges_added.insert(e);
 				}
 
@@ -115,7 +116,7 @@ void CreateFacesAndEdges(TopoDS_Shape shape, CFaceList* faces, CEdgeList* edges,
 				HVertex* v = vertex_array[vertexMap.FindIndex(explorer.CurrentVertex())];
 				if(vertices_added.find(v) == vertices_added.end())
 				{
-					vertices->Add(v, NULL);
+					vertices->Add(v);
 					vertices_added.insert(v);
 				}
 			}
@@ -160,3 +161,150 @@ void CreateFacesAndEdges(TopoDS_Shape shape, CFaceList* faces, CEdgeList* edges,
 	}
 }
 
+
+wxString TopoDS_ToString(const TopoDS_Shape& shape, int level)
+{
+    wxString rtn = (level == 0) ? "Shape:\n" : "";
+
+    if (shape.IsNull())
+    {
+        rtn += "NULL\n";
+        return rtn;
+    }
+    wxString indent('\t', level);
+    wxString format;
+
+    rtn += indent;
+    rtn += "{";
+
+    switch(shape.ShapeType())
+    {
+    case TopAbs_COMPOUND:
+        rtn += "COMPOUND";
+    break;
+
+    case TopAbs_COMPSOLID:
+        rtn += "COMPSOLID";
+    break;
+
+    case TopAbs_SOLID:
+        rtn += "SOLID";
+    break;
+
+    case TopAbs_SHELL:
+        rtn += "SHELL";
+    break;
+
+    case TopAbs_FACE:
+    {
+        rtn += "FACE";
+        BRepAdaptor_Surface surface(TopoDS::Face(shape));
+        switch(surface.GetType())
+        {
+        case GeomAbs_Plane:
+            format = "type: plane";
+        break;
+        case GeomAbs_Cylinder:
+            format = "type: cylinder";
+        break;
+        case GeomAbs_Cone:
+            format = "type: cone";
+        break;
+        case GeomAbs_Sphere:
+            format = "type: sphere";
+        break;
+        case GeomAbs_Torus:
+            format = "type: torus";
+        break;
+        case GeomAbs_BezierSurface:
+            format = "type: bezier_surface";
+        break;
+        case GeomAbs_BSplineSurface:
+            format = "type: bspline_surface";
+        break;
+        case GeomAbs_SurfaceOfRevolution:
+            format = "type: revolution_surface";
+        break;
+        case GeomAbs_SurfaceOfExtrusion:
+            format = "type: extrusion_surface";
+        break;
+        case GeomAbs_OffsetSurface:
+            format = "type: offset_surface";
+        break;
+        case GeomAbs_OtherSurface:
+            format = "type: other_surface";
+        break;
+        }
+    }
+    break;
+
+    case TopAbs_WIRE:
+        rtn += "WIRE";
+    break;
+    case TopAbs_EDGE:
+    {
+        rtn += "EDGE";
+        BRepAdaptor_Curve curve(TopoDS::Edge(shape));
+        switch(curve.GetType())
+        {
+        case GeomAbs_Line:
+            format = "type: line";
+        break;
+        case GeomAbs_Circle:
+            format = "type: circle";
+        break;
+        case GeomAbs_Ellipse:
+            format = "type: ellipse";
+        break;
+        case GeomAbs_Hyperbola:
+            format = "type: hyperbola";
+        break;
+        case GeomAbs_Parabola:
+            format = "type: parabola";
+        break;
+        case GeomAbs_BezierCurve:
+            format = "type: bezier";
+        break;
+        case GeomAbs_BSplineCurve:
+            format = "type: bspline";
+        break;
+        case GeomAbs_OtherCurve:
+            format = "type: other";
+        break;
+        }
+    }
+    break;
+
+    case TopAbs_VERTEX:
+    {
+        rtn += "VERTEX";
+        gp_Pnt pnt = BRep_Tool::Pnt(TopoDS::Vertex(shape));
+        format = wxString::Format("point: (%f, %f, %f)", pnt.X(), pnt.Y(), pnt.Z());
+    }
+    break;
+
+    case TopAbs_SHAPE:
+        rtn += "SHAPE";
+    break;
+    }
+
+    TopAbs_Orientation orientation = shape.Orientation();
+    rtn += ", closed: ";
+    rtn += (shape.Closed() ? "true" : "false");
+    rtn += ", orientation: ";
+    rtn += ((orientation == TopAbs_FORWARD) ? "forward" :
+            (orientation == TopAbs_REVERSED) ? "reversed" :
+            (orientation == TopAbs_INTERNAL) ? "internal" :
+            (orientation == TopAbs_EXTERNAL) ? "external" : "<unknown>");
+    if (!format.IsEmpty())
+        rtn += ", " + format;
+
+    rtn += "}\n";
+
+    for (TopoDS_Iterator iter2(shape); iter2.More(); iter2.Next())
+    {
+        // Recurse
+        rtn += TopoDS_ToString(iter2.Value(), level + 1);
+    }
+    return rtn;
+}

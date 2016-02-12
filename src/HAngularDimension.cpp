@@ -9,9 +9,13 @@
 #include "HeeksFrame.h"
 #include "GraphicsCanvas.h"
 
+HAngularDimension::HAngularDimension()
+: HeeksObj(ObjType)
+{
+}
 
 HAngularDimension::HAngularDimension(const wxString &text, const gp_Pnt &p0, const gp_Pnt &p1, const gp_Pnt &p2, const gp_Pnt &p3, const gp_Pnt &p4, AngularDimensionTextMode text_mode, const HeeksColor& col)
-: m_text(text), m_text_mode(text_mode), m_scale(1.0)
+: HeeksObj(ObjType), m_text(text), m_text_mode(text_mode), m_scale(1.0)
 {
 	InitializeProperties();
 	m_color = col;
@@ -34,22 +38,23 @@ HAngularDimension::HAngularDimension(const wxString &text, const gp_Pnt &p0, con
 	m_p3->SetSkipForUndo(true);
 	m_p4->SetSkipForUndo(true);
 
-	Add(m_p0,NULL);
-	Add(m_p1,NULL);
-	Add(m_p2,NULL);
-	Add(m_p3,NULL);
-	Add(m_p4,NULL);
+	Add(m_p0);
+	Add(m_p1);
+	Add(m_p2);
+	Add(m_p3);
+	Add(m_p4);
 }
 
 //Points loaded via objlist constructor
 HAngularDimension::HAngularDimension(const wxString &text, AngularDimensionTextMode text_mode, const HeeksColor& col)
-: m_text(text), m_text_mode(text_mode), m_scale(1.0)
+: HeeksObj(ObjType), m_text(text), m_text_mode(text_mode), m_scale(1.0)
 {
 	InitializeProperties();
 	m_color = col;
 }
 
 HAngularDimension::HAngularDimension(const HAngularDimension &b)
+: HeeksObj(b)
 {
 	InitializeProperties();
 	operator=(b);
@@ -61,11 +66,8 @@ HAngularDimension::~HAngularDimension(void)
 
 const HAngularDimension& HAngularDimension::operator=(const HAngularDimension &b)
 {
-#ifdef MULTIPLE_OWNERS
-	ObjList::operator=(b);
-#else
 	HeeksObj::operator=(b);
-#endif
+
 	m_text = b.m_text;
 	m_text_mode = b.m_text_mode;
 	m_color = b.m_color;
@@ -99,7 +101,7 @@ bool HAngularDimension::IsDifferent(HeeksObj* other)
 	if(m_color.COLORREF_color() != dim->m_color.COLORREF_color() || m_scale != dim->m_scale || m_text_mode != dim->m_text_mode)
 		return true;
 
-	if(wxStrcmp(m_text,dim->m_text))
+	if(wxStrcmp((const wxString&)m_text, (const wxString&)dim->m_text))
 		return true;
 
 	if(m_p0->m_p.Distance(dim->m_p0->m_p) > wxGetApp().m_geom_tol)
@@ -119,11 +121,7 @@ bool HAngularDimension::IsDifferent(HeeksObj* other)
 	if(m_p4->m_p.Distance(dim->m_p4->m_p) > wxGetApp().m_geom_tol)
 		return true;
 
-#ifdef MULTIPLE_OWNERS
-	return ObjList::IsDifferent(other);
-#else
 	return HeeksObj::IsDifferent(other);
-#endif
 }
 
 void HAngularDimension::glCommands(bool select, bool marked, bool no_color)
@@ -267,26 +265,6 @@ void HAngularDimension::DrawArc(gp_Pnt center, double r, double a1, double a2)
 	}
 }
 
-#ifdef MULTIPLE_OWNERS
-void HAngularDimension::LoadToDoubles()
-{
-	m_p0->LoadToDoubles();
-	m_p1->LoadToDoubles();
-	m_p2->LoadToDoubles();
-	m_p3->LoadToDoubles();
-	m_p4->LoadToDoubles();
-}
-
-void HAngularDimension::LoadFromDoubles()
-{
-	m_p0->LoadFromDoubles();
-	m_p1->LoadFromDoubles();
-	m_p2->LoadFromDoubles();
-	m_p3->LoadFromDoubles();
-	m_p4->LoadFromDoubles();
-}
-#endif
-
 HAngularDimension* angular_dimension_for_tool = NULL;
 
 void HAngularDimension::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
@@ -346,11 +324,7 @@ void HAngularDimension::GetGripperPositions(std::list<GripData> *list, bool just
 
 bool HAngularDimension::Stretch(const double *p, const double* shift, void* data)
 {
-#ifdef MULTIPLE_OWNERS
-	ObjList::Stretch(p,shift,data);
-#else
 	HeeksObj::Stretch(p,shift,data);
-#endif
 	gp_Pnt vp = make_point(p);
 	gp_Vec vshift = make_vector(shift);
 
@@ -360,49 +334,12 @@ bool HAngularDimension::Stretch(const double *p, const double* shift, void* data
 	return false;
 }
 
-void HAngularDimension::OnEditString(const wxChar* str){
-	m_text.assign(str);
-	wxGetApp().Changed();
-}
-
-void HAngularDimension::WriteXML(TiXmlNode *root)
-{
-	TiXmlElement * element;
-	element = new TiXmlElement( "AngularDimension" );
-	root->LinkEndChild( element );
-	element->SetAttribute("text", m_text.utf8_str());
-
-	element->SetAttribute("col", m_color.COLORREF_color());
-	element->SetDoubleAttribute("scale",m_scale);
-	element->SetAttribute("textmode", m_text_mode);
-
-	WriteBaseXML(element);
-}
-
 // static
 HeeksObj* HAngularDimension::ReadFromXMLElement(TiXmlElement* pElem)
 {
-	wxString text;
-	HeeksColor c;
-	double scale=1;
-
-	AngularDimensionTextMode text_mode = StringAngularDimensionTextMode;
-
-	// get the attributes
-	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
-	{
-		std::string name(a->Name());
-		if(name == "col"){c = HeeksColor((long)(a->IntValue()));}
-		else if(name == "text"){text.assign(Ctt(a->Value()));}
-		else if(name == "scale"){scale= a->DoubleValue();}
-		else if(name == "textmode"){text_mode = (AngularDimensionTextMode)(a->IntValue());}
-	}
-
-	HAngularDimension* new_object = new HAngularDimension(text, text_mode, c);
+	HAngularDimension* new_object = new HAngularDimension();
 	new_object->ReadBaseXML(pElem);
-	new_object->m_scale = scale;
 	new_object->ReloadPointers();
-
 	return new_object;
 }
 
@@ -414,11 +351,7 @@ void HAngularDimension::ReloadPointers()
 	m_p3 = (HPoint*)GetNextChild();
 	m_p4 = (HPoint*)GetNextChild();
 
-#ifdef MULTIPLE_OWNERS
-	ObjList::ReloadPointers();
-#else
 	HeeksObj::ReloadPointers();
-#endif
 }
 
 wxString HAngularDimension::MakeText(double angle)
@@ -428,7 +361,7 @@ wxString HAngularDimension::MakeText(double angle)
 	switch(m_text_mode)
 	{
 		case StringAngularDimensionTextMode:
-			text = wxString::Format(_T("%s"), m_text.c_str());
+			text = wxString::Format(_T("%s"), ((const wxString&)m_text).c_str());
 			break;
 		case DegreesAngularDimensionTextMode:
 			text = wxString::Format(_T("%lg degrees"), angle * 180/M_PI);

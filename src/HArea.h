@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include "../interface/HeeksObj.h"
+#include "../interface/IdNamedObj.h"
 #include "../libarea/Area.h"
 
-class HArea: public HeeksObj{
+class HArea: public IdNamedObj
+{
 	static void WriteVertex(const CVertex& vertex, TiXmlNode *root);
 	static void WriteCurve(const CCurve& curve, TiXmlNode *root);
 	static void WriteArea(const CArea& area, TiXmlNode *root);
@@ -19,26 +20,28 @@ private:
 	PropertyInt m_number_curves;
 
 public:
+
+	static const int ObjType = AreaType;
+
+
 	CArea m_area;
 	CCurve* m_selected_curve;
 
-	~HArea(void);
 	HArea(const CArea &a);
 	HArea(const HArea &area);
 
+    ~HArea(void);
+
 	const HArea& operator=(const HArea &b);
 
+    // HeeksObj's virtual functions
     void InitializeProperties();
     void GetProperties(std::list<Property *> *list);
-
-	// HeeksObj's virtual functions
-	int GetType()const{return AreaType;}
 	int GetMarkingFilter()const{return AreaMarkingFilter;}
 	int GetIDGroupType()const{return SketchType;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void Draw(wxDC& dc);
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Area");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);

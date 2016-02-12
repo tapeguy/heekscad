@@ -9,31 +9,46 @@
 #include "HCircle.h"
 #include "Gripper.h"
 
-HILine::HILine(const HILine &line):EndedObject(line.m_color){
-	InitializeProperties();
-	operator=(line);
+HILine::HILine()
+ : EndedObject(ObjType)
+{
+    InitializeProperties();
 }
 
-HILine::HILine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col):EndedObject(col){
+HILine::HILine(const HILine &line)
+ : EndedObject(line)
+{
+    InitializeProperties();
+    HeeksObj::operator=(line);      // my properties only
+}
+
+HILine::HILine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col)
+: EndedObject(ObjType, col)
+{
 	InitializeProperties();
 	A->m_p = a;
 	B->m_p = b;
 }
 
-HILine::~HILine(){
+HILine::~HILine()
+{
 }
 
-const HILine& HILine::operator=(const HILine &b){
+const HILine& HILine::operator=(const HILine &b)
+{
 	EndedObject::operator=(b);
 	return *this;
 }
 
 void HILine::InitializeProperties()
 {
-        m_start.Initialize(_("start"), this);
-        m_end.Initialize(_("end"), this);
-        m_length.Initialize(_("Length"), this);
-        m_length.SetReadOnly(true);
+    m_start.Initialize(_("start"), this);
+    m_start.SetTransient(true);
+    m_end.Initialize(_("end"), this);
+    m_end.SetTransient(true);
+    m_length.Initialize(_("Length"), this);
+    m_length.SetReadOnly(true);
+    m_length.SetTransient(true);
 }
 
 const wxBitmap &HILine::GetIcon()
@@ -47,7 +62,7 @@ void HILine::glCommands(bool select, bool marked, bool no_color)
 {
 	if(!no_color)
 	{
-		wxGetApp().glColorEnsuringContrast(m_color);
+		wxGetApp().glColorEnsuringContrast(GetColor());
 		if (wxGetApp().m_allow_opengl_stippling)
 		{
 			glEnable(GL_LINE_STIPPLE);
@@ -107,7 +122,7 @@ void HILine::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	}
 }
 
-void HILine::OnPropertyEdit(Property& prop)
+void HILine::OnPropertySet(Property& prop)
 {
     if ( prop == m_start )
     {
@@ -119,7 +134,7 @@ void HILine::OnPropertyEdit(Property& prop)
     }
     else
     {
-        HeeksObj::OnPropertyEdit ( prop );
+        EndedObject::OnPropertySet ( prop );
     }
 }
 
@@ -128,7 +143,8 @@ void HILine::GetProperties(std::list<Property *> *list)
     m_start = A->m_p;
     m_end = B->m_p;
     m_length = A->m_p.Distance ( B->m_p );
-    HeeksObj::GetProperties ( list );
+
+    EndedObject::GetProperties ( list );
 }
 
 bool HILine::FindNearPoint(const double* ray_start, const double* ray_direction, double *point){
@@ -222,41 +238,10 @@ bool HILine::GetEndPoint(double* pos)
 	return true;
 }
 
-void HILine::WriteXML(TiXmlNode *root)
-{
-	TiXmlElement * element;
-	element = new TiXmlElement( "InfiniteLine" );
-	root->LinkEndChild( element );
-	element->SetAttribute("col", m_color.COLORREF_color());
-//	element->SetDoubleAttribute("sx", A->m_p.X());
-//	element->SetDoubleAttribute("sy", A->m_p.Y());
-//	element->SetDoubleAttribute("sz", A->m_p.Z());
-//	element->SetDoubleAttribute("ex", B->m_p.X());
-//	element->SetDoubleAttribute("ey", B->m_p.Y());
-//	element->SetDoubleAttribute("ez", B->m_p.Z());
-	WriteBaseXML(element);
-}
-
 // static member function
 HeeksObj* HILine::ReadFromXMLElement(TiXmlElement* pElem)
 {
-	gp_Pnt p0, p1;
-	HeeksColor c;
-
-	// get the attributes
-	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
-	{
-		std::string name(a->Name());
-		if(name == "col"){c = HeeksColor((long)(a->IntValue()));}
-		else if(name == "sx"){p0.SetX(a->DoubleValue());}
-		else if(name == "sy"){p0.SetY(a->DoubleValue());}
-		else if(name == "sz"){p0.SetZ(a->DoubleValue());}
-		else if(name == "ex"){p1.SetX(a->DoubleValue());}
-		else if(name == "ey"){p1.SetY(a->DoubleValue());}
-		else if(name == "ez"){p1.SetZ(a->DoubleValue());}
-	}
-
-	HILine* new_object = new HILine(p0, p1, c);
+	HILine* new_object = new HILine();
 	new_object->ReadBaseXML(pElem);
 
 	if(new_object->GetNumChildren()>2)

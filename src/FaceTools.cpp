@@ -6,14 +6,14 @@
 #include "FaceTools.h"
 
 static Standard_Boolean TriangleIsValid(const gp_Pnt& P1, const gp_Pnt& P2, const gp_Pnt& P3)
-{ 
+{
   gp_Vec V1(P1,P2);								// V1=(P1,P2)
   gp_Vec V2(P2,P3);								// V2=(P2,P3)
   gp_Vec V3(P3,P1);								// V3=(P3,P1)
-  
+
   if ((V1.SquareMagnitude() > 1.e-10) && (V2.SquareMagnitude() > 1.e-10) && (V3.SquareMagnitude() > 1.e-10))
     {
-      V1.Cross(V2);								// V1 = Normal	
+      V1.Cross(V2);								// V1 = Normal
       if (V1.SquareMagnitude() > 1.e-10)
 	return Standard_True;
       else
@@ -21,14 +21,14 @@ static Standard_Boolean TriangleIsValid(const gp_Pnt& P1, const gp_Pnt& P2, cons
     }
   else
     return Standard_False;
-  
+
 }
 
 
 void MeshFace(TopoDS_Face face, double pixels_per_mm)
 {
 	BRepTools::Clean(face);
-	BRepMesh::Mesh(face, 1/pixels_per_mm);
+	BRepMesh_IncrementalMesh(face, 1/pixels_per_mm);
 }
 
 void command_callback(const double* x, const double* n)
@@ -163,7 +163,7 @@ void DrawFace(TopoDS_Face face,void(*callbackfunc)(const double* x, const double
 	}
 	else
 	{
-		Poly_Connect pc(facing);	
+		Poly_Connect pc(facing);
 		const TColgp_Array1OfPnt& Nodes = facing->Nodes();
 		const Poly_Array1OfTriangle& triangles = facing->Triangles();
 		TColgp_Array1OfDir myNormal(Nodes.Lower(), Nodes.Upper());
@@ -171,14 +171,11 @@ void DrawFace(TopoDS_Face face,void(*callbackfunc)(const double* x, const double
 		SST.Normal(face, pc, myNormal);
 
 		Standard_Integer nnn = facing->NbTriangles();					// nnn : nombre de triangles
-		Standard_Integer nt, n1, n2, n3 = 0;						// nt  : triangle courant
+		Standard_Integer nt, n1, n2, n3 = 0;						    // nt  : triangle courant
 		// ni  : sommet i du triangle courant
-		for (nt = 1; nt <= nnn; nt++)					
+		for (nt = 1; nt <= nnn; nt++)
 		{
-			if (SST.Orientation(face) == TopAbs_REVERSED)			// si la face est "reversed"
-				triangles(nt).Get(n1,n3,n2);						// le triangle est n1,n3,n2
-			else 
-				triangles(nt).Get(n1,n2,n3);						// le triangle est n1,n2,n3
+			triangles(nt).Get(n1,n2,n3);						        // le triangle est n1,n2,n3
 
 			if (TriangleIsValid (Nodes(n1),Nodes(n2),Nodes(n3)) )
 			{

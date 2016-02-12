@@ -14,6 +14,9 @@ private:
 	PropertyDouble m_twist_angle;
 
 public:
+
+	static const int ObjType = CoordinateSystemType;
+
 	PropertyVertex m_o;
 	PropertyVector m_x;
 	PropertyVector m_y;
@@ -31,17 +34,12 @@ public:
 	const CoordinateSystem& operator=(const CoordinateSystem &c);
 
     void InitializeProperties();
-    void OnPropertyEdit(Property& prop);
+    void OnPropertySet(Property& prop);
 
 	// HeeksObj's virtual functions
-	int GetType()const{return CoordinateSystemType;}
 	int GetMarkingFilter()const{return CoordinateSystemMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Coordinate System");}
-	const wxChar* GetShortString(void)const{return m_title.c_str();}
-	bool CanEditString(void)const{return true;}
-	void OnEditString(const wxChar* str);
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
@@ -58,6 +56,6 @@ public:
 	static void RenderDatum(bool bright, bool solid); // render a coordinate system at 0, 0, 0
 	static void AxesToAngles(const gp_Dir &x, const gp_Dir &y, double &v_angle, double &h_angle, double &t_angle);
 	static void AnglesToAxes(const double &v_angle, const double &h_angle, const double &t_angle, gp_Dir &x, gp_Dir &y);
-	void PickFrom3Points();
-	void PickFrom1Point();
+	bool PickFrom3Points();
+	bool PickFrom1Point();
 };

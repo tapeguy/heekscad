@@ -17,30 +17,34 @@
 #include "DigitizeMode.h"
 
 HArea::HArea(const HArea &a)
- : m_number_curves(a.m_number_curves)
+ : IdNamedObj(a), m_number_curves(a.m_number_curves)
 {
 	InitializeProperties();
 	operator=(a);
 }
 
 HArea::HArea(const CArea &a)
- : m_number_curves(a.m_curves.size()), m_area(a)
+ : IdNamedObj(ObjType), m_number_curves(a.m_curves.size()), m_area(a)
 {
 	InitializeProperties();
 }
 
-HArea::~HArea(){
+HArea::~HArea()
+{
 }
 
 void HArea::InitializeProperties()
 {
 	m_number_curves.Initialize(_("number of curves"), this);
+	m_number_curves.SetReadOnly(true);
+	m_number_curves.SetTransient(true);
 }
 
 const wxBitmap &HArea::GetIcon()
 {
 	static wxBitmap* icon = NULL;
-	if(icon == NULL)icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/area.png")));
+	if(icon == NULL)
+	    icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/area.png")));
 	return *icon;
 }
 
@@ -53,7 +57,8 @@ bool HArea::IsDifferent(HeeksObj* other)
 	return this != a;
 }
 
-const HArea& HArea::operator=(const HArea &b){
+const HArea& HArea::operator=(const HArea &b)
+{
 	m_area = b.m_area;
 	return *this;
 }
@@ -94,7 +99,7 @@ public:
 				CArea area = object_for_tool->m_area;
 				area.Offset(-offset_value);
 				HeeksObj* new_object = new HArea(area);
-				object_for_tool->Owner()->Add(new_object, NULL);
+				object_for_tool->GetOwner()->Add(new_object);
 				config.Write(_T("OffsetAreaValue"), offset_value);
 			}
 			catch (...) {
@@ -122,7 +127,7 @@ public:
 				CArea area = object_for_tool->m_area;
 				area.Thicken(fabs(offset_value));
 				HeeksObj* new_object = new HArea(area);
-				object_for_tool->Owner()->Add(new_object, NULL);
+				object_for_tool->GetOwner()->Add(new_object);
 				config.Write(_T("ObroundAreaValue"), fabs(offset_value));
 			}
 			catch (...) {

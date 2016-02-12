@@ -7,7 +7,9 @@
 #include "Face.h"
 #include "Edge.h"
 
-CLoop::CLoop(const TopoDS_Wire &wire) {
+CLoop::CLoop(const TopoDS_Wire &wire)
+ : HeeksObj(ObjType)
+{
 	m_topods_wire = wire;
 	m_pface = NULL;
 	m_is_outer = false;

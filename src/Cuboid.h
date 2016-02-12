@@ -7,7 +7,8 @@
 #include "Solid.h"
 
 
-class CCuboid: public CSolid{
+class CCuboid: public CSolid
+{
 protected:
 	// CShape's virtual functions
 	void MakeTransformedShape(const gp_Trsf &mat);
@@ -33,7 +34,7 @@ public:
 	void GetProperties(std::list<Property *> *list);
 	//ObjectCanvas* GetDialog(wxWindow* parent);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property& prop);
+	void OnPropertySet(Property& prop);
 	bool GetScaleAboutMatrix(double *m);
 	bool Stretch(const double *p, const double* shift, void* data);
 	bool DescendForUndo(){return false;}

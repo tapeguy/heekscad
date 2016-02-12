@@ -10,8 +10,13 @@
 class CFace;
 class CEdge;
 
-class CLoop : public HeeksObj{
+class CLoop : public HeeksObj
+{
 public:
+
+    static const int ObjType = LoopType;
+
+
 	TopoDS_Wire m_topods_wire;
 	CFace* m_pface;
 	std::list<CEdge*> m_edges;

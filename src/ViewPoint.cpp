@@ -196,7 +196,7 @@ void CViewPoint::Scale(const wxPoint &point, bool reversed){
 	if(increasing)multiplier = 1/multiplier;
 	if(multiplier< 0.1)multiplier = 0.1;
 	Scale(multiplier, true);
-}	
+}
 
 void CViewPoint::Twist(double angle){
 	gp_Vec f = m_target_point.XYZ() - m_lens_point.XYZ();
@@ -311,12 +311,12 @@ void CViewPoint::SetViewport(void)const{
 	glViewport(0, 0, size.GetWidth(), size.GetHeight());
 }
 
-void CViewPoint::SetView(const gp_Vec &unity, const gp_Vec &unitz){
+void CViewPoint::SetView(const gp_Vec &unity, const gp_Vec &unitz, int margin){
 	m_target_point = gp_Pnt(0, 0, 0);
 	m_lens_point = m_target_point.XYZ() + unitz.XYZ();
 	m_vertical = unity;
 	m_pixel_scale = 10;
-	SetViewAroundAllObjects();
+	SetViewAroundAllObjects(margin);
 }
 
 gp_Pnt CViewPoint::glUnproject(const gp_Pnt &v)const{
@@ -339,7 +339,7 @@ void CViewPoint::SetPolygonOffset(void)const{
 	glPolygonOffset(1.0, 1.0);
 }
 
-void CViewPoint::SetViewAroundAllObjects(){
+void CViewPoint::SetViewAroundAllObjects(int margin){
 	CBox box;
 
 	wxGetApp().GetBox(box);
@@ -372,8 +372,8 @@ void CViewPoint::SetViewAroundAllObjects(){
 	m_lens_point = m_target_point.XYZ() - (uf.XYZ() * m);
 	double Width = window.Width();
 	double Height = window.Height();
-	double pw = width - 6;
-	double ph = height - 6;
+	double pw = width - margin;
+	double ph = height - margin;
 	if(Width<0.00001)Width = 0.00001;
 	if(Height<0.00001)Height = 0.00001;
 	if(pw<0.00001)pw = 0.00001;
@@ -486,7 +486,7 @@ int CViewPoint::GetTwoAxes(gp_Vec& vx, gp_Vec& vy, bool flattened_onto_screen, i
 	{
 		vx = -vx;
 	}
-	
+
 	if(flattened_onto_screen){
 		gp_Vec f = forwards_vector().Normalized();
 		vx = gp_Vec(vx.XYZ() - (f * (f * vx)).XYZ()).Normalized();
@@ -508,7 +508,7 @@ void CViewPoint::Set90PlaneDrawMatrix(gp_Trsf &mat)const{
 	case 1:
 		mat = make_matrix(gp_Pnt(0, 0, 0).Transformed(mat), gp_Vec(1, 0, 0).Transformed(mat), gp_Vec(0, 0, 1).Transformed(mat));
 		break;
-		
+
 	case 2:
 		mat = make_matrix(gp_Pnt(0, 0, 0).Transformed(mat), gp_Vec(0, 1, 0).Transformed(mat), gp_Vec(0, 0, 1).Transformed(mat));
 		break;

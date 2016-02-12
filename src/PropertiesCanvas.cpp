@@ -3,8 +3,8 @@
 // This program is released under the BSD license. See the file COPYING for details.
 #include "stdafx.h"
 #include "PropertiesCanvas.h"
+#include "PropertyChange.h"
 #include "../interface/MarkedObject.h"
-#include "../interface/Property.h"
 #include "../interface/PropertyList.h"
 #include "wx/propgrid/propgrid.h"
 #include "wx/propgrid/advprops.h"
@@ -73,9 +73,22 @@ void CPropertiesCanvas::RemoveProperty(Property* property)
 		{
 			m_pg->DeleteProperty((wxPGProperty*)It->first);
 			pmap.erase(It);
-			return;
+			//  don't return, remove all instances.
 		}
 	}
+}
+
+void CPropertiesCanvas::ReplaceProperty(Property* property)
+{
+    for(std::map<wxPGProperty*, Property*>::iterator It = pmap.begin(); It != pmap.end(); It++)
+    {
+        Property* cursor = It->second;
+        if(property->GetName() == cursor->GetName())
+        {
+            pmap[It->first] = property;
+            //  don't return, replace all instances.
+        }
+    }
 }
 
 void CPropertiesCanvas::Append(wxPGProperty* parent_prop, wxPGProperty* new_prop, Property* property)
@@ -86,42 +99,56 @@ void CPropertiesCanvas::Append(wxPGProperty* parent_prop, wxPGProperty* new_prop
 	else {
 		m_pg->AppendIn(m_pg->GetRoot(), new_prop);
 	}
-
-	pmap.insert(std::pair<wxPGProperty*, Property*>( new_prop, property));
+	pmap.insert(std::pair<wxPGProperty*, Property*>(new_prop, property));
 }
 
 void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 {
-	if (!p->IsVisible()) {
+
+	if (!p->IsVisible() || p->GetName().IsEmpty()) {
 		return;
 	}
 
-	switch(p->GetPropertyType()){
+	switch(p->GetPropertyType()) {
 	case PropertyStringType:
 		{
 			wxPGProperty *new_prop = new wxStringProperty(p->GetShortString(),wxPG_LABEL, *(PropertyString*)p);
 			if(p->IsReadOnly()) {
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
-			Append( parent_prop, new_prop, p);
+			Append(parent_prop, new_prop, p);
             if(p->IsHighlighted()) {
                 m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
             }
 		}
 		break;
 	case PropertyDoubleType:
-	case PropertyLengthType:
 		{
-			wxPGProperty *new_prop = new wxFloatProperty(p->GetShortString(),wxPG_LABEL, *(PropertyDouble*)p);
+		    wxPGProperty *new_prop = new wxFloatProperty(p->GetShortString(), wxPG_LABEL, *(PropertyDouble*)p);
+
 			if(p->IsReadOnly()) {
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
-			Append( parent_prop, new_prop, p);
+			Append(parent_prop, new_prop, p);
 			if(p->IsHighlighted()) {
 				m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
 			}
 		}
 		break;
+    case PropertyLengthType:
+        {
+            PropertyLength * length = (PropertyLength*)p;
+            wxPGProperty *new_prop = new wxFloatProperty(p->GetShortString(),wxPG_LABEL, length->GetActualValue());
+            new_prop->SetAttribute(wxPG_ATTR_UNITS, GetShortString(length->GetUnits()));
+            if(p->IsReadOnly()) {
+                new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
+            }
+            Append(parent_prop, new_prop, p);
+            if(p->IsHighlighted()) {
+                m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
+            }
+        }
+        break;
 	case PropertyIntType:
 		{
 			wxPGProperty *new_prop = new wxIntProperty(p->GetShortString(),wxPG_LABEL, *(PropertyInt*)p);
@@ -142,7 +169,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			if(p->IsReadOnly()) {
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
-			Append( parent_prop, new_prop, p);
+			Append(parent_prop, new_prop, p);
 			if(p->IsHighlighted()) {
 				m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
 			}
@@ -163,34 +190,36 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			if(p->IsReadOnly()) {
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
-			Append( parent_prop, new_prop, p );
+			Append(parent_prop, new_prop, p);
 			if(p->IsHighlighted()) {
 				m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
 			}
 		}
 		break;
+	case PropertyVertex2dType:
 	case PropertyVertexType:
 		{
 			wxPGProperty* new_prop = new wxPropertyCategory(p->GetShortString(),wxPG_LABEL);
 			PropertyVertex* vertex = (PropertyVertex*)p;
-			Append( parent_prop, new_prop, p );
+			Append(parent_prop, new_prop, p);
 			unsigned int number_of_axes = vertex->xyOnly() ? 2 : 3;
 
-			wxPGProperty* x_prop = new wxFloatProperty(_("x"), p->GetShortString() + _(".x"), vertex->X());
+			wxPGProperty* x_prop = new wxFloatProperty(_("x"), p->GetShortString() + _(".x"), vertex->XProp().GetActualValue());
+			x_prop->SetAttribute(wxPG_ATTR_UNITS, GetShortString(vertex->XProp().GetUnits()));
 			if(p->IsReadOnly()) {
 				x_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
 			Append( new_prop, x_prop, p );
-
-			wxPGProperty* y_prop = new wxFloatProperty(_("y"), p->GetShortString() + _(".y"), vertex->Y());
+			wxPGProperty* y_prop = new wxFloatProperty(_("y"), p->GetShortString() + _(".y"), vertex->YProp().GetActualValue());
+			y_prop->SetAttribute(wxPG_ATTR_UNITS, GetShortString(vertex->YProp().GetUnits()));
 			if(p->IsReadOnly()) {
 				y_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
 			Append( new_prop, y_prop, p );
-
 			if(number_of_axes == 3)
 			{
-				wxPGProperty* z_prop = new wxFloatProperty(_("z"), p->GetShortString() + _(".z"), vertex->Z());
+				wxPGProperty* z_prop = new wxFloatProperty(_("z"), p->GetShortString() + _(".z"), vertex->ZProp().GetActualValue());
+				z_prop->SetAttribute(wxPG_ATTR_UNITS, GetShortString(vertex->ZProp().GetUnits()));
 				if(p->IsReadOnly()) {
 					z_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 				}
@@ -254,7 +283,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			if(p->IsReadOnly()) {
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
-			Append( parent_prop, new_prop, p );
+			Append(parent_prop, new_prop, p);
 			std::list< Property* > proplist = *(PropertyList *)p;
 			std::list< Property* >::iterator It;
 			for(It = proplist.begin(); It != proplist.end(); It++){
@@ -269,7 +298,7 @@ void CPropertiesCanvas::AddProperty(Property* p, wxPGProperty* parent_prop)
 			if(p->IsReadOnly()) {
 				new_prop->ChangeFlag(wxPG_PROP_READONLY, true);
 			}
-			Append( parent_prop, new_prop, p);
+			Append(parent_prop, new_prop, p);
 			if(p->IsHighlighted()) {
 				m_pg->SetPropertyBackgroundColour(new_prop, wxColour(71, 141, 248), false);
 			}
@@ -282,7 +311,8 @@ Property* CPropertiesCanvas::GetProperty(wxPGProperty* p)
 {
 	std::map<wxPGProperty*, Property*>::iterator FindIt;
 	FindIt = pmap.find(p);
-	if(FindIt == pmap.end())return NULL;
+	if(FindIt == pmap.end())
+	    return NULL;
 	return FindIt->second;
 }
 
@@ -293,7 +323,8 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 	if(property == NULL)
 	    return;
 
-	wxGetApp().CreateUndoPoint();
+    PropertyChange * changer  = new PropertyChange ( property );
+
 	switch(property->GetPropertyType()) {
 	case PropertyStringType:
 		((PropertyString*)property)->SetValue ( event.GetPropertyValue().GetString() );
@@ -302,7 +333,7 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 		((PropertyDouble*)property)->SetValue ( event.GetPropertyValue().GetDouble() );
 		break;
 	case PropertyLengthType:
-		((PropertyLength*)property)->SetValue ( event.GetPropertyValue().GetDouble() );
+		((PropertyLength*)property)->SetActualValue ( event.GetPropertyValue().GetDouble() );
 		break;
 	case PropertyIntType:
 		((PropertyInt*)property)->SetValue ( event.GetPropertyValue().GetLong() );
@@ -318,13 +349,13 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 	case PropertyVertexType:
 		{
 			if(p->GetLabel()[0] == 'x'){
-				((PropertyVertex*)property)->SetX( event.GetPropertyValue().GetLong() );
+				((PropertyVertex*)property)->SetActualX ( event.GetPropertyValue().GetDouble() );
 			}
 			else if(p->GetLabel()[0] == 'y'){
-				((PropertyVertex*)property)->SetY( event.GetPropertyValue().GetLong() );
+				((PropertyVertex*)property)->SetActualY ( event.GetPropertyValue().GetDouble() );
 			}
 			else if(p->GetLabel()[0] == 'z'){
-				((PropertyVertex*)property)->SetZ( event.GetPropertyValue().GetLong() );
+				((PropertyVertex*)property)->SetActualZ ( event.GetPropertyValue().GetDouble() );
 			}
 		}
 		break;
@@ -380,10 +411,13 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 		((PropertyFile*)property)->SetValue ( event.GetPropertyValue().GetString() );
 		break;
 	}
-    property->CallEditFunction();
-	wxGetApp().Changed();
-	wxGetApp().Repaint();
+
+    wxGetApp().StartHistory();
+    wxGetApp().DoUndoable(changer);
+    wxGetApp().EndHistory();
+    wxGetApp().Repaint();
 }
+
 
 void CPropertiesCanvas::DeselectProperties()
 {
@@ -400,6 +434,78 @@ void CPropertiesCanvas::RefreshProperties()
 	{
 		RefreshProperties2();
 	}
+}
+
+void CPropertiesCanvas::RecursiveMerge(std::set<Property *>& prop_set, Property * property)
+{
+    bool found_prop = false;
+
+    for(std::set<Property*>::iterator It = prop_set.begin(); It != prop_set.end(); It++)
+    {
+        Property *cursor = *It;
+        if(cursor == property)
+        {
+            found_prop = true;
+            break;
+        }
+        else if (cursor->GetName() == property->GetName())
+        {
+            found_prop = true;
+//            printf("(Merge)Replacing property: 0x%lx, %s\n", property, (const char *)property->GetName().c_str());
+            ReplaceProperty(property);
+            break;
+        }
+    }
+    if(found_prop)
+    {
+        // Already exists, remove it from the to-be-deleted list
+//        printf("(Merge)Desired property: 0x%lx, %s\n", property, (const char *)property->GetName().c_str());
+        prop_set.erase(property);
+        if (property->GetPropertyType() == PropertyListType)
+        {
+            PropertyList * prop_list = (PropertyList *)property;
+            DomainObjectIterator It;
+            for (It = prop_list->begin(); It != prop_list->end(); It++)
+            {
+                // Recurse
+                RecursiveMerge(prop_set, *It);
+            }
+        }
+    }
+    else
+    {
+        // Didn't find desired property in the current list, add it
+        AddProperty((Property *)property);
+    }
+}
+
+void CPropertiesCanvas::RefreshByMerging(std::list<Property *>& desired_list)
+{
+    Property * property;
+
+    // build a set of the current properties
+    std::set<Property *> current_set;
+    for(std::map<wxPGProperty*, Property*>::iterator It = pmap.begin(); It != pmap.end(); It++)
+    {
+        property = It->second;
+//        printf ("Current property: 0x%lx, %s\n", property, (const char *)property->GetName().c_str());
+        current_set.insert(property);
+    }
+
+    for(std::list<Property *>::iterator It = desired_list.begin(); It != desired_list.end(); It++)
+    {
+        property = *It;
+//        printf ("Desired property: 0x%lx, %s\n", property, (const char *)property->GetName().c_str());
+        RecursiveMerge(current_set, property);
+    }
+
+    // Anything left in the current set is to be removed
+    for(std::set<Property*>::iterator It = current_set.begin(); It != current_set.end(); It++)
+    {
+        Property* property = *It;
+//        printf ("Removing property: 0x%lx, %s\n", property, (const char *)property->GetName().c_str());
+        RemoveProperty(property);
+    }
 }
 
 void CPropertiesCanvas::Freeze()

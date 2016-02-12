@@ -27,7 +27,6 @@ wxCursor LineArcDrawing::m_cursor_end;
 
 LineArcDrawing::LineArcDrawing(void){
 	InitializeProperties();
-	temp_object = NULL;
 	m_previous_direction_set = false;
 	m_previous_direction = gp_Vec(1, 0, 0);
 	drawing_mode = LineDrawingMode;
@@ -51,20 +50,40 @@ void LineArcDrawing::InitializeProperties()
 
 	arc_mode.Initialize ( _("(press 'a' for arcs)"), this );
 	arc_mode.SetReadOnly(true);
-	arc_mode.SetVisible ( drawing_mode == ArcDrawingMode );
 
 	circle_mode.Initialize ( _("circle mode"), this );
 	circle_mode.m_choices.push_back ( wxString ( _("centre and point") ) );
 	circle_mode.m_choices.push_back ( wxString ( _("three points") ) );
 	circle_mode.m_choices.push_back ( wxString ( _("two points") ) );
 	circle_mode.m_choices.push_back ( wxString ( _("centre and radius") ) );
-	circle_mode.SetVisible ( drawing_mode == CircleDrawingMode );
 
 	radius_for_circle.Initialize ( _("radius"), this );
 	radius_for_circle.SetVisible ( drawing_mode == CircleDrawingMode );
 }
 
-class SetPreviousDirection:public Tool{
+void LineArcDrawing::OnPropertyEdit(Property& prop)
+{
+    if (prop == drawing_mode) {
+        m_save_drawing_mode.clear();
+    }
+    else if (prop == radius_for_circle) {
+        HeeksConfig& config = wxGetApp().GetConfig();
+        config.Write(_T("RadiusForCircle"), radius_for_circle);
+    }
+    else {
+        Drawing::OnPropertyEdit(prop);
+    }
+}
+
+void LineArcDrawing::GetProperties(std::list<Property *> *list)
+{
+    arc_mode.SetVisible ( drawing_mode == ArcDrawingMode );
+    circle_mode.SetVisible ( drawing_mode == CircleDrawingMode );
+    radius_for_circle.SetVisible ( drawing_mode == CircleDrawingMode );
+    Drawing::GetProperties(list);
+}
+
+class SetPreviousDirection:public Undoable {
 private:
 	LineArcDrawing *drawing;
 	gp_Vec old_direction;
@@ -82,37 +101,33 @@ public:
 
 	// Tool's virtual functions
 	const wxChar* GetTitle(){return _("set previous direction");}
-	void Run()
+	void Run(bool redo)
 	{
 		drawing->m_previous_direction = new_direction;
 		drawing->m_previous_direction_set = true;
-		wxGetApp().Changed();
 	}
 	void RollBack()
 	{
 		if(old_previous_direction_set)drawing->m_previous_direction = old_direction;
 		drawing->m_previous_direction_set = old_previous_direction_set;
 	}
-	bool Undoable(){return true;}
 };
 
 void LineArcDrawing::set_previous_direction(){
-	if(temp_object == NULL)return;
+    if(PrevObject() == NULL)return;
 
-	if(temp_object->GetType() == LineType){
-		double s[3], e[3];
-		if(temp_object->GetStartPoint(s) && temp_object->GetEndPoint(e))
-		{
-			SetPreviousDirection spd(this, make_vector(make_point(s), make_point(e)));
-			spd.Run();
-		}
-	}
-	else if(temp_object->GetType() == ArcType){
-		gp_Vec circlev(((HArc*)temp_object)->m_axis.Direction());
-		gp_Vec endv(((HArc*)temp_object)->C->m_p, ((HArc*)temp_object)->B->m_p);
-		SetPreviousDirection spd(this, (circlev ^ endv).Normalized());
-		spd.Run();
-	}
+    if(PrevObject()->GetType() == LineType){
+        double s[3], e[3];
+        if(PrevObject()->GetStartPoint(s) && PrevObject()->GetEndPoint(e))
+        {
+            wxGetApp().DoUndoable(new SetPreviousDirection(this, make_vector(make_point(s), make_point(e))));
+        }
+    }
+    else if(PrevObject()->GetType() == ArcType){
+        gp_Vec circlev(((HArc*)PrevObject())->Direction());
+        gp_Vec endv(((HArc*)PrevObject())->C->m_p, ((HArc*)PrevObject())->B->m_p);
+        wxGetApp().DoUndoable(new SetPreviousDirection(this, (circlev ^ endv).Normalized()));
+    }
 }
 
 int LineArcDrawing::number_of_steps()
@@ -212,25 +227,6 @@ void LineArcDrawing::AddPoint()
 	switch(drawing_mode)
 	{
 	case CircleDrawingMode:
-		{
-#if 0
-			// kill focus on control being typed into
-			wxGetApp().m_frame->m_input_canvas->DeselectProperties();
-			wxGetApp().ProcessPendingEvents();
-
-			// add a circle
-			HCircle* new_object = new HCircle(gp_Circ(gp_Ax2(wxGetApp().m_digitizing->digitized_point.m_point, gp_Dir(0, 0, 1)), radius_for_circle), wxGetApp().ConstructionColor());
-			wxGetApp().AddUndoably(new_object, GetOwnerForDrawingObjects(), NULL);
-			std::list<HeeksObj*> list;
-			list.push_back(new_object);
-			wxGetApp().m_current_viewport->DrawObjectsOnFront(list, true);
-			m_getting_position = false;
-			m_inhibit_coordinate_change = false;
-#endif
-		Drawing::AddPoint();
-		}
-		break;
-
 	case EllipseDrawingMode:
 		Drawing::AddPoint();
 		break;
@@ -242,15 +238,14 @@ void LineArcDrawing::AddPoint()
 			// this only happens if we are drawing tangents to other objects
 			// really need to fill the gap with whatever we are tangent around
 			// ellipse,arc,spline or whatever
-			if(temp_object && prev_object_in_list.size() > 0)
+		    if(TempObject() && PrevObject())
 			{
-				HeeksObj* prev_object = prev_object_in_list.front();
-				if(prev_object)
+		        if(PrevObject())
 				{
 					double spos[3];
 					double epos[3];
-					temp_object->GetStartPoint(spos);
-					prev_object->GetEndPoint(epos);
+					TempObject()->GetStartPoint(spos);
+					PrevObject()->GetEndPoint(epos);
 					HeeksObj* tanobject = GetStartPos().m_object1;
 					if(current_view_stuff->start_pos.m_type == DigitizeTangentType && tanobject)
 					switch(tanobject->GetType())
@@ -263,7 +258,7 @@ void LineArcDrawing::AddPoint()
 								HArc* arc = new HArc(*(HArc*)tanobject);
 								arc->A->m_p = make_point(spos);
 								arc->B->m_p = make_point(epos);
-								temp_object_in_list.push_back(arc);
+								AddToTempObjects(arc);
 							}
 							break;
 						case CircleType:
@@ -271,7 +266,7 @@ void LineArcDrawing::AddPoint()
 								HArc* arc = new HArc(make_point(spos),make_point(epos),((HCircle*)tanobject)->GetCircle(),wxGetApp().CurrentColor());
 								arc->A->m_p = make_point(spos);
 								arc->B->m_p = make_point(epos);
-								temp_object_in_list.push_back(arc);
+								AddToTempObjects(arc);
 							}
 							break;
 						}
@@ -296,228 +291,207 @@ bool LineArcDrawing::calculate_item(DigitizedPoint &end){
 
 	switch(drawing_mode)
 	{
-	case LineDrawingMode:
-		{
-			if(temp_object && temp_object->GetType() != LineType){
-				delete temp_object;
-				temp_object = NULL;
-				temp_object_in_list.clear();
-			}
-			gp_Pnt p1, p2;
-			DigitizedPoint::GetLinePoints(GetStartPos(), end, p1, p2);
-			if(p1.IsEqual(p2, wxGetApp().m_geom_tol))return false;
-			end.m_point = p2;
-			if(!temp_object){
-				temp_object = new HLine(p1, p2, wxGetApp().CurrentColor());
-				if(temp_object)temp_object_in_list.push_back(temp_object);
-			}
-			else{
-				((HLine*)temp_object)->A->m_p = p1;
-				((HLine*)temp_object)->B->m_p = p2;
-			}
-		}
-		return true;
+    case LineDrawingMode:
+        {
+            if(TempObject() && TempObject()->GetType() != LineType){
+                ClearObjectsMade();
+            }
+            gp_Pnt p1, p2;
+            DigitizedPoint::GetLinePoints(GetStartPos(), end, p1, p2);
+            if(p1.IsEqual(p2, wxGetApp().m_geom_tol))return false;
+            end.m_point = p2;
+            if(TempObject() == NULL){
+                AddToTempObjects(new HLine(p1, p2, wxGetApp().CurrentColor()));
+            }
+            else{
+                ((HLine*)TempObject())->A->m_p = p1;
+                ((HLine*)TempObject())->B->m_p = p2;
+            }
+        }
+        return true;
 
 	case ArcDrawingMode:
 		{
-			// tangential arcs
-			if(temp_object && temp_object->GetType() != ArcType){
-				delete temp_object;
-				temp_object = NULL;
-				temp_object_in_list.clear();
-			}
+            // tangential arcs
+            if(TempObject() && TempObject()->GetType() != ArcType){
+                ClearObjectsMade();
+            }
 
-			gp_Pnt centre;
-			gp_Dir axis;
-			gp_Pnt p1, p2;
-			bool arc_found = DigitizedPoint::GetArcPoints(GetStartPos(), m_previous_direction_set ? (&m_previous_direction) : NULL, end, p1, p2, centre, axis);
-			if(p1.IsEqual(p2, wxGetApp().m_geom_tol))return false;
+            gp_Pnt centre;
+            gp_Dir axis;
+            gp_Pnt p1, p2;
+            bool arc_found = DigitizedPoint::GetArcPoints(GetStartPos(), m_previous_direction_set ? (&m_previous_direction) : NULL, end, p1, p2, centre, axis);
+            if(p1.IsEqual(p2, wxGetApp().m_geom_tol))return false;
 
 			if(arc_found)
 			{
-				if(HArc::TangentialArc(p1, m_previous_direction, p2, centre, axis))
-				{
-					// arc
-					gp_Circ circle(gp_Ax2(centre, axis), centre.Distance(p1));
+                if(HArc::TangentialArc(p1, m_previous_direction, p2, centre, axis))
+                {
+                    // arc
+                    gp_Circ circle(gp_Ax2(centre, axis), centre.Distance(p1));
 
-					if(!temp_object){
-						temp_object = new HArc(p1, p2, circle, wxGetApp().CurrentColor());
-						if(temp_object)temp_object_in_list.push_back(temp_object);
-					}
-					else{
-						((HArc*)temp_object)->SetCircle(circle);
-						((HArc*)temp_object)->A->m_p = p1;
-						((HArc*)temp_object)->B->m_p = p2;
-					}
-				}
+                    if(TempObject() == NULL){
+                        AddToTempObjects(new HArc(p1, p2, circle, wxGetApp().CurrentColor()));
+                    }
+                    else{
+                        ((HArc*)TempObject())->SetCircle(circle);
+                        ((HArc*)TempObject())->A->m_p = p1;
+                        ((HArc*)TempObject())->B->m_p = p2;
+                    }
+                }
 				else
 				{
-					// line
-					if(temp_object && temp_object->GetType() != LineType){
-						delete temp_object;
-						temp_object = NULL;
-						temp_object_in_list.clear();
-					}
-					if(!temp_object){
-						temp_object = new HLine(p1, p2, wxGetApp().CurrentColor());
-						if(temp_object)temp_object_in_list.push_back(temp_object);
-					}
-					else{
-						((HLine*)temp_object)->A->m_p = p1;
-						((HLine*)temp_object)->B->m_p = p2;
-					}
+                    // line
+                    if(TempObject() && TempObject()->GetType() != LineType){
+                        ClearObjectsMade();
+                    }
+                    if(TempObject()==NULL){
+                        AddToTempObjects(new HLine(p1, p2, wxGetApp().CurrentColor()));
+                    }
+                    else{
+                        ((HLine*)TempObject())->A->m_p = p1;
+                        ((HLine*)TempObject())->B->m_p = p2;
+                    }
 				}
 			}
 		}
 		return true;
 
-	case ILineDrawingMode:
-		{
-			if(temp_object && temp_object->GetType() != ILineType){
-				delete temp_object;
-				temp_object = NULL;
-				temp_object_in_list.clear();
-			}
-			gp_Pnt p1, p2;
-			DigitizedPoint::GetLinePoints(GetStartPos(), end, p1, p2);
-			if(p1.IsEqual(p2, wxGetApp().m_geom_tol))return false;
-			if(!temp_object){
-				temp_object = new HILine(p1, p2, wxGetApp().ConstructionColor());
-				if(temp_object)temp_object_in_list.push_back(temp_object);
-			}
-			else{
-				((HILine*)temp_object)->A->m_p = p1;
-				((HILine*)temp_object)->B->m_p = p2;
-			}
-		}
-		return true;
+    case ILineDrawingMode:
+        {
+            if(TempObject() && TempObject()->GetType() != ILineType){
+                ClearObjectsMade();
+            }
+            gp_Pnt p1, p2;
+            DigitizedPoint::GetLinePoints(GetStartPos(), end, p1, p2);
+            if(p1.IsEqual(p2, wxGetApp().m_geom_tol))return false;
+            if(TempObject() == NULL){
+                AddToTempObjects(new HILine(p1, p2, wxGetApp().CurrentColor()));
+            }
+            else{
+                ((HILine*)TempObject())->A->m_p = p1;
+                ((HILine*)TempObject())->B->m_p = p2;
+            }
+        }
+        return true;
 
-	case EllipseDrawingMode:
-		if(temp_object && temp_object->GetType() != EllipseType){
-			delete temp_object;
-			temp_object = NULL;
-			temp_object_in_list.clear();
-		}
+    case EllipseDrawingMode:
+        if(TempObject() && TempObject()->GetType() != EllipseType){
+            ClearObjectsMade();
+        }
 
-		if(!temp_object)
-		{
-			gp_Elips elip;
-			DigitizedPoint::GetEllipse(GetBeforeStartPos(), GetStartPos(), end,elip);
+        if(TempObject() == NULL)
+        {
+            gp_Elips elip;
+            DigitizedPoint::GetEllipse(GetBeforeStartPos(), GetStartPos(), end,elip);
 
-			temp_object = new HEllipse(elip, wxGetApp().ConstructionColor());
-			if(temp_object)temp_object_in_list.push_back(temp_object);
+            AddToTempObjects(new HEllipse(elip, wxGetApp().CurrentColor()));
 
-		}
-		else
-		{
-			gp_Elips elip;
-			DigitizedPoint::GetEllipse(GetBeforeStartPos(), GetStartPos(), end,elip);
-			((HEllipse*)temp_object)->SetEllipse(elip);
-		}
-		return true;
+        }
+        else
+        {
+            gp_Elips elip;
+            DigitizedPoint::GetEllipse(GetBeforeStartPos(), GetStartPos(), end,elip);
+            ((HEllipse*)TempObject())->SetEllipse(elip);
+        }
+        return true;
 
-	case SplineDrawingMode:
-		{
-			if(temp_object && temp_object->GetType() != SplineType){
-				delete temp_object;
-				temp_object = NULL;
-				temp_object_in_list.clear();
-			}
+    case SplineDrawingMode:
+        {
+            if(TempObject() && TempObject()->GetType() != SplineType){
+                ClearObjectsMade();
+            }
 
-			Handle_Geom_BSplineCurve spline;
-			switch(spline_mode)
-			{
-				case CubicSplineMode:
-					DigitizedPoint::GetCubicSpline(GetBeforeBeforeStartPos(), GetBeforeStartPos(), GetStartPos(), end, spline);
-					break;
-				case QuarticSplineMode:
-					DigitizedPoint::GetQuarticSpline(GetBeforeStartPos(), GetStartPos(), end, spline);
-					break;
-				case RationalSplineMode:
-					DigitizedPoint::GetRationalSpline(spline_points, end, spline);
-					break;
-			}
+            Handle_Geom_BSplineCurve spline;
+            switch(spline_mode)
+            {
+                case CubicSplineMode:
+                    DigitizedPoint::GetCubicSpline(GetBeforeBeforeStartPos(), GetBeforeStartPos(), GetStartPos(), end, spline);
+                    break;
+                case QuarticSplineMode:
+                    DigitizedPoint::GetQuarticSpline(GetBeforeStartPos(), GetStartPos(), end, spline);
+                    break;
+                case RationalSplineMode:
+                    DigitizedPoint::GetRationalSpline(spline_points, end, spline);
+                    break;
+            }
 
-			if(!temp_object){
-				temp_object = new HSpline(spline, wxGetApp().ConstructionColor());
-				if(temp_object)temp_object_in_list.push_back(temp_object);
-			}
-			else{
-				((HSpline*)temp_object)->m_spline = spline;
-			}
+            if(TempObject() == NULL){
+                AddToTempObjects(new HSpline(spline, wxGetApp().CurrentColor()));
+            }
+            else{
+                ((HSpline*)TempObject())->m_spline = spline;
+            }
 
-			return true;
-		}
+            return true;
+        }
+
 	case CircleDrawingMode:
 		{
-			if(temp_object && temp_object->GetType() != CircleType){
-				delete temp_object;
-				temp_object = NULL;
-				temp_object_in_list.clear();
-			}
+            if(TempObject() && TempObject()->GetType() != CircleType){
+                ClearObjectsMade();
+            }
 
-			switch(circle_mode)
-			{
-			case CentreAndPointCircleMode:
-				{
-					gp_Pnt p1, p2, centre;
-					gp_Dir axis;
-					DigitizedPoint::GetArcPoints(GetStartPos(), NULL, end, p1, p2, centre, axis);
-					radius_for_circle = p1.Distance(p2);
+            switch(circle_mode)
+            {
+            case CentreAndPointCircleMode:
+                {
+                    gp_Pnt p1, p2, centre;
+                    gp_Dir axis;
+                    DigitizedPoint::GetArcPoints(GetStartPos(), NULL, end, p1, p2, centre, axis);
+                    radius_for_circle = p1.Distance(p2);
 
-					if(!temp_object){
-						temp_object = new HCircle(gp_Circ(gp_Ax2(p1, gp_Dir(0, 0, 1)), radius_for_circle), wxGetApp().ConstructionColor());
-						if(temp_object)temp_object_in_list.push_back(temp_object);
-					}
-					else{
-						((HCircle*)temp_object)->C->m_p = p1;
-						((HCircle*)temp_object)->m_radius = radius_for_circle;
-					}
-				}
-				return true;
+                    if(TempObject() == NULL){
+                        AddToTempObjects(new HCircle(gp_Circ(gp_Ax2(p1, gp_Dir(0, 0, 1)), radius_for_circle), wxGetApp().CurrentColor()));
+                    }
+                    else{
+                        ((HCircle*)TempObject())->m_axis.SetLocation(p1);
+                        ((HCircle*)TempObject())->m_radius = radius_for_circle;
+                    }
+                }
+                return true;
 
-			case ThreePointsCircleMode:
-				{
-					gp_Circ c;
-					if(DigitizedPoint::GetTangentCircle(GetBeforeStartPos(), GetStartPos(), end, c))
-					{
-						if(!temp_object){
-							temp_object = new HCircle(c, wxGetApp().ConstructionColor());
-							if(temp_object)temp_object_in_list.push_back(temp_object);
-						}
-						else{
-							((HCircle*)temp_object)->SetCircle(c);
-						}
-					}
-				}
-				return true;
-			case TwoPointsCircleMode:
-				{
-					gp_Circ c;
-					if(DigitizedPoint::GetCircleBetween(GetStartPos(), end, c))
-					{
-						if(!temp_object){
-							temp_object = new HCircle(c, wxGetApp().ConstructionColor());
-							if(temp_object)temp_object_in_list.push_back(temp_object);
-						}
-						else{
-							((HCircle*)temp_object)->SetCircle(c);
-						}
-					}
-				}
-				return true;
-			case CentreAndRadiusCircleMode:
-				{
-					if(!temp_object){
-						temp_object = new HCircle(gp_Circ(gp_Ax2(end.m_point, gp_Dir(0, 0, 1)), radius_for_circle), wxGetApp().ConstructionColor());
-						if(temp_object)temp_object_in_list.push_back(temp_object);
-					}
-					else{
-						((HCircle*)temp_object)->C->m_p = end.m_point;
-						((HCircle*)temp_object)->m_radius = radius_for_circle;
-					}
-				}
-				return true;
+            case ThreePointsCircleMode:
+                {
+                    gp_Circ c;
+                    if(DigitizedPoint::GetTangentCircle(GetBeforeStartPos(), GetStartPos(), end, c))
+                    {
+                        if(TempObject() == NULL){
+                            AddToTempObjects(new HCircle(c, wxGetApp().CurrentColor()));
+                        }
+                        else{
+                            ((HCircle*)TempObject())->SetCircle(c);
+                        }
+                    }
+                }
+                return true;
+
+            case TwoPointsCircleMode:
+                {
+                    gp_Circ c;
+                    if(DigitizedPoint::GetCircleBetween(GetStartPos(), end, c))
+                    {
+                        if(TempObject() == NULL){
+                            AddToTempObjects(new HCircle(c, wxGetApp().CurrentColor()));
+                        }
+                        else{
+                            ((HCircle*)TempObject())->SetCircle(c);
+                        }
+                    }
+                }
+                return true;
+
+            case CentreAndRadiusCircleMode:
+                {
+                    if(TempObject()==NULL){
+                        AddToTempObjects(new HCircle(gp_Circ(gp_Ax2(end.m_point, gp_Dir(0, 0, 1)), radius_for_circle), wxGetApp().CurrentColor()));
+                    }
+                    else{
+                        ((HCircle*)TempObject())->m_axis.SetLocation(end.m_point);
+                        ((HCircle*)TempObject())->m_radius = radius_for_circle;
+                    }
+                }
+                return true;
 
 			}
 		}
@@ -538,7 +512,8 @@ HeeksObj* LineArcDrawing::GetOwnerForDrawingObjects()
 			{
 				if(m_container == NULL)
 				{
-					m_container = wxGetApp().GetContainer();
+				    m_container = new CSketch();
+				    wxGetApp().AddUndoably(m_container, NULL, NULL);
 				}
 				return m_container;
 			}
@@ -547,23 +522,8 @@ HeeksObj* LineArcDrawing::GetOwnerForDrawingObjects()
 	default:
 		break;
 	}
-	if(wxGetApp().m_sketch_mode)
-	{
-		m_container = wxGetApp().GetContainer();
-		return m_container;
-	}
-	return &wxGetApp(); //Object always needs to be added somewhere
-}
 
-void LineArcDrawing::clear_drawing_objects(int mode)
-{
-	if(mode == 1)
-	{
-		prev_object_in_list = temp_object_in_list;
-	}
-	if(temp_object && mode == 2)delete temp_object;
-	temp_object = NULL;
-	temp_object_in_list.clear();
+	return &wxGetApp(); //Object always needs to be added somewhere
 }
 
 static wxString str_for_GetTitle;
@@ -731,39 +691,22 @@ void LineArcDrawing::OnKeyUp(wxKeyEvent& event)
 void LineArcDrawing::set_cursor(void){
 }
 
-void LineArcDrawing::OnPropertyEdit(Property& prop)
-{
-	if (prop == drawing_mode) {
-		m_save_drawing_mode.clear();
-		arc_mode.SetVisible ( drawing_mode == ArcDrawingMode );
-		circle_mode.SetVisible ( drawing_mode == CircleDrawingMode );
-		radius_for_circle.SetVisible ( drawing_mode == CircleDrawingMode );
-	}
-	else if (prop == radius_for_circle) {
-		HeeksConfig& config = wxGetApp().GetConfig();
-		config.Write(_T("RadiusForCircle"), radius_for_circle);
-	}
-	else {
-		Drawing::OnPropertyEdit(prop);
-	}
-}
-
 void LineArcDrawing::GetTools(std::list<Tool*> *f_list, const wxPoint *p){
 	Drawing::GetTools(f_list, p);
 }
 
 bool LineArcDrawing::OnModeChange(void){
-	// on start of drawing mode
-	if(!Drawing::OnModeChange())return false;
-	if(m_container)m_container = NULL;
+    // on start of drawing mode
+    if(!Drawing::OnModeChange())return false;
+    if(m_container)m_container = NULL;
 
-	HeeksConfig& config = wxGetApp().GetConfig();
-	config.Read(_T("RadiusForCircle"), radius_for_circle, 5.0);
+    HeeksConfig& config = wxGetApp().GetConfig();
+    config.Read(_T("RadiusForCircle"), radius_for_circle, 5.0);
 
-	prev_object_in_list.clear();
-	m_previous_direction_set = false;
+    ClearPrevObject();
+    m_previous_direction_set = false;
 
-	return true;
+    return true;
 }
 
 void LineArcDrawing::set_draw_step_not_undoable(int s)

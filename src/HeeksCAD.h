@@ -18,7 +18,6 @@
 #include "RegularShapesDrawing.h"
 #include <memory>
 
-class TransientObject;
 class MagDragWindow;
 class ViewRotating;
 class ViewZooming;
@@ -33,9 +32,7 @@ class HeeksObj;
 class MarkedObject;
 class Gripper;
 class CViewPoint;
-#ifdef USE_UNDO_ENGINE
-class UndoEngine;
-#endif
+class MainHistory;
 class Observer;
 class CHeeksFrame;
 class CViewport;
@@ -87,19 +84,15 @@ class HeeksCADapp : public wxApp, public ObjList
 {
 private:
 	std::set<Observer*> observers;
-#ifdef USE_UNDO_ENGINE
-	UndoEngine *history;
-#endif
-	std::map<HeeksObj*,std::list<HeeksObj*> > m_transient_objects;
+	MainHistory *history;
 
-	typedef std::map< int, std::list<HeeksObj*> > IdsToObjects_t;
+
+	typedef std::map< ObjectId_t, std::list<HeeksObj*> > IdsToObjects_t;
 	typedef int GroupId_t;
 	typedef std::map< GroupId_t, IdsToObjects_t > UsedIds_t;
 
 	UsedIds_t	used_ids;
-
-	// std::map< int, std::map<int, HeeksObj*> > used_ids; // map of group type ( usually same as object type ) to "map of ID to object"
-	std::map< int, int > next_id_map;
+	std::map< int, ObjectId_t > next_id_map;
 	std::map< std::string, HeeksObj*(*)(TiXmlElement* pElem) > xml_read_fn_map;
 
 	void render_screen_text2(const wxChar* str);
@@ -108,17 +101,21 @@ private:
 	wxLocale m_locale; // locale we'll be using
 	bool m_locale_initialised;
 
-	void StartPickObjects(const wxChar* str, const std::set<MarkingFilter>& marking_filter, bool just_one);
-	int EndPickObjects();
 	HeeksConfig * config;
 
 public:
+
+	static const int ObjType = DocumentType;
+
+
 	HeeksCADapp();
 	~HeeksCADapp();
 
-    double m_view_units; // units to display to the user ( but everything is stored as mm ), 1.0 for mm, 25.4 for inches
-
 	// View option properties
+private:
+    PropertyChoice m_view_units;  // units to display to the user (but everything is stored as mm)
+
+public:
 	PropertyList view_options;
 	PropertyChoice m_rotate_mode;
 	PropertyChoice m_graphics_text_mode;
@@ -145,6 +142,8 @@ public:
 	PropertyChoice m_solid_view_mode;
 	PropertyCheck m_input_uses_modal_dialog;
 	PropertyCheck m_dragging_moves_objects;
+	PropertyCheck m_mouse_move_highlighting;
+    PropertyColor m_highlight_color;
 
 	// Digitizing properties
 	PropertyList digitizing;
@@ -172,6 +171,7 @@ public:
 	PropertyColor current_color;
 	PropertyColor construction_color;
 	PropertyLength m_geom_tol;
+	PropertyLength m_sketch_reorder_tol;
 	PropertyCheck useOldFuse;
 	PropertyCheck m_extrude_to_solid;
 	PropertyDouble m_revolve_angle;
@@ -222,7 +222,7 @@ public:
 	bool m_doing_rollback;
 	wxString m_filepath;
 	bool m_untitled;
-	std::list<HeeksObj*> m_hidden_for_drag;
+	std::set<HeeksObj*> m_hidden_for_drag;
 	bool m_show_grippers_on_drag;
 	std::list<Plugin> m_loaded_libraries;
 	std::list< void(*)() > m_on_glCommands_list;
@@ -241,12 +241,12 @@ public:
 	std::list< void(*)() > m_on_build_texture_callbacks;
 	std::list< void(*)(int, int) > m_beforeneworopen_callbacks;
 	std::list< void(*)() > m_beforeframedelete_callbacks;
+    std::list< void(*)(std::list<Tool*>&) > m_markedlisttools_callbacks;
+    std::list< void(*)() > m_on_restore_defaults_callbacks;
 	int m_transform_gl_list;
-	gp_Trsf m_drag_matrix;
+	double m_drag_matrix[16];
 	bool m_font_created;
 	glfont::GLFont m_gl_font;
-	bool m_sketch_mode;
-	CSketch* m_sketch;
 	unsigned int m_font_tex_number;
 	bool m_print_scaled_to_page;
 	wxPrintData *m_printData;
@@ -263,9 +263,6 @@ public:
 
 	std::auto_ptr<CAutoSave> m_pAutoSave;
 
-	bool m_isModified;
-	bool m_isModifiedValid;
-
 	int m_icon_texture_number;
 
 	typedef void(*FileOpenHandler_t)(const wxChar *path);
@@ -276,7 +273,7 @@ public:
 	bool RegisterFileOpenHandler( const std::list<wxString> file_extensions, FileOpenHandler_t );
 	bool UnregisterFileOpenHandler( void (*fileopen_handler)(const wxChar *path) );
 
-	typedef void(*UnitsChangedHandler_t)(const double value);
+	typedef void(*UnitsChangedHandler_t)(const EnumUnitType value);
 	typedef std::list<UnitsChangedHandler_t> UnitsChangedHandlers_t;
 
 	UnitsChangedHandlers_t m_units_changed_handlers;
@@ -294,6 +291,8 @@ public:
 
 	wxString m_alternative_open_wild_card_string;
 
+	bool m_settings_restored;
+
 	//WxApp override
 	int OnRun();
 	bool OnExceptionInMainLoop();
@@ -301,21 +300,30 @@ public:
     int OnExit();
 
 	// HeeksObj's virtual functions
+    void InitializeProperties();
+    void OnPropertyEdit(Property& prop);
+    void GetProperties(std::list<Property *> *list);
 	void GetBox(CBox &box);
 	void glCommands(bool select, bool marked, bool no_color);
 	bool CanAdd(HeeksObj* object){return true;}
-	int GetType()const{return DocumentType;}
+	virtual bool UsesID() { return false; }
+
+	EnumUnitType GetViewUnits();
+	void SetViewUnits(EnumUnitType units);
 
 	HeeksConfig& GetConfig();
 	void WriteConfig();
+
 	void CreateLights(void);
 	void DestroyLights(void);
+
 	void FindMarkedObject(const wxPoint &point, MarkedObject* marked_object);
 	void SetInputMode(CInputMode *i);
 	void Repaint(bool soon = false);
 	void RecalculateGLLists();
 	void SetLikeNewFile(void);
 	bool IsModified(void);
+	void SetAsModified();
 	void ClearHistory(void);
 	void glCommandsAll(const CViewPoint &view_point);
 	double GetPixelScale(void);
@@ -324,28 +332,27 @@ public:
 	void DoDropDownMenu(wxWindow *wnd, const wxPoint &point, MarkedObject* marked_object, bool dont_use_point_for_functions, bool control_pressed);
 	void GenerateIntersectionMenuOptions( std::list<Tool*> &f_list );
 	void on_menu_event(wxCommandEvent& event);
-	void DoToolUndoably(Tool *);
-	void Undo(void);
-	void Redo(void);
-	void WentTransient(HeeksObj* obj, TransientObject* tobj);
-	void ClearTransients();
-	std::map<HeeksObj*,std::list<HeeksObj*> >& GetTransients();
-	bool Add(HeeksObj* object, HeeksObj* prev_object);
+    void DoUndoable(Undoable *);
+    bool RollBack(void);
+    bool RollForward(void);
+    bool CanUndo(void);
+    bool CanRedo(void);
+    void StartHistory();
+    void EndHistory(void);
+    void ClearRollingForward(void);
+	bool Add(HeeksObj* object, HeeksObj* prev_object = NULL);
 	void Remove(HeeksObj* object);
 	void Remove(std::list<HeeksObj*> objects);
 	void Transform(std::list<HeeksObj*> objects, double *m);
 	void Reset();
 	HeeksObj* ReadXMLElement(TiXmlElement* pElem);
-	void ObjectWriteBaseXML(HeeksObj *object, TiXmlElement *element);
-	void ObjectReadBaseXML(HeeksObj *object, TiXmlElement* element);
 	void InitializeXMLFunctions();
-	void OpenXMLFile(const wxChar *filepath,HeeksObj* paste_into = NULL, HeeksObj* paste_before = NULL);
+	void OpenXMLFile(const wxChar *filepath,HeeksObj* paste_into = NULL, HeeksObj* paste_before = NULL, bool undoably = false);
 	static void OpenSVGFile(const wxChar *filepath);
 	static void OpenSTLFile(const wxChar *filepath);
 	static void OpenDXFFile(const wxChar *filepath);
 	static void OpenRS274XFile(const wxChar *filepath);
 	bool OpenImageFile(const wxChar *filepath);
-
 	void OnNewButton();
 	void OnOpenButton();
 	bool OpenFile(const wxChar *filepath, bool import_not_open = false, HeeksObj* paste_into = NULL, HeeksObj* paste_before = NULL, bool retain_filename = true );
@@ -357,17 +364,25 @@ public:
 	void SavePyFile(const std::list<HeeksObj*>& objects, const wxChar *filepath, double facet_tolerance = -1.0);
 	void SaveXMLFile(const std::list<HeeksObj*>& objects, const wxChar *filepath, bool for_clipboard = false);
 	void SaveXMLFile(const wxChar *filepath){SaveXMLFile(m_objects, filepath);}
-#ifdef CONSTRAINT_TESTER
-    //JT
-	 virtual void AuditHeeksObjTree4Constraints(HeeksObj * SketchPtr ,HeeksObj* mom, int level,bool ShowMsgInConsole,bool * ConstraintsAreOk){};
-#endif
-
 	bool SaveFile(const wxChar *filepath, bool use_dialog = false, bool update_recent_file_list = true, bool set_app_caption = true);
-	void CreateUndoPoint();
-	void Changed();
+    void AddUndoably(HeeksObj *object, HeeksObj* owner, HeeksObj* prev_object);
+	void AddUndoably(const std::list<HeeksObj*>& list, HeeksObj* owner);
+	void DeleteUndoably(HeeksObj* object);
+	void DeleteUndoably(const std::list<HeeksObj*>& list);
+	void CopyUndoably(HeeksObj* object, HeeksObj* copy_with_new_data);
+	void TransformUndoably(HeeksObj *object, double *m);
+	void TransformUndoably(const std::list<HeeksObj*>& list, double* m);
+    void StretchUndoably(HeeksObj *object, double* p, double* shift);
+    void StretchUndoably(const std::list<HeeksObj*>& list, double* shift);
+	void ReverseUndoably(HeeksObj *object);
+	void EditUndoably(HeeksObj *object);
+	void WasModified(HeeksObj *object);
+	void WasAdded(HeeksObj *object);
+	void WasRemoved(HeeksObj *object);
+	void WereModified(const std::list<HeeksObj*>& list);
+	void WereAdded(const std::list<HeeksObj*>& list);
+    void WereRemoved(const std::list<HeeksObj*>& list);
 	gp_Trsf GetDrawMatrix(bool get_the_appropriate_orthogonal);
-	void GetProperties(std::list<Property *> *list);
-	void InitializeProperties();
 	void DeleteMarkedItems();
 	void glColorEnsuringContrast(const HeeksColor &c);
 	void RegisterObserver(Observer* observer);
@@ -376,15 +391,17 @@ public:
 	void ObserversMarkedListChanged(bool selection_cleared, const std::list<HeeksObj*>* added, const std::list<HeeksObj*>* removed);
 	void ObserversFreeze();
 	void ObserversThaw();
-	const wxChar* GetKnownFilesWildCardString(bool open = true)const;
-	const wxChar* GetKnownFilesCommaSeparatedList(bool open = true)const;
+	const wxChar* GetKnownFilesWildCardString(bool open, bool import_export)const;
+	const wxChar* GetKnownFilesCommaSeparatedList(bool open, bool import_export)const;
 	void GetTools(MarkedObject* marked_object, std::list<Tool*>& t_list, const wxPoint& point, bool control_pressed);
-	void GetTools2(MarkedObject* marked_object, std::list<Tool*>& t_list, const wxPoint& point, bool control_pressed);
+	void GetTools2(MarkedObject* marked_object, std::list<Tool*>& t_list, const wxPoint& point, bool control_pressed, bool make_tool_list_container);
 	wxString GetExeFolder()const;
 	wxString GetResFolder()const;
 	wxString GetTmpFolder()const;
 	void get_2d_arc_segments(double xs, double ys, double xe, double ye, double xc, double yc, bool dir, bool want_start, double pixels_per_mm, void(*callbackfunc)(const double* xy));
 	int PickObjects(const wxChar* str, const std::set<MarkingFilter>& marking_filter = MarkedList::all_filters, bool just_one = false);
+    void StartPickObjects(const wxChar* str, const std::set<MarkingFilter>& marking_filter, bool just_one);
+    int EndPickObjects();
 	bool PickPosition(const wxChar* str, double* pos, void(*callback)(const double*) = NULL);
 	void glSphere(double radius, const double* pos = NULL);
 	void OnNewOrOpen(bool open, int res);
@@ -398,16 +415,18 @@ public:
 	void InsertRecentFileItem(const wxChar* filepath);
 	int CheckForModifiedDoc(); // returns wxCANCEL, if NOT OK to continue with file open etc.
 	void SetFrameTitle();
-	HeeksObj* GetIDObject(int type, int id);
-	std::list<HeeksObj*> GetIDObjects(int type, int id);
-	void SetObjectID(HeeksObj* object, int id);
-	int GetNextID(int type);
+	HeeksObj* GetIDObject(int type, ObjectId_t id);
+	std::list<HeeksObj*> GetIDObjects(int type, ObjectId_t id);
+	void SetObjectID(HeeksObj* object, ObjectId_t id);
+	ObjectId_t GetNextID(int type);
 	void RemoveID(HeeksObj* object); // only call this from ObjList::Remove()
 	void ResetIDs();
 	bool InputInt(const wxChar* prompt, const wxChar* value_name, int &value);
 	bool InputDouble(const wxChar* prompt, const wxChar* value_name, double &value);
 	bool InputAngleWithPlane(double &angle, double *axis = NULL, double *pos = NULL, int *number_of_copies = NULL, double *axial_shift = NULL);
+	bool InputFromAndTo(double *from, double *to, int *number_of_copies = NULL);
 	bool InputLength(const wxChar* prompt, const wxChar* value_name, double &value);
+	bool InputScalingValues(double *xyzScaling);
 	void ShowModalOptions();
 	void SectioningDialog();
 	void RegisterOnGLCommands( void(*callbackfunc)() );
@@ -438,9 +457,6 @@ public:
 	void PlotArc(const double* s, const double* e, const double* c);
 	void InitialiseLocale();
 	void create_font();
-	CSketch* GetContainer();
-	bool EndSketchMode();
-	void EnterSketchMode(CSketch* sketch);
 	std::auto_ptr<VectorFonts>	& GetAvailableFonts(const bool force_read = false);
 	void GetPluginsFromCommandLineParams(std::list<wxString> &plugins);
 	void RegisterOnBuildTexture(void(*callbackfunc)());
@@ -451,26 +467,17 @@ public:
 	void LogDebug(std::string msg);
 
 	typedef int ObjectType_t;
-	typedef int ObjectId_t;
 	typedef std::pair< ObjectType_t, ObjectId_t > ObjectReference_t;
 	typedef std::map< ObjectReference_t, HeeksObj * > ObjectReferences_t;
 
-	HeeksObj *MergeCommonObjects( ObjectReferences_t & unique_set, HeeksObj *object ) const;
-
 	wxString HeeksType( const int type ) const;
+    unsigned int GetIndex(HeeksObj *object);
+    void ReleaseIndex(unsigned int index);
 
-	bool UsesID() { return false; }
-	bool UsesColor() { return false; }
-
-//JT
-#ifdef CONSTRAINT_TESTER
-     bool TestForValidConstraints(){return TestForValidConstraints(m_objects);};//m_objects is protected and visible to class or sub_class
-   	 bool TestForValidConstraints(const std::list<HeeksObj*>& objects);
-
-#endif
-
-	unsigned int GetIndex(HeeksObj *object);
-	void ReleaseIndex(unsigned int index);
+    void GetExternalMarkedListTools(std::list<Tool*>& t_list);
+    void RegisterMarkedListTools(void(*callbackfunc)(std::list<Tool*>& t_list));
+    void RegisterOnRestoreDefaults(void(*callbackfunc)());
+    void RestoreDefaults();
 };
 
 void ExitMainLoop();

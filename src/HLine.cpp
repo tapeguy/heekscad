@@ -15,21 +15,33 @@
 #include "DigitizeMode.h"
 #include "Drawing.h"
 
-HLine::HLine(const HLine &line):EndedObject(line.m_color){
-	InitializeProperties();
-	operator=(line);
+HLine::HLine()
+ : EndedObject(ObjType)
+{
+    InitializeProperties();
 }
 
-HLine::HLine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col):EndedObject(col){
+HLine::HLine(const HLine &line)
+ : EndedObject(line)
+{
+	InitializeProperties();
+    HeeksObj::operator=(line);      // my properties only
+}
+
+HLine::HLine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col)
+ : EndedObject(ObjType, col)
+{
 	InitializeProperties();
 	A->m_p = a;
 	B->m_p = b;
 }
 
-HLine::~HLine(){
+HLine::~HLine()
+{
 }
 
-const HLine& HLine::operator=(const HLine &b){
+const HLine& HLine::operator=(const HLine &b)
+{
 	EndedObject::operator=(b);
 	return *this;
 }
@@ -37,35 +49,41 @@ const HLine& HLine::operator=(const HLine &b){
 void HLine::InitializeProperties()
 {
 	m_start.Initialize(_("start"), this);
+	m_start.SetTransient(true);
 	m_end.Initialize(_("end"), this);
+	m_end.SetTransient(true);
 	m_length.Initialize(_("length"), this);
 	m_length.SetReadOnly(true);
+	m_length.SetTransient(true);
 }
 
 HLine* line_for_tool = NULL;
 
-class MakeCylinderOnLine:public Tool{
+class MakeCylinderOnLine : public Tool
+{
 public:
-	void Run(){
+	void Run()
+	{
 		gp_Vec v(line_for_tool->A->m_p, line_for_tool->B->m_p);
 		CCylinder* new_object = new CCylinder(gp_Ax2(line_for_tool->A->m_p, v), 1.0, v.Magnitude(), _("Cylinder"), HeeksColor(191, 191, 240), 1.0f);
-		wxGetApp().CreateUndoPoint();
-		wxGetApp().Add(new_object,NULL);
-		wxGetApp().Changed();
+		wxGetApp().StartHistory();
+		wxGetApp().Add(new_object);
+		wxGetApp().EndHistory();
 	}
 	const wxChar* GetTitle(){return _("Make Cylinder On Line");}
 	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/cylonlin.png");}
 };
 static MakeCylinderOnLine make_cylinder_on_line;
 
-class MakeConeOnLine:public Tool{
+class MakeConeOnLine:public Tool
+{
 public:
 	void Run(){
 		gp_Vec v(line_for_tool->A->m_p, line_for_tool->B->m_p);
 		CCone* new_object = new CCone(gp_Ax2(line_for_tool->A->m_p, v), 2.0, 1.0, v.Magnitude(), _("Cone"), HeeksColor(240, 240, 191), 1.0f);
-		wxGetApp().CreateUndoPoint();
-		wxGetApp().Add(new_object,NULL);
-		wxGetApp().Changed();
+		wxGetApp().StartHistory();
+		wxGetApp().Add(new_object);
+		wxGetApp().EndHistory();
 	}
 	const wxChar* GetTitle(){return _("Make Cone On Line");}
 	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/coneonlin.png");}
@@ -73,7 +91,8 @@ public:
 static MakeConeOnLine make_cone_on_line;
 
 
-class ClickMidpointOnLine:public Tool{
+class ClickMidpointOnLine:public Tool
+{
 public:
 	void Run(){
 		gp_Pnt midpoint((line_for_tool->A->m_p.XYZ() + line_for_tool->B->m_p.XYZ()) /2);
@@ -91,7 +110,8 @@ public:
 static ClickMidpointOnLine click_midpoint_on_line;
 
 
-class ClickStartPointOnLine:public Tool{
+class ClickStartPointOnLine:public Tool
+{
 public:
 	void Run(){
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(line_for_tool->A->m_p, DigitizeInputType);
@@ -107,7 +127,8 @@ public:
 static ClickStartPointOnLine click_start_point_on_line;
 
 
-class ClickEndPointOnLine:public Tool{
+class ClickEndPointOnLine:public Tool
+{
 public:
 	void Run(){
 		wxGetApp().m_digitizing->digitized_point = DigitizedPoint(line_for_tool->B->m_p, DigitizeInputType);
@@ -154,7 +175,7 @@ void HLine::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 
 void HLine::glCommands(bool select, bool marked, bool no_color){
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(m_color);
+		wxGetApp().glColorEnsuringContrast(GetColor());
 	}
 	GLfloat save_depth_range[2];
 	if(marked){
@@ -171,21 +192,12 @@ void HLine::glCommands(bool select, bool marked, bool no_color){
 		glDepthRange(save_depth_range[0], save_depth_range[1]);
 	}
 
-#ifdef MULTIPLE_OWNERS
-	if(!A->m_p.IsEqual(B->m_p, wxGetApp().m_geom_tol))
-	{
-		gp_Pnt mid_point = A->m_p.XYZ() + (B->m_p.XYZ() - A->m_p.XYZ())/2;
-		gp_Dir dir = B->m_p.XYZ() - mid_point.XYZ();
-		gp_Ax1 ax(mid_point,dir);
-	}
-#endif
-
 	EndedObject::glCommands(select,marked,no_color);
 }
 
 void HLine::Draw(wxDC& dc)
 {
-	wxGetApp().PlotSetColor(m_color);
+	wxGetApp().PlotSetColor(GetColor());
 	double s[3], e[3];
 	extract(A->m_p, s);
 	extract(B->m_p, e);
@@ -206,17 +218,20 @@ void HLine::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
 	EndedObject::GetGripperPositions(list,just_for_endof);
 }
 
-void HLine::OnPropertyEdit(Property& prop)
+void HLine::OnPropertySet(Property& prop)
 {
-	if (prop == m_start) {
-		A->m_p = m_start;
-	}
-	else if (prop == m_end) {
-		B->m_p = m_end;
-	}
-	else {
-		HeeksObj::OnPropertyEdit(prop);
-	}
+    if ( prop == m_start )
+    {
+        A->m_p = m_start;
+    }
+    else if ( prop == m_end )
+    {
+        B->m_p = m_end;
+    }
+    else
+    {
+        EndedObject::OnPropertySet ( prop );
+    }
 }
 
 void HLine::GetProperties(std::list<Property *> *list)
@@ -368,77 +383,47 @@ gp_Vec HLine::GetSegmentVector(double fraction)
 	return gp_Vec(A->m_p, B->m_p).Normalized();
 }
 
-void HLine::WriteXML(TiXmlNode *root)
-{
-	TiXmlElement * element;
-	element = new TiXmlElement( "Line" );
-	root->LinkEndChild( element );
-	element->SetAttribute("col", m_color.COLORREF_color());
-	WriteBaseXML(element);
-}
-
 // static member function
 HeeksObj* HLine::ReadFromXMLElement(TiXmlElement* pElem)
 {
-	gp_Pnt p0(0, 0, 0), p1(0, 0, 0);
-	HeeksColor c;
+    HLine* new_object = new HLine();
+    new_object->ReadBaseXML(pElem);
 
-	// get the attributes
-	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
-	{
-		std::string name(a->Name());
-		if(name == "col"){c = HeeksColor((long)(a->IntValue()));}
-		else if(name == "sx"){p0.SetX(a->DoubleValue());}
-		else if(name == "sy"){p0.SetY(a->DoubleValue());}
-		else if(name == "sz"){p0.SetZ(a->DoubleValue());}
-		else if(name == "ex"){p1.SetX(a->DoubleValue());}
-		else if(name == "ey"){p1.SetY(a->DoubleValue());}
-		else if(name == "ez"){p1.SetZ(a->DoubleValue());}
-	}
+    if(new_object->GetNumChildren()>2)
+    {
+        //This is a new style line, with children points
+        new_object->Remove(new_object->A);
+        new_object->Remove(new_object->B);
+        delete new_object->A;
+        delete new_object->B;
+        new_object->A = (HPoint*)new_object->GetFirstChild();
+        new_object->B = (HPoint*)new_object->GetNextChild();
+        new_object->A->m_draw_unselected = false;
+        new_object->B->m_draw_unselected = false;
+    }
+    else
+    {
+        new_object->A->m_p = new_object->m_start;
+        new_object->B->m_p = new_object->m_end;
+    }
 
-	HLine* new_object = new HLine(p0, p1, c);
-	new_object->ReadBaseXML(pElem);
+    // The OpenCascade libraries throw an exception when one tries to
+    // create a gp_Lin() object using a vector that doesn't point
+    // anywhere.  If this is a zero-length line then we're in
+    // trouble.  Don't bother with it.
+    if (new_object->A->m_p.IsEqual(new_object->B->m_p, wxGetApp().m_geom_tol))
+    {
+        delete new_object;
+        return(NULL);
+    }
 
-	if(new_object->GetNumChildren()>2)
-	{
-		//This is a new style line, with children points
-		new_object->Remove(new_object->A);
-		new_object->Remove(new_object->B);
-		delete new_object->A;
-		delete new_object->B;
-		new_object->A = (HPoint*)new_object->GetFirstChild();
-		new_object->B = (HPoint*)new_object->GetNextChild();
-		new_object->A->m_draw_unselected = false;
-		new_object->B->m_draw_unselected = false;
-		new_object->A->SetSkipForUndo(true);
-		new_object->B->SetSkipForUndo(true);
-	}
-
-	// The OpenCascade libraries throw an exception when one tries to
-	// create a gp_Lin() object using a vector that doesn't point
-	// anywhere.  If this is a zero-length line then we're in
-	// trouble.  Don't bother with it.
-	if (new_object->A == NULL || new_object->B == NULL || ((new_object->A->m_p.X() == new_object->B->m_p.X()) &&
-		(new_object->A->m_p.Y() == new_object->B->m_p.Y()) &&
-		(new_object->A->m_p.Z() == new_object->B->m_p.Z())))
-	{
-		delete new_object;
-		return(NULL);
-	}
-
-	return new_object;
+    return new_object;
 }
 
 void HLine::Reverse()
 {
-	HPoint* temp = A;
-	A = B;
-	B = temp;
-#ifdef MULTIPLE_OWNERS
-	m_objects.pop_front();
-	m_objects.pop_front();
-	m_objects.push_front(B);
-	m_objects.push_front(A);
-#endif
+    gp_Pnt temp = A->m_p;
+    A->m_p = B->m_p;
+    B->m_p = temp;
 }
 

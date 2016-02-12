@@ -10,7 +10,7 @@ set ( CMAKE_BUILD_TYPE Debug )
 add_definitions ( -Wall -Wno-overloaded-virtual -DUSE_GENERIC_TREECTRL -DHEEKSCAD -DUNICODE -DTIXML_USE_STL )
 
 #find OCE or OpenCASCADE
-set( CASCADE_LIBS TKVRML TKSTL TKBRep TKIGES TKShHealing TKSTEP TKSTEP209 TKSTEPAttr TKSTEPBase TKXSBase TKShapeSchema FWOSPlugin TKBool TKCAF TKCDF TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo TKGeomBase TKHLR TKMath TKOffset TKPrim TKPShape TKService TKTopAlgo TKV3d TKMesh TKAdvTools TKBO TKXDESTEP TKXCAF TKXCAFSchema TKLCAF TKPLCAF )
+set( CASCADE_LIBS TKVRML TKSTL TKBRep TKIGES TKShHealing TKSTEP TKSTEP209 TKSTEPAttr TKSTEPBase TKXSBase TKShapeSchema FWOSPlugin TKBool TKCAF TKCDF TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo TKGeomBase TKHLR TKMath TKOffset TKPrim TKPShape TKService TKTopAlgo TKV3d TKMesh TKBO TKXDESTEP TKXCAF TKXCAFSchema TKLCAF TKPLCAF )
 #inherits variables from parent dir - don't need to 'find_package ( OCE )' again
 if( ${OCE_FOUND} )
   set( OpenCASCADE_LIBRARIES ${CASCADE_LIBS} )
@@ -21,7 +21,7 @@ else() #look for OpenCASCADE
 endif()
 
 find_package( OpenGL REQUIRED )
-FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS base core gl aui propgrid )
+FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS adv base core gl aui propgrid )
 find_package( PythonLibs REQUIRED )
 INCLUDE(${wxWidgets_USE_FILE})
 
@@ -40,7 +40,6 @@ set( heekscad_HDRS
     ${LIBAREA_PATH}/Area.h
     ${LIBAREA_PATH}/AreaOrderer.h
     AutoSave.h
-    BentleyOttmann.h
     BezierCurve.h
     ../interface/Box.h
     ${LIBAREA_PATH}/Box2D.h
@@ -54,13 +53,16 @@ set( heekscad_HDRS
     ${LIBAREA_PATH}/Curve.h
     CxfFont.h
     Cylinder.h
+    Dexel.cpp
+    DexelContour.cpp
+    DexelGrid.h
+    DexelSolid.h
     DigitizedPoint.h
     DigitizeMode.h
     DimensionDrawing.h
     ../interface/DoubleInput.h
     Drawing.h
     dxf.h
-    DynamicSolid.h
     Edge.h
     EndedObject.h
     Face.h
@@ -87,6 +89,7 @@ set( heekscad_HDRS
     HeeksFrame.h
     ../interface/HeeksObj.h
     HeeksPrintout.h
+    History.h
     HEllipse.h
     HGear.h
     HILine.h
@@ -107,27 +110,26 @@ set( heekscad_HDRS
     MarkedList.h
     ../interface/MarkedObject.h
     ../interface/Material.h
-    MultiPoly.h
-    NearMap.h
     ../interface/NiceTextCtrl.h
-    ../interface/ObjectCanvas.h
     ../interface/ObjList.h
     ObjPropsCanvas.h
     ../interface/Observer.h
     OptionsCanvas.h
     OrientationModifier.h
-    Pad.h
-    Part.h
     ../interface/PictureFrame.h
     Plugins.h
-    Pocket.h
     ${LIBAREA_PATH}/Point.h
     PointDrawing.h
     PointOrWindow.h
+    PropBinding.h
+    PropBindingDialog.h
     PropertiesCanvas.h
+    PropertyChange.h
     ../interface/Property.h
     ../interface/PropertyList.h
+    Pyramid.h
     RegularShapesDrawing.h
+    RemoveOrAddTool.h
     RuledSurface.h
     Ruler.h
     Sectioning.h
@@ -135,9 +137,7 @@ set( heekscad_HDRS
     Shape.h
     ShapeData.h
     ShapeTools.h
-    SimpleIntersector.h
     Sketch.h
-    SketchTools.h
     Solid.h
     SolidTools.h
     Sphere.h
@@ -153,9 +153,7 @@ set( heekscad_HDRS
     ../interface/ToolList.h
     TransformTool.h
     TransformTools.h
-    ../interface/TransientObject.h
     TreeCanvas.h
-    UndoEngine.h
     Vertex.h
     ViewPanning.h
     ViewPoint.h
@@ -163,7 +161,6 @@ set( heekscad_HDRS
     ViewZooming.h
     Window.h
     Wire.h
-    WrappedCurves.h
     wxImageLoader.h
    )
 
@@ -175,7 +172,6 @@ set( heekscad_SRCS
     ${LIBAREA_PATH}/AreaOrderer.cpp
     ${LIBAREA_PATH}/AreaPocket.cpp
     AutoSave.cpp
-    BentleyOttmann.cpp
     BezierCurve.cpp
     ${LIBAREA_PATH}/Circle.cpp
     ${LIBAREA_PATH}/clipper.cpp
@@ -188,12 +184,15 @@ set( heekscad_SRCS
     ${LIBAREA_PATH}/Curve.cpp
     CxfFont.cpp
     Cylinder.cpp
+    Dexel.cpp
+    DexelContour.cpp
+    DexelGrid.cpp
+    DexelSolid.cpp
     DigitizedPoint.cpp
     DigitizeMode.cpp
     DimensionDrawing.cpp
     Drawing.cpp
     dxf.cpp
-    DynamicSolid.cpp
     Edge.cpp
     EndedObject.cpp
     ExitMainLoop.cpp
@@ -217,6 +216,7 @@ set( heekscad_SRCS
     HeeksCAD.cpp
     HeeksFrame.cpp
     HeeksPrintout.cpp
+    History.cpp
     HEllipse.cpp
     HGear.cpp
     HILine.cpp
@@ -234,21 +234,20 @@ set( heekscad_SRCS
     MagDragWindow.cpp
     MarkedList.cpp
     ${LIBAREA_PATH}/kurve/Matrix.cpp
-    MultiPoly.cpp
-    NearMap.cpp
     ObjPropsCanvas.cpp
     ${LIBAREA_PATH}/kurve/offset.cpp
     OptionsCanvas.cpp
     OrientationModifier.cpp
-    Pad.cpp
-    Part.cpp
     Plugins.cpp
-    Pocket.cpp
     PointDrawing.cpp
     PointOrWindow.cpp
-    Polygon.cpp
+    PropBinding.cpp
+    PropBindingDialog.cpp
     PropertiesCanvas.cpp
+    PropertyChange.cpp
+    Pyramid.cpp
     RegularShapesDrawing.cpp
+    RemoveOrAddTool.cpp
     RS274X.cpp
     RuledSurface.cpp
     Ruler.cpp
@@ -257,9 +256,7 @@ set( heekscad_SRCS
     Shape.cpp
     ShapeData.cpp
     ShapeTools.cpp
-    SimpleIntersector.cpp
     Sketch.cpp
-    SketchTools.cpp
     Solid.cpp
     SolidTools.cpp
     Sphere.cpp
@@ -270,7 +267,6 @@ set( heekscad_SRCS
     TransformTool.cpp
     TransformTools.cpp
     TreeCanvas.cpp
-    UndoEngine.cpp
     Vertex.cpp
     ViewPanning.cpp
     ViewPoint.cpp
@@ -278,7 +274,6 @@ set( heekscad_SRCS
     ViewZooming.cpp
     Window.cpp
     Wire.cpp
-    WrappedCurves.cpp
     wxImageLoader.cpp
    )
 

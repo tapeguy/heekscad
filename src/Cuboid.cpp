@@ -25,10 +25,8 @@ CCuboid::CCuboid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColo
 CCuboid::CCuboid( const CCuboid & rhs )
  : CSolid(rhs)
 {
-    m_pos = rhs.m_pos;
-    m_x = rhs.m_x;
-    m_y = rhs.m_y;
-    m_z = rhs.m_z;
+    InitializeProperties();
+    HeeksObj::operator=(rhs);   // Just copy my immediate properties.
 }
 
 const wxBitmap &CCuboid::GetIcon()
@@ -45,24 +43,16 @@ HeeksObj *CCuboid::MakeACopy(void)const
 
 CCuboid & CCuboid::operator= ( const CCuboid & rhs )
 {
-    if (this != &rhs)
-    {
-        m_pos = rhs.m_pos;
-        m_x = rhs.m_x;
-        m_y = rhs.m_y;
-        m_z = rhs.m_z;
-
-        CSolid::operator=( rhs );
-    }
-
+    CSolid::operator=( rhs );
     return(*this);
 }
 
 void CCuboid::InitializeProperties()
 {
-	m_x.Initialize(_("width ( x )"), this);
-	m_y.Initialize(_("height ( y )"), this);
-	m_z.Initialize(_("depth ( z )"), this);
+    m_pos.Initialize(_("coordinates"), this, true);
+	m_x.Initialize(_("width ( x )"), this, true);
+	m_y.Initialize(_("height ( y )"), this, true);
+	m_z.Initialize(_("depth ( z )"), this, true);
 }
 
 bool CCuboid::IsDifferent(HeeksObj* other)
@@ -85,7 +75,6 @@ void CCuboid::MakeTransformedShape(const gp_Trsf &mat)
 	m_x = fabs(m_x * scale);
 	m_y = fabs(m_y * scale);
 	m_z = fabs(m_z * scale);
-	m_shape = BRepPrimAPI_MakeBox(m_pos, m_x, m_y, m_z).Shape();
 }
 
 wxString CCuboid::StretchedName(){ return _("Stretched Cuboid");}
@@ -123,21 +112,16 @@ void CCuboid::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 	list->push_back(GripData(GripperTypeObjectScaleZ,m8.X(),m8.Y(),m8.Z(),NULL));
 }
 
-void CCuboid::OnPropertyEdit(Property& prop)
+void CCuboid::OnPropertySet(Property& prop)
 {
-	if (prop == m_x || prop == m_y || prop == m_z) {
-		CCuboid* new_object = new CCuboid(m_pos, m_x, m_y, m_z, m_title.c_str(), m_color, m_opacity);
-		new_object->CopyIDsFrom(this);
-		Owner()->Add(new_object, NULL);
-		Owner()->Remove(this);
-		if(wxGetApp().m_marked_list->ObjectMarked(this))
-		{
-			wxGetApp().m_marked_list->Remove(this, false);
-			wxGetApp().m_marked_list->Add(new_object, true);
-		}
+	if (prop == m_pos || prop == m_x || prop == m_y || prop == m_z) {
+	    m_shape = BRepPrimAPI_MakeBox(m_pos, m_x, m_y, m_z).Shape();
+	    delete_faces_and_edges();
+	    KillGLLists();
+	    create_faces_and_edges();
 	}
 	else {
-		CSolid::OnPropertyEdit(prop);
+		CSolid::OnPropertySet(prop);
 	}
 }
 
@@ -160,21 +144,17 @@ bool CCuboid::Stretch(const double *p, const double* shift, void* data)
 	gp_Pnt m3(o.XYZ() + m_pos.XDirection().XYZ() * m_x/2 + m_pos.YDirection().XYZ() * m_y);
 	gp_Pnt m8(o.XYZ() + m_pos.YDirection().XYZ() * m_y/2 + z_dir.XYZ() * m_z);
 
-	bool make_a_new_cuboid = false;
-
 	if(m2.IsEqual(vp, wxGetApp().m_geom_tol)){
 		m2 = m2.XYZ() + vshift.XYZ();
 		double new_x = gp_Vec(m2.XYZ()) * gp_Vec(m_pos.XDirection()) - gp_Vec(o.XYZ()) * gp_Vec(m_pos.XDirection());
-		if(new_x > 0){
-			make_a_new_cuboid = true;
+		if(new_x > 0) {
 			m_x = new_x;
 		}
 	}
 	else if(m3.IsEqual(vp, wxGetApp().m_geom_tol)){
 		m3 = m3.XYZ() + vshift.XYZ();
 		double new_y = gp_Vec(m3.XYZ()) * gp_Vec(m_pos.YDirection()) - gp_Vec(o.XYZ()) * gp_Vec(m_pos.YDirection());
-		if(new_y > 0){
-			make_a_new_cuboid = true;
+		if(new_y > 0) {
 			m_y = new_y;
 		}
 	}
@@ -182,22 +162,14 @@ bool CCuboid::Stretch(const double *p, const double* shift, void* data)
 		m8 = m8.XYZ() + vshift.XYZ();
 		double new_z = gp_Vec(m8.XYZ()) * gp_Vec(z_dir) - gp_Vec(o.XYZ()) * gp_Vec(z_dir);
 		if(new_z > 0){
-			make_a_new_cuboid = true;
 			m_z = new_z;
 		}
 	}
-
-	if(make_a_new_cuboid)
-	{
-		CCuboid* new_object = new CCuboid(m_pos, m_x, m_y, m_z, m_title.c_str(), m_color, m_opacity);
-		new_object->CopyIDsFrom(this);
-		Owner()->Add(new_object, NULL);
-		Owner()->Remove(this);
-		wxGetApp().m_marked_list->Clear(false);
-		wxGetApp().m_marked_list->Add(new_object, true);
+	else {
+	    CSolid::Stretch(p, shift, data);
 	}
 
-	return true;
+	return false;
 }
 
 void CCuboid::SetXMLElement(TiXmlElement* element)

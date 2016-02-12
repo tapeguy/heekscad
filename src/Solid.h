@@ -12,7 +12,6 @@ protected:
 	void MakeTransformedShape(const gp_Trsf &mat);
 
 public:
-	SolidTypeEnum m_type; // so the solid can be stretched in specific ways, if it's still a primitive solid
 
 	CSolid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity);
 	CSolid( const CSolid & rhs );
@@ -23,7 +22,6 @@ public:
 
 	int GetType()const{return SolidType;}
 	int GetMarkingFilter()const{return SolidMarkingFilter;}
-	const wxChar* GetTypeString(void)const{return _("Solid");}
 	const wxBitmap &GetIcon();
 	HeeksObj *MakeACopy(void)const;
 

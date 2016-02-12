@@ -38,24 +38,16 @@ void COptionsCanvas::OnSize(wxSizeEvent& event)
     event.Skip();
 }
 
-void COptionsCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
+void COptionsCanvas::OnPropertyGridChange( wxPropertyGridEvent& event )
+{
 	CPropertiesCanvas::OnPropertyGridChange(event);
 }
 
-void COptionsCanvas::RefreshProperties2(){
-	ClearProperties();
-
-	std::list<Property *> list;
-
-	// add the application's properties
-	wxGetApp().GetProperties(&list);
-
-	// add the properties to the grid
-	std::list<Property *>::iterator It;
-	for(It = list.begin(); It != list.end(); It++)
-	{
-	    Property* property = *It;
-		AddProperty((Property *)property);
-	}
+void COptionsCanvas::RefreshProperties2()
+{
+    // get the desired property list
+    std::list<Property *> list;
+    wxGetApp().GetProperties(&list);
+    CPropertiesCanvas::RefreshByMerging(list);
 }
 

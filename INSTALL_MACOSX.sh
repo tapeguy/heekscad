@@ -1,16 +1,13 @@
+#!/bin/sh
+
+export skip_resolve=$1
 export CFLAGS="$CFLAGS -DMACOSX -mmacosx-version-min=10.5"
 export CXXFLAGS="$CXXFLAGS -DMACOSX -mmacosx-version-min=10.5"
 set -e
 cmake .
 make
-if [ -d heekscnc ]; then
-	cd heekscnc
-	cmake .
-	make
-	cd ..
-fi
 
-sudo bash << "EOF"
+sudo -E sh << "EOF"
 rm -rf /Applications/HeeksCAD.app
 mkdir -p /Applications/HeeksCAD.app/Contents
 mkdir -p /Applications/HeeksCAD.app/Contents/MacOS
@@ -20,10 +17,20 @@ mkdir -p /Applications/HeeksCAD.app/Contents/MacOS/oce
 mkdir -p /Applications/HeeksCAD.app/Contents/share/heekscad
 cp -R ./bitmaps /Applications/HeeksCAD.app/Contents/share/heekscad
 cp -R ./icons  /Applications/HeeksCAD.app/Contents/share/heekscad
+EOF
 
+if [ -d heekscnc ]; then
+	cd heekscnc
+	cmake .
+	make
+	cd ..
+fi
+
+sudo -E sh << "EOF"
 if [ -f heekscnc/bin/libheekscnc.dylib ]; then
 	mkdir -p /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
 	cp -R heekscnc/bin/* /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
+	cp heekscnc/*.py /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
 fi
 
 if [ -d heekscnc/bitmaps ]; then
@@ -36,6 +43,10 @@ fi
 
 if [ -d heekscnc/nc ]; then
 	cp -R heekscnc/nc /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
+fi
+
+if [ -f heekscnc/script_ops.xml ]; then
+	cp heekscnc/script_ops.xml /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
 fi
 
 cd /Applications/HeeksCAD.app/Contents/MacOS
@@ -91,13 +102,19 @@ resolve_dylibs()
 		fi
 	done;
 }
-foundlibs=`resolve_dylibs heekscad`
-while [ ! -z "$foundlibs" ]; do
-	foundlibs=`echo "$foundlibs" | while read dylib; do resolve_dylibs "$dylib"; done`
-done
 
-if [ -f ../share/plugins/heekscnc/libheekscnc.dylib ]; then
-	resolve_dylibs ../share/plugins/heekscnc/libheekscnc.dylib
+if [ ! "$skip_resolve" ]; then
+	foundlibs=`resolve_dylibs heekscad`
+	while [ ! -z "$foundlibs" ]; do
+		foundlibs=`echo "$foundlibs" | while read dylib; do resolve_dylibs "$dylib"; done`
+	done
+
+	if [ -f ../share/plugins/heekscnc/libheekscnc.dylib ]; then
+		foundlibs=`resolve_dylibs ../share/plugins/heekscnc/libheekscnc.dylib`
+		while [ ! -z "$foundlibs" ]; do
+			foundlibs=`echo "$foundlibs" | while read dylib; do resolve_dylibs "$dylib"; done`
+		done
+	fi
 fi
 
 chmod -R 555 /Applications/HeeksCAD.app

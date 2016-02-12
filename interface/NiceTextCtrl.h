@@ -9,8 +9,8 @@ class CDoubleCtrl: public wxTextCtrl
 	double m_factor;
 public:
 	CDoubleCtrl(wxWindow* parent, wxWindowID id = wxID_ANY, double factor = 1.0);
-	double GetValue();
-	void SetValue(double value);
+	double GetValueAsDouble();
+	void SetValueFromDouble(double value);
 };
 
 // a dialog control to enter a number in the current units
@@ -25,8 +25,6 @@ class CObjectIdsCtrl: public wxTextCtrl
 {
 public:
 	CObjectIdsCtrl(wxWindow* parent, wxWindowID id = wxID_ANY);
-	void GetAddChildren(HeeksObj* object, int group_type);
-	void SetFromChildren(HeeksObj* object, int group_type);
 	void GetIDList(std::list<int> &id_list);
 	void SetFromIDList(std::list<int> &id_list);
 };

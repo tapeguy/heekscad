@@ -465,7 +465,7 @@ HeeksObj *VectorFont::Glyph::Sketch( const gp_Pnt & location, const gp_Trsf & tr
 
 	for (GraphicsList_t::const_iterator l_itGraphic = m_graphics_list.begin(); l_itGraphic != m_graphics_list.end(); l_itGraphic++)
 	{
-		sketch->Add((*l_itGraphic)->Sketch( location, transformation_matrix, width, pOrientationModifier ), NULL);
+		sketch->Add((*l_itGraphic)->Sketch( location, transformation_matrix, width, pOrientationModifier ));
 	} // End for
 
 	return(sketch);
@@ -755,7 +755,7 @@ HeeksObj *VectorFont::Sketch( const wxString & text, const gp_Trsf & transformat
     }
 
 	HeeksObj *sketch = heekscad_interface.NewSketch();
-	sketch->OnEditString(text.c_str());
+	sketch->SetTitle(text);
 
 	gp_Pnt location(StartingLocation());	// The transformation matrix will put it in the right place.
 	for (wxString::size_type offset = 0; offset < text.Length(); offset++)
@@ -831,16 +831,16 @@ HeeksObj *VectorFont::Sketch( const wxString & text, const gp_Trsf & transformat
 			bottom_right_point[2] = bottom_right.Z();
 
 			HeeksObj *line = heekscad_interface.NewLine( top_left_point, top_right_point );
-			sketch->Add( line, NULL);
+			sketch->Add(line);
 
 			line = heekscad_interface.NewLine( top_right_point, bottom_right_point );
-			sketch->Add( line, NULL );
+			sketch->Add(line);
 
 			line = heekscad_interface.NewLine( bottom_right_point, bottom_left_point );
-			sketch->Add( line, NULL );
+			sketch->Add(line);
 
 			line = heekscad_interface.NewLine( bottom_left_point, top_left_point );
-			sketch->Add( line, NULL );
+			sketch->Add(line);
 
 			location.SetX( location.X() + BoundingBox().Width() );
 		} // End if - then
@@ -859,10 +859,10 @@ HeeksObj *VectorFont::Sketch( const wxString & text, const gp_Trsf & transformat
 				for (std::list<HeeksObj *>::iterator l_itGraphic = graphics.begin(); l_itGraphic != graphics.end(); l_itGraphic++)
 				{
 					// label this piece of graphics with the character it's representing
-					(*l_itGraphic)->OnEditString(text.Mid(offset,1).c_str());
+					(*l_itGraphic)->SetTitle(text.Mid(offset,1));
 
 					// And add it to the sketch that represents the whole text string.
-					sketch->Add( *l_itGraphic, NULL );
+					sketch->Add( *l_itGraphic );
 				} // End for
 
                 location.SetX( original_location.X() + LetterSpacing( l_itGlyph->second ) );

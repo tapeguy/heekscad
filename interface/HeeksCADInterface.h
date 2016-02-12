@@ -26,9 +26,16 @@ class wxUpdateUIEvent;
 class wxSizeEvent;
 class wxMouseEvent;
 class CNurbSurfaceParams;
-class TransientObject;
 class Plugin;
 class CoordinateSystem;
+class Undoable;
+class Tool;
+
+
+#define HEEKSCAD_VERSION_MAIN "1"
+#define HEEKSCAD_VERSION_SUB "0"
+
+//#define FREE_VERSION
 
 #include "SketchOrder.h"
 
@@ -61,6 +68,7 @@ public:
 #endif
 	virtual wxMenuBar* GetMenuBar();
 	virtual wxMenu* GetWindowMenu();
+	virtual wxMenu* GetHelpMenu();
 	virtual wxAuiManager* GetAuiManager();
 	virtual void AddToolBarButton(wxAuiToolBar* toolbar, const wxString& title, const wxBitmap& bitmap, const wxString& caption, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&) = NULL);
 	virtual void StartToolBarFlyout(const wxString& title_and_bitmap);
@@ -71,6 +79,12 @@ public:
 	virtual int AddMenuItem(wxMenu* menu, const wxString& title, const wxBitmap& bitmap, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&) = NULL, wxMenu* submenu = NULL, bool check_item = false);
 	virtual wxString GetExeFolder();
 	virtual wxString GetResFolder();
+    virtual void AddUndoably(HeeksObj* object, HeeksObj* owner);
+    virtual void DeleteUndoably(HeeksObj* object);
+    virtual void CopyUndoably(HeeksObj* object, HeeksObj* copy_with_new_data);
+    virtual void DoUndoable(Undoable *);
+    virtual void StartHistory();
+    virtual void EndHistory(void);
 	virtual HeeksObj* GetMainObject();
 	virtual const std::list<HeeksObj*>& GetMarkedList();
 	virtual unsigned long GetMarkedListSize();
@@ -94,8 +108,6 @@ public:
 	virtual CInputMode* GetSelectMode();
 	virtual void SetLineDrawingMode();
 	virtual void SetInputMode(CInputMode* input_mode);
-	virtual bool EndSketchMode();
-	virtual void EnterSketchMode(HeeksObj* sketch);
 	virtual int PickObjects(const wxChar* str, const std::set<MarkingFilter>& marking_filter = std::set<MarkingFilter>(), bool m_just_one = false);
 	virtual bool PickPosition(const wxChar* str, double* pos);
 	virtual bool Digitize(const wxPoint &point, double* pos);
@@ -117,11 +129,12 @@ public:
         virtual HeeksObj* NewCylinderEx(const double* pos, const double* dir, double r, double h);
 	virtual HeeksObj* NewCone(const double*c, double r1, double r2, double h);
 	virtual HeeksObj* NewSphere(const double*pos, double radius);
+	virtual HeeksObj* NewPyramid(const double *c, double x, double y, double z);
 	virtual HeeksObj* NewGroup();
 	virtual HeeksObj* NewSolid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col);
 	virtual HeeksObj* NewCoordinateSystem(const double* pos, const double* x, const double* y);
+    virtual HeeksObj* Cut(std::list<HeeksObj*> objects);
 	virtual HeeksObj* Fuse(std::list<HeeksObj*> objects);
-	virtual HeeksObj* Cut(std::list<HeeksObj*> objects);
 	virtual HeeksObj* Common(std::list<HeeksObj*> objects);
 	virtual void AddText(const wxChar *text);
 	virtual void RotateObject(HeeksObj*, const double*p,const double*u,double r);
@@ -144,17 +157,12 @@ public:
 	virtual void OpendxfFile(const wxChar *filepath);
 	virtual void RegisterReadXMLfunction(const char* type_name, HeeksObj*(*read_xml_function)(TiXmlElement* pElem));
 	virtual void OpenXMLFile(const wxChar *filepath, HeeksObj* paste_into = NULL);
-	virtual void ObjectWriteBaseXML(HeeksObj* object, TiXmlElement* element);
-	virtual void ObjectReadBaseXML(HeeksObj* object, TiXmlElement* element);
 	virtual std::list<HeeksObj*> GetIDObjects(int type, int id);
 	virtual HeeksObj* GetIDObject(int type, int id);
 	virtual void SetObjectID(HeeksObj* object, int id); // check for existing id using GetIDObject and call DeleteUndoably first
 	virtual void SaveXMLFile(const std::list<HeeksObj*>& objects, const wxChar *filepath, bool for_clipboard);
-	virtual void Changed();
 	virtual void Remove(HeeksObj* obj);
 	virtual void Add(HeeksObj* object, HeeksObj* other);
-	virtual void CreateUndoPoint();
-	virtual void WentTransient(HeeksObj* obj, TransientObject *tobj);
 	virtual const Plugin* GetFirstPlugin();
 	virtual const Plugin* GetNextPlugin();
 
@@ -305,8 +313,8 @@ public:
 	virtual void SetColor(int r, int b, int g);
 	virtual bool InputDouble(const wxChar* prompt, const wxChar* value_name, double &value);
 	virtual bool InputLength(const wxChar* prompt, const wxChar* value_name, double &value);
-	virtual double GetViewUnits();
-	virtual void SetViewUnits(double units, bool write_to_config);
+	virtual EnumUnitType GetViewUnits();
+	virtual void SetViewUnits(EnumUnitType units);
 	virtual void SplineToBiarcs(HeeksObj* spline, std::list<HeeksObj*> &new_spans, double tolerance);
 	virtual HeeksObj* SketchSplineToBiarcs(HeeksObj* sketch, double tolerance);
 	virtual HeeksObj* NewSplineFromPoints(unsigned int num_points, const double* d3); // list of 3 doubles
@@ -324,7 +332,7 @@ public:
 	virtual void OnCopyRotateButton();
 	virtual void OnMoveMirrorButton();
 	virtual void OnCopyMirrorButton();
-	virtual void OnMoveScaleButton();
+	virtual void OnStretchButton();
 
 	virtual void OnMagExtentsButton();
 	virtual void OnMagNoRotButton();
@@ -355,14 +363,15 @@ public:
 	virtual void RegisterOnBeforeNewOrOpen(void(*callbackfunc)(int, int));
 	virtual void RegisterOnBeforeFrameDelete(void(*callbackfunc)());
 
-	virtual void RegisterUnitsChangeHandler( void (*units_changed_handler)(const double value) );
-	virtual void UnregisterUnitsChangeHandler( void (*units_changed_handler)(const double value) );
+	virtual void RegisterUnitsChangeHandler( void (*units_changed_handler)(const EnumUnitType value) );
+	virtual void UnregisterUnitsChangeHandler( void (*units_changed_handler)(const EnumUnitType value) );
 
 	virtual void RegisterHeeksTypesConverter( wxString (*converter)(const int type) );
 	virtual void UnregisterHeeksTypesConverter( wxString (*converter)(const int type) );
 	virtual wxString HeeksType( const int type );
 
 	// Matrix functions
+	virtual bool GetCoordinateSystemMatrix(HeeksObj* object, double *m);
 	virtual void MakeMatrix(double* m, const double *origin, const double* x_axis, const double* y_axis);
 	virtual void TransformPoint(double* p, const double* m);
 	virtual void TransformVector(double* v, const double* m);
@@ -392,4 +401,11 @@ public:
 
 	// Area functions
 	virtual void ObjectAreaString(HeeksObj* object, wxString &s);
+    virtual HeeksObj* NewSketchFromArea(HeeksObj* object);
+
+    virtual void RegisterMarkedListTools(void(*callbackfunc)(std::list<Tool*>&));
+    virtual void RegisterOnRestoreDefaults(void(*callbackfunc)());
+
+    virtual bool UsingRibbon();
+
 };

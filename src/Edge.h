@@ -11,7 +11,8 @@ class CFace;
 class CShape;
 class HVertex;
 
-class CEdge:public HeeksObj{
+class CEdge : public HeeksObj
+{
 private:
 	CBox m_box;
 	TopoDS_Edge m_topods_edge;
@@ -32,11 +33,15 @@ private:
 	HVertex* m_vertex0;
 	HVertex* m_vertex1;
 	PropertyLength m_length;
+	PropertyString m_curve;
 
 	void FindVertices();
 
 public:
-//	int m_temp_attr; // not saved with the model
+
+	static const int ObjType = EdgeType;
+
+
 	std::list<CFace*>::iterator m_faceIt;
 	std::list<CFace*> m_faces;
 	std::list<bool> m_face_senses;
@@ -48,17 +53,15 @@ public:
 	int m_temp_attr; // not saved with the model
 
 	void InitializeProperties();
-	int GetType()const{return EdgeType;}
+	void GetProperties(std::list<Property *> *list);
 	int GetMarkingFilter()const{return EdgeMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	HeeksObj *MakeACopy(void)const{ return new CEdge(*this);}
+	HeeksObj *MakeACopy(void)const{ return new CEdge(*this); }
 	const wxBitmap &GetIcon();
-	const wxChar* GetTypeString(void)const{return _("Edge");}
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	void WriteXML(TiXmlNode *root);
-	bool UsesID(){return true;}
 	bool GetMidPoint(double* pos);
 	bool GetStartPoint(double* pos);
 	bool GetEndPoint(double* pos);
@@ -69,6 +72,7 @@ public:
 	CFace* GetFirstFace();
 	CFace* GetNextFace();
 	int GetCurveType();
+	wxString GetCurveTypeStr();
 	void GetCurveParams(double* start, double* end, double* uStart, double* uEnd, int* Reversed);
 	void GetCurveParams2(double *uStart, double *uEnd, int *isClosed, int *isPeriodic);
 	bool InFaceSense(CFace* face);
@@ -80,6 +84,7 @@ public:
 	bool Orientation();
 	double Length();
 	double Length2(double uStart, double uEnd);
+	void ReplaceVertex(ShapeBuild_ReShape& reshaper, const TopoDS_Vertex& vertex, const TopoDS_Vertex& new_vertex);
 	HVertex* GetVertex0();
 	HVertex* GetVertex1();
 	CShape* GetParentBody();

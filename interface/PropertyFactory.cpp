@@ -7,6 +7,7 @@ const char * PROP_READONLY = "READONLY";
 
 Property * PropertyFactory::CreateProperty ( unsigned char * descriptor, DomainObject * owner ) const
 {
+    int i;
     Property * rtn = NULL;
 
     PropertyDescriptor * prop = (PropertyDescriptor *) descriptor;
@@ -64,9 +65,27 @@ Property * PropertyFactory::CreateProperty ( unsigned char * descriptor, DomainO
         rtn = new PropertyFile(prop->name, prop->title, owner);
         break;
 
+    case PropertyAxisType:
+        rtn = new PropertyAxis(prop->name, prop->title, owner);
+        break;
+
     case PropertyCoordType:
         rtn = new PropertyCoord(prop->name, prop->title, owner);
         break;
+
+    default:
+        return rtn;
+    }
+
+    for ( i = 0; i < sizeof(prop->attributes) / sizeof (PropertyAttribute); i++) {
+        PropertyAttribute attribute = prop->attributes[i];
+        if ( attribute.name == NULL )
+            break;
+        wxString name ( attribute.name );
+        wxString value ( attribute.name );
+        if (name == PROP_READONLY) {
+            rtn->SetReadOnly(true);
+        }
     }
     return rtn;
 }

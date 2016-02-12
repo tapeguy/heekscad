@@ -22,7 +22,7 @@ public:
 	HeeksObj *MakeACopy(void)const{ return new GripperSelTransform(*this);}
 
 	// virtual functions
-	void MakeMatrix(const double* from, const double* to, const double* object_m, gp_Trsf& mat);
+	void MakeMatrix(const double* from, const double* to, const double* object_m, double* m);
 
 	//Gripper's virtual functions
 	void OnGripperMoved( double* from, const double* to );

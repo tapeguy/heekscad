@@ -670,18 +670,6 @@ public:
 
 static PickFaces pick_faces;
 
-class EndSketchModeTool:public Tool{
-public:
-	void Run(){
-		wxGetApp().EndSketchMode();
-		wxGetApp().m_frame->RefreshInputCanvas();
-	}
-	const wxChar* GetTitle(){return _("End Sketch Mode");}
-	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/endsketchmode.png");}
-};
-
-static EndSketchModeTool end_sketch_mode;
-
 void CSelectMode::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 {
 	if(m_doing_a_main_loop)
@@ -699,6 +687,4 @@ void CSelectMode::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 	if(filters.size() != 1 || filters.find(FaceMarkingFilter) == filters.end()) {
 		t_list->push_back(&pick_faces);
 	}
-	if(wxGetApp().m_sketch_mode)
-		t_list->push_back(&end_sketch_mode);
 }

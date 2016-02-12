@@ -21,8 +21,12 @@ private:
 	void do_vertex_for_lots_of_quads( double x, double y );
 
 public:
+
+	static const int ObjType = ImageType;
+
+
 	double m_x[4][3]; // bottom left, bottom right, top right, top left
-	wxString m_file_path;
+	PropertyString m_file_path;
 	bool m_lots_of_quads;
 
 	HImage(const wxChar* file_path);
@@ -33,17 +37,14 @@ public:
 	const HImage& operator=(const HImage &p);
 
 	// HeeksObj's virtual functions
-	int GetType()const{return ImageType;}
+	void InitializeProperties();
 	int GetMarkingFilter()const{return ImageMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxBitmap &GetIcon();
-	const wxChar* GetShortString(void)const;
-	const wxChar* GetTypeString(void)const{return _("Image");}
 	HeeksObj *MakeACopy(void)const;
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void GetProperties(std::list<Property *> *list);
 	bool Stretch(const double *p, const double* shift, void* data);
 	void CopyFrom(const HeeksObj* object){operator=(*((HImage*)object));}
 	void WriteXML(TiXmlNode *root);

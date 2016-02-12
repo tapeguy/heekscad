@@ -114,7 +114,7 @@ void HeeksDxfRead::OnReadSpline(struct SplineData& sd)
 	std::list<double>::iterator itz = sd.controlz.begin();
 	std::list<double>::iterator itw = sd.weight.begin();
 
-	unsigned i=1; //int i=1;
+	unsigned int i = 1;
 	for(std::list<double>::iterator itx = sd.controlx.begin(); itx!=sd.controlx.end(); ++itx)
 	{
 		gp_Pnt pnt(*itx,*ity,*itz);

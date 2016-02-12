@@ -123,7 +123,7 @@ void ManyRemoveOrAddTool::Add()
 	std::list<HeeksObj*>::iterator It;
 	for(It = m_objects.begin(); It != m_objects.end(); It++){
 		HeeksObj* object = *It;
-		m_owner->Add(object, NULL);
+		m_owner->Add(object);
 		object->SetOwner(m_owner);
 	}
 

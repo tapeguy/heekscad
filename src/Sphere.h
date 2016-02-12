@@ -27,7 +27,7 @@ public:
 	const wxBitmap &GetIcon();
 	HeeksObj *MakeACopy(void)const;
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
-	void OnPropertyEdit(Property& prop);
+	void OnPropertySet(Property& prop);
 	bool GetCentrePoint(double* pos);
 	bool GetScaleAboutMatrix(double *m);
 	bool IsDifferent(HeeksObj* other);

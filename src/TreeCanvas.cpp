@@ -150,7 +150,7 @@ void CTreeCanvas::OnMouse( wxMouseEvent& event )
 
 				if(drag_possible)
 				{
-					wxGetApp().CreateUndoPoint();
+				    wxGetApp().StartHistory();
 
 					// cut the objects
 					wxGetApp().Remove(m_dragged_list);
@@ -174,16 +174,16 @@ void CTreeCanvas::OnMouse( wxMouseEvent& event )
 								}
 								if(!one_found)
 								{
-									add_to->Add(object, button ? button->paste_before : NULL);
+								    wxGetApp().AddUndoably(object, add_to, button ? button->paste_before : NULL);
 								}
 							}
 							else
 							{
-								add_to->Add(object, button ? button->paste_before : NULL);
+							    wxGetApp().AddUndoably(object, add_to, button ? button->paste_before : NULL);
 							}
 						}
 					}
-					wxGetApp().Changed();
+					wxGetApp().EndHistory();
 				}
 				else
 				{
@@ -294,9 +294,7 @@ void CTreeCanvas::OnMouse( wxMouseEvent& event )
 
 void CTreeCanvas::OnKeyDown(wxKeyEvent& event)
 {
-	if(event.GetKeyCode() == WXK_ESCAPE && wxGetApp().EndSketchMode())
-	{}
-	else wxGetApp().input_mode_object->OnKeyDown(event);
+	wxGetApp().input_mode_object->OnKeyDown(event);
 
 	event.Skip();
 }
@@ -470,7 +468,7 @@ void CTreeCanvas::AddLabelButton(bool expanded, HeeksObj* prev_object, bool prev
 	}
 	b.type = ButtonTypeLabelBefore;
 	b.obj = object;
-	b.paste_into = object->Owner();
+	b.paste_into = object->GetOwner();
 	b.paste_before = object;
 	m_tree_buttons.push_back(b);
 
@@ -486,7 +484,7 @@ void CTreeCanvas::AddLabelButton(bool expanded, HeeksObj* prev_object, bool prev
 	if(next_object == NULL && !expanded)
 	{
 		b.type = ButtonTypeLabelBefore;
-		b.paste_into = object->Owner();
+		b.paste_into = object->GetOwner();
 		b.paste_before = next_object;
 		m_tree_buttons.push_back(b);
 	}
@@ -497,7 +495,7 @@ void CTreeCanvas::OnLabelLeftDown(HeeksObj* object, wxMouseEvent& event)
 	if(event.ShiftDown())
 	{
 		// mark a list of siblings
-		HeeksObj* parent = object->Owner();
+		HeeksObj* parent = object->GetOwner();
 		std::set<HeeksObj*> sibling_set;
 		std::list<HeeksObj*> sibling_list;
 		for(HeeksObj* sibling = parent->GetFirstChild(); sibling; sibling = parent->GetNextChild())
@@ -701,10 +699,17 @@ void CTreeCanvas::RenderObject(bool expanded, HeeksObj* prev_object, bool prev_o
 
 	int label_start_x = m_xpos;
 	// find icon info
-	if(!render_just_for_calculation)m_dc->DrawBitmap(object->GetIcon(), m_xpos, m_ypos);
+	if(!render_just_for_calculation)
+	{
+	    m_dc->DrawBitmap(object->GetIcon(), m_xpos, m_ypos);
+	}
 	m_xpos += 16;
 
-	wxString str(object->GetShortStringOrTypeString());
+    wxString str = object->GetTitle();
+    if ( str.IsEmpty())
+    {
+            str = object->GetTypeString();
+    }
 	if(!render_just_for_calculation)
 	{
 		if(render_labels && wxGetApp().m_marked_list->ObjectMarked(object))
@@ -736,7 +741,10 @@ void CTreeCanvas::RenderObject(bool expanded, HeeksObj* prev_object, bool prev_o
 	{
 		AddLabelButton(expanded, prev_object, prev_object_expanded, object, next_object, label_start_x, label_end_x);
 	}
-	if(label_end_x > m_max_xpos)m_max_xpos = label_end_x;
+	if(label_end_x > m_max_xpos)
+	{
+	    m_max_xpos = label_end_x;
+	}
 
 	m_ypos += 18;
 

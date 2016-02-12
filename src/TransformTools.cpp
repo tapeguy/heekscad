@@ -11,14 +11,6 @@
 #include "HLine.h"
 #include "HILine.h"
 
-static double from[3];
-static double centre[3];
-
-static void on_move_translate(const double* to)
-{
-	wxGetApp().m_drag_matrix.SetTranslationPart(gp_Vec(make_point(from), make_point(to)));
-	wxGetApp().Repaint(true);
-}
 
 //static
 void TransformTools::RemoveUncopyable()
@@ -47,83 +39,68 @@ void TransformTools::Translate(bool copy)
 	config.Read(_T("TranslateNumCopies"), &ncopies, 1);
 	if(copy)
 	{
-		// check for uncopyable objects
-		RemoveUncopyable();
-		if(wxGetApp().m_marked_list->size() == 0)return;
-
-		// input "number of copies"
-		if(!wxGetApp().InputInt(_("Enter number of copies"), _("number of copies"), ncopies))return;
-		if(ncopies < 1)return;
-		config.Write(_T("TranslateNumCopies"), ncopies);
+        // check for uncopyable objects
+        RemoveUncopyable();
+        if(wxGetApp().m_marked_list->size() == 0)return;
 	}
 
 	// clear the selection
 	std::list<HeeksObj *> selected_items = wxGetApp().m_marked_list->list();
 	wxGetApp().m_marked_list->Clear(true);
 
-	// pick "from" position
-	if(!wxGetApp().PickPosition(_("Click position to move from"), from))return;
+    double from[3], to[3];
+    config.Read(_T("TranslateFromX"), &from[0], 0.0);
+    config.Read(_T("TranslateFromY"), &from[1], 0.0);
+    config.Read(_T("TranslateFromZ"), &from[2], 0.0);
+    config.Read(_T("TranslateToX"), &to[0], 0.0);
+    config.Read(_T("TranslateToY"), &to[1], 0.0);
+    config.Read(_T("TranslateToZ"), &to[2], 0.0);
 
-	// pick "to" position
-	wxGetApp().CreateTransformGLList(selected_items, false);
-	wxGetApp().m_drag_matrix = gp_Trsf();
-	if(!copy)
-	{
-		for(std::list<HeeksObj*>::const_iterator It = selected_items.begin(); It != selected_items.end(); It++){
-			HeeksObj* object = *It;
-			if ( object->IsVisible ( ) )
-			    wxGetApp().m_hidden_for_drag.push_back(object);
-			object->SetVisible ( false );
-		}
-	}
-	double to[3];
+    if(!wxGetApp().InputFromAndTo(from, to, copy ? &ncopies : NULL))return;
 
-	bool move_to_accepted = wxGetApp().PickPosition(_("Click position to move to"), to, on_move_translate);
+    if(copy)
+    {
+            if(ncopies < 1)return;
+            config.Write(_T("TranslateNumCopies"), ncopies);
+    }
+    config.Write(_T("TranslateFromX"), from[0]);
+    config.Write(_T("TranslateFromY"), from[1]);
+    config.Write(_T("TranslateFromZ"), from[2]);
+    config.Write(_T("TranslateToX"), to[0]);
+    config.Write(_T("TranslateToY"), to[1]);
+    config.Write(_T("TranslateToZ"), to[2]);
 
-	if(!copy)
-	{
-		for(std::list<HeeksObj*>::iterator It = wxGetApp().m_hidden_for_drag.begin(); It != wxGetApp().m_hidden_for_drag.end(); It++)
-		{
-			HeeksObj* object = *It;
-			object->SetVisible ( true );
-		}
-		wxGetApp().m_hidden_for_drag.clear();
-	}
-	wxGetApp().DestroyTransformGLList();
+    wxGetApp().StartHistory();
 
-	if(!move_to_accepted)return;
+    // transform the objects
+    if(copy)
+    {
+        for(int i = 0; i<ncopies; i++)
+        {
+            gp_Trsf mat;
+            mat.SetTranslationPart(make_vector(make_point(from), make_point(to)) * (i + 1));
+            double m[16];
+            extract(mat, m);
+            for(std::list<HeeksObj*>::iterator It = selected_items.begin(); It != selected_items.end(); It++)
+            {
+                HeeksObj* object = *It;
+                HeeksObj* new_object = object->MakeACopy();
+                object->GetOwner()->Add(new_object);
+                wxGetApp().TransformUndoably(new_object, m);
+            }
+        }
+        wxGetApp().m_marked_list->Clear(true);
+    }
+    else
+    {
+        gp_Trsf mat;
+        mat.SetTranslationPart(make_vector(make_point(from), make_point(to)));
+        double m[16];
+        extract(mat, m);
+        wxGetApp().TransformUndoably(selected_items, m);
+    }
 
-	wxGetApp().CreateUndoPoint();
-
-	// transform the objects
-	if(copy)
-	{
-		for(int i = 0; i<ncopies; i++)
-		{
-			gp_Trsf mat;
-			mat.SetTranslationPart(make_vector(make_point(from), make_point(to)) * (i + 1));
-			double m[16];
-			extract(mat, m);
-			for(std::list<HeeksObj*>::iterator It = selected_items.begin(); It != selected_items.end(); It++)
-			{
-				HeeksObj* object = *It;
-				HeeksObj* new_object = object->MakeACopy();
-				object->Owner()->Add(new_object, NULL);
-				new_object->ModifyByMatrix(m);
-			}
-		}
-		wxGetApp().m_marked_list->Clear(true);
-	}
-	else
-	{
-		gp_Trsf mat;
-		mat.SetTranslationPart(make_vector(make_point(from), make_point(to)));
-		double m[16];
-		extract(mat, m);
-		wxGetApp().Transform(selected_items, m);
-	}
-
-	wxGetApp().Changed();
+    wxGetApp().EndHistory();
 }
 
 //static
@@ -188,7 +165,7 @@ void TransformTools::Rotate(bool copy)
 	line_Pos = gp_Pnt(pos[0], pos[1], pos[2]);
 
 	// transform the objects
-	wxGetApp().CreateUndoPoint();
+	wxGetApp().StartHistory();
 	if(copy)
 	{
 		for(int i = 0; i<ncopies; i++)
@@ -204,8 +181,8 @@ void TransformTools::Rotate(bool copy)
 			{
 				HeeksObj* object = *It;
 				HeeksObj* new_object = object->MakeACopy();
-				new_object->ModifyByMatrix(m);              // Rotate the duplicate object.
-				object->Owner()->Add(new_object, NULL);     // And add it to this object's owner
+                wxGetApp().TransformUndoably(new_object, m);             // Rotate the duplicate object.
+                wxGetApp().AddUndoably(new_object, object->GetOwner(), NULL);// And add it to this object's owner
 			}
 		}
 		wxGetApp().m_marked_list->Clear(true);
@@ -219,9 +196,9 @@ void TransformTools::Rotate(bool copy)
 		mat = tmat * mat;
 		double m[16];
 		extract(mat, m);
-		wxGetApp().Transform(selected_items, m);
+		wxGetApp().TransformUndoably(selected_items, m);
 	}
-	wxGetApp().Changed();
+	wxGetApp().EndHistory();
 }
 
 //static
@@ -247,9 +224,11 @@ void TransformTools::Mirror(bool copy)
 	// pick a line to mirror about
 	bool line_found = false;
 	gp_Lin line;
+	std::set<MarkingFilter> save_filter = wxGetApp().m_marked_list->GetFilters();
 	MarkingFilter line_filters[] = { LineMarkingFilter, ILineMarkingFilter };
 	std::set<MarkingFilter> filterset (line_filters, line_filters + sizeof(line_filters) / sizeof(MarkingFilter));
 	wxGetApp().PickObjects(_("Pick line to mirror about"), filterset, true);
+	wxGetApp().m_marked_list->SetFilters(save_filter);
 	for(std::list<HeeksObj *>::const_iterator It = wxGetApp().m_marked_list->list().begin(); It != wxGetApp().m_marked_list->list().end(); It++)
 	{
 		HeeksObj* object = *It;
@@ -267,7 +246,7 @@ void TransformTools::Mirror(bool copy)
 	if(!line_found)return;
 
 	// transform the objects
-	wxGetApp().CreateUndoPoint();
+	wxGetApp().StartHistory();
 	gp_Trsf mat;
 	mat.SetMirror(gp_Ax1(line.Location(), line.Direction()));
 	double m[16];
@@ -279,23 +258,23 @@ void TransformTools::Mirror(bool copy)
 		{
 			HeeksObj* object = *It;
 			HeeksObj* new_object = object->MakeACopy();
-			object->Owner()->Add(new_object, NULL);
-			new_object->ModifyByMatrix(m);
+            wxGetApp().AddUndoably(new_object, object->GetOwner(), NULL);
+            wxGetApp().TransformUndoably(new_object, m);
 		}
 		wxGetApp().m_marked_list->Clear(true);
 	}
 	else
 	{
-		wxGetApp().Transform(selected_items, m);
+	    wxGetApp().TransformUndoably(selected_items, m);
 	}
-	wxGetApp().Changed();
+	wxGetApp().EndHistory();
 }
 
-void TransformTools::Scale(bool copy)
+void TransformTools::Stretch(bool copy)
 {
 	// pick items
 	if(wxGetApp().m_marked_list->size() == 0){
-		wxGetApp().PickObjects(_("Pick objects to scale"));
+		wxGetApp().PickObjects(_("Pick objects to stretch"));
 	}
 	if(wxGetApp().m_marked_list->size() == 0)return;
 
@@ -319,42 +298,41 @@ void TransformTools::Scale(bool copy)
 	std::list<HeeksObj *> selected_items = wxGetApp().m_marked_list->list();
 	wxGetApp().m_marked_list->Clear(true);
 
-	// pick "centre" position
-	if(!wxGetApp().PickPosition(_("Click centre position to scale about"), centre))return;
-
-	// enter scale factor
-	double scale;
-	config.Read(_T("ScaleFactor"), &scale, 2.0);
-	if(!wxGetApp().InputDouble(_("Enter scale factor"), _("scale factor"), scale))return;
-	config.Write(_T("ScaleFactor"), scale);
+	// enter scale factors
+	double scale[3];
+	config.Read(_T("XScaleFactor"), &scale[0], 1.0);
+	config.Read(_T("YScaleFactor"), &scale[1], 1.0);
+	config.Read(_T("ZScaleFactor"), &scale[2], 1.0);
+	if(!wxGetApp().InputScalingValues(scale))return;
+	config.Write(_T("XScaleFactor"), scale[0]);
+	config.Write(_T("YScaleFactor"), scale[1]);
+	config.Write(_T("ZScaleFactor"), scale[2]);
 
 	// transform the objects
-	wxGetApp().CreateUndoPoint();
+
+	wxGetApp().StartHistory();
 	if(copy)
 	{
+	    double p[3];
 		for(int i = 0; i<ncopies; i++)
 		{
-			gp_Trsf mat;
-			mat.SetScale(make_point(centre), scale * (i+1));
-			double m[16];
-			extract(mat, m);
 			for(std::list<HeeksObj*>::iterator It = selected_items.begin(); It != selected_items.end(); It++)
 			{
 				HeeksObj* object = *It;
 				HeeksObj* new_object = object->MakeACopy();
-				object->Owner()->Add(new_object, NULL);
-				new_object->ModifyByMatrix(m);
+                wxGetApp().AddUndoably(new_object, object->GetOwner(), NULL);
+                for (int i = 0; i < 3; i++) {
+                    p[i] = 0;
+                }
+                new_object->GetStartPoint(p);
+                wxGetApp().StretchUndoably(new_object, p, scale);
 			}
 		}
 		wxGetApp().m_marked_list->Clear(true);
 	}
 	else
 	{
-		gp_Trsf mat;
-		mat.SetScale(make_point(centre), scale);
-		double m[16];
-		extract(mat, m);
-		wxGetApp().Transform(selected_items, m);
+		wxGetApp().StretchUndoably(selected_items, scale);
 	}
-	wxGetApp().Changed();
+	wxGetApp().EndHistory();
 }

@@ -14,7 +14,6 @@
 RegularShapesDrawing::RegularShapesDrawing(void)
 {
 	InitializeProperties();
-	temp_object = NULL;
 	m_drawing_mode = RectanglesRegularShapeMode;
 	m_number_of_side_for_polygon = 6;
 	m_rect_radius = 0.0;
@@ -33,38 +32,34 @@ void RegularShapesDrawing::InitializeProperties()
 	m_drawing_mode.m_choices.push_back ( wxString ( _("draw slots") ) );
 
 	m_polygon_mode.Initialize(_("polygon mode"), this);
-	m_polygon_mode.m_choices.push_back ( wxString ( _("excribed circle") ) );
+	m_polygon_mode.m_choices.push_back ( wxString ( _("exscribed circle") ) );
 	m_polygon_mode.m_choices.push_back ( wxString ( _("inscribed circle") ) );
 
 	m_number_of_side_for_polygon.Initialize(_("number of sides for polygon"), this);
 
-	m_rect_radius.Initialize(_("radius"), this);
-	m_obround_radius.Initialize(_("radius"), this);
+	m_rect_radius.Initialize(_("rect radius"), this);
+	m_obround_radius.Initialize(_("obround radius"), this);
 }
 
 void RegularShapesDrawing::ClearSketch()
 {
-	if(temp_object)((CSketch*)temp_object)->Clear();
+    if(TempObject())((CSketch*)TempObject())->Clear();
 }
 
 bool RegularShapesDrawing::calculate_item(DigitizedPoint &end)
 {
 	if(end.m_type == DigitizeNoItemType)return false;
 
-	if(temp_object && temp_object->GetType() != SketchType){
-		delete temp_object;
-		temp_object = NULL;
-		temp_object_in_list.clear();
-	}
+    if(TempObject() && TempObject()->GetType() != SketchType){
+        ClearObjectsMade();
+    }
 
-	// make sure sketch exists
-	if(!temp_object){
-		temp_object = new CSketch;
-		if(temp_object)temp_object_in_list.push_back(temp_object);
-	}
+    // make sure sketch exists
+    if(TempObject()==NULL){
+        AddToTempObjects(new CSketch);
+    }
 
 	gp_Trsf mat;
-	if(!wxGetApp().m_sketch_mode)mat = wxGetApp().GetDrawMatrix(true);
 	gp_Dir xdir = gp_Dir(1, 0, 0).Transformed(mat);
 	gp_Dir ydir = gp_Dir(0, 1, 0).Transformed(mat);
 	gp_Dir zdir = gp_Dir(0, 0, 1).Transformed(mat);
@@ -140,32 +135,32 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 		else good_num = 8;
 	}
 
-	if(temp_object->GetNumChildren() != good_num)ClearSketch();
-	// check first item
-	else if(temp_object->GetFirstChild()->GetType() != (radii_wanted ? ArcType:LineType))
-		ClearSketch();
+    if(TempObject()->GetNumChildren() != good_num)ClearSketch();
+    // check first item
+    else if(TempObject()->GetFirstChild()->GetType() != (radii_wanted ? ArcType:LineType))
+        ClearSketch();
 
 	if(radii_wanted)
 	{
 		if(x_lines_disappear && y_lines_disappear)
 		{
-			// make two arcs, for a circle
-			HArc* arcs[2];
-			if(temp_object->GetNumChildren() > 0)
-			{
-				HeeksObj* object = temp_object->GetFirstChild();
-				for(int i = 0; i<2; i++)
-				{
-					arcs[i] = (HArc*)object;
-					object = temp_object->GetNextChild();
-				}
-			}
+            // make two arcs, for a circle
+            HArc* arcs[2];
+            if(TempObject()->GetNumChildren() > 0)
+            {
+                HeeksObj* object = TempObject()->GetFirstChild();
+                for(int i = 0; i<2; i++)
+                {
+                    arcs[i] = (HArc*)object;
+                    object = TempObject()->GetNextChild();
+                }
+            }
 			else
 			{
 				for(int i = 0; i<2; i++)
 				{
 					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
-					temp_object->Add(arcs[i], NULL);
+					TempObject()->Add(arcs[i]);
 				}
 			}
 			arcs[0]->A->m_p = p0.XYZ() + xdir.XYZ() * m_rect_radius;
@@ -180,15 +175,15 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 			// arc-line-arc-line
 			HArc* arcs[2];
 			HLine* lines[2];
-			if(temp_object->GetNumChildren() > 0)
+			if(TempObject()->GetNumChildren() > 0)
 			{
-				HeeksObj* object = temp_object->GetFirstChild();
+				HeeksObj* object = TempObject()->GetFirstChild();
 				for(int i = 0; i<2; i++)
 				{
 					arcs[i] = (HArc*)object;
-					object = temp_object->GetNextChild();
+					object = TempObject()->GetNextChild();
 					lines[i] = (HLine*)object;
-					object = temp_object->GetNextChild();
+					object = TempObject()->GetNextChild();
 				}
 			}
 			else
@@ -196,9 +191,9 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 				for(int i = 0; i<2; i++)
 				{
 					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
-					temp_object->Add(arcs[i], NULL);
+					TempObject()->Add(arcs[i]);
 					lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
-					temp_object->Add(lines[i], NULL);
+					TempObject()->Add(lines[i]);
 				}
 			}
 
@@ -231,15 +226,15 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 			// arc-line-arc-line-arc-line-arc-line
 			HLine* lines[4];
 			HArc* arcs[4];
-			if(temp_object->GetNumChildren() > 0)
+			if(TempObject()->GetNumChildren() > 0)
 			{
-				HeeksObj* object = temp_object->GetFirstChild();
+				HeeksObj* object = TempObject()->GetFirstChild();
 				for(int i = 0; i<4; i++)
 				{
 					arcs[i] = (HArc*)object;
-					object = temp_object->GetNextChild();
+					object = TempObject()->GetNextChild();
 					lines[i] = (HLine*)object;
-					object = temp_object->GetNextChild();
+					object = TempObject()->GetNextChild();
 				}
 			}
 			else
@@ -247,9 +242,9 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 				for(int i = 0; i<4; i++)
 				{
 					arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
-					temp_object->Add(arcs[i], NULL);
+					TempObject()->Add(arcs[i]);
 					lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
-					temp_object->Add(lines[i], NULL);
+					TempObject()->Add(lines[i]);
 				}
 			}
 
@@ -279,13 +274,13 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 	{
 		// line-line-line-line
 		HLine* lines[4];
-		if(temp_object->GetNumChildren() > 0)
+		if(TempObject()->GetNumChildren() > 0)
 		{
-			HeeksObj* object = temp_object->GetFirstChild();
+			HeeksObj* object = TempObject()->GetFirstChild();
 			for(int i = 0; i<4; i++)
 			{
 				lines[i] = (HLine*)object;
-				object = temp_object->GetNextChild();
+				object = TempObject()->GetNextChild();
 			}
 		}
 		else
@@ -293,7 +288,7 @@ void RegularShapesDrawing::CalculateRectangle(double x, double y, const gp_Pnt& 
 			for(int i = 0; i<4; i++)
 			{
 				lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
-				temp_object->Add(lines[i], NULL);
+				TempObject()->Add(lines[i]);
 			}
 		}
 
@@ -312,17 +307,17 @@ void RegularShapesDrawing::CalculatePolygon(const gp_Pnt& p0, const gp_Pnt& p1, 
 {
 	if(p0.IsEqual(p1, wxGetApp().m_geom_tol))return;
 
-	if(temp_object->GetNumChildren() != m_number_of_side_for_polygon)
+	if(TempObject()->GetNumChildren() != m_number_of_side_for_polygon)
 		ClearSketch();
 	HLine** lines = (HLine**)malloc(m_number_of_side_for_polygon * sizeof(HLine*));
 
-	if(temp_object->GetNumChildren() > 0)
+	if(TempObject()->GetNumChildren() > 0)
 	{
-		HeeksObj* object = temp_object->GetFirstChild();
+		HeeksObj* object = TempObject()->GetFirstChild();
 		for(int i = 0; i<m_number_of_side_for_polygon; i++)
 		{
 			lines[i] = (HLine*)object;
-			object = temp_object->GetNextChild();
+			object = TempObject()->GetNextChild();
 		}
 	}
 	else
@@ -330,7 +325,7 @@ void RegularShapesDrawing::CalculatePolygon(const gp_Pnt& p0, const gp_Pnt& p1, 
 		for(int i = 0; i<m_number_of_side_for_polygon; i++)
 		{
 			lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
-			temp_object->Add(lines[i], NULL);
+			TempObject()->Add(lines[i]);
 		}
 	}
 
@@ -386,19 +381,19 @@ void RegularShapesDrawing::CalculateObround(const gp_Pnt& p0, const gp_Pnt& p1, 
 	int good_num = 4;
 	if(lines_disappear)good_num = 2;
 
-	if(temp_object->GetNumChildren() != good_num)ClearSketch();
+	if(TempObject()->GetNumChildren() != good_num)ClearSketch();
 
 	if(lines_disappear)
 	{
 		// make two arcs, for a circle
 		HArc* arcs[2];
-		if(temp_object->GetNumChildren() > 0)
+		if(TempObject()->GetNumChildren() > 0)
 		{
-			HeeksObj* object = temp_object->GetFirstChild();
+			HeeksObj* object = TempObject()->GetFirstChild();
 			for(int i = 0; i<2; i++)
 			{
 				arcs[i] = (HArc*)object;
-				object = temp_object->GetNextChild();
+				object = TempObject()->GetNextChild();
 			}
 		}
 		else
@@ -406,31 +401,32 @@ void RegularShapesDrawing::CalculateObround(const gp_Pnt& p0, const gp_Pnt& p1, 
 			for(int i = 0; i<2; i++)
 			{
 				arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
-				temp_object->Add(arcs[i], NULL);
+				TempObject()->Add(arcs[i]);
 			}
 		}
 		arcs[0]->A->m_p = p0.XYZ() + xdir.XYZ() * m_obround_radius;
 		arcs[0]->B->m_p = p0.XYZ() - xdir.XYZ() * m_obround_radius;
 		arcs[0]->SetCircle(gp_Circ(gp_Ax2(p0, zdir), m_obround_radius));
+        arcs[1] = arcs[0];
+
+        // Swap start and end
 		arcs[1]->A->m_p = arcs[0]->B->m_p;
 		arcs[1]->B->m_p = arcs[0]->A->m_p;
-		arcs[1]->C->m_p = arcs[0]->C->m_p;
-		arcs[1]->m_axis = arcs[0]->m_axis;
 	}
 	else
 	{
 		// arc-line-arc-line
 		HArc* arcs[2];
 		HLine* lines[2];
-		if(temp_object->GetNumChildren() > 0)
+		if(TempObject()->GetNumChildren() > 0)
 		{
-			HeeksObj* object = temp_object->GetFirstChild();
+			HeeksObj* object = TempObject()->GetFirstChild();
 			for(int i = 0; i<2; i++)
 			{
 				arcs[i] = (HArc*)object;
-				object = temp_object->GetNextChild();
+				object = TempObject()->GetNextChild();
 				lines[i] = (HLine*)object;
-				object = temp_object->GetNextChild();
+				object = TempObject()->GetNextChild();
 			}
 		}
 		else
@@ -438,9 +434,9 @@ void RegularShapesDrawing::CalculateObround(const gp_Pnt& p0, const gp_Pnt& p1, 
 			for(int i = 0; i<2; i++)
 			{
 				arcs[i] = new HArc(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), gp_Circ(), wxGetApp().CurrentColor());
-				temp_object->Add(arcs[i], NULL);
+				TempObject()->Add(arcs[i]);
 				lines[i] = new HLine(gp_Pnt(0, 0, 0), gp_Pnt(0, 0, 0), wxGetApp().CurrentColor());
-				temp_object->Add(lines[i], NULL);
+				TempObject()->Add(lines[i]);
 			}
 		}
 
@@ -458,13 +454,6 @@ void RegularShapesDrawing::CalculateObround(const gp_Pnt& p0, const gp_Pnt& p1, 
 		lines[1]->A->m_p = arcs[1]->B->m_p;
 		lines[1]->B->m_p = arcs[0]->A->m_p;
 	}
-}
-
-void RegularShapesDrawing::clear_drawing_objects(int mode)
-{
-	if(mode == 2 && temp_object)delete temp_object;
-	temp_object = NULL;
-	temp_object_in_list.clear();
 }
 
 const wxChar* RegularShapesDrawing::GetTitle()

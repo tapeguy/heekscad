@@ -24,9 +24,9 @@ CCone::CCone(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& c
 
 void CCone::InitializeProperties()
 {
-	m_r1.Initialize(_("r1"), this);
-	m_r2.Initialize(_("r2"), this);
-	m_height.Initialize(_("height"), this);
+	m_r1.Initialize(_("r1"), this, true);
+	m_r2.Initialize(_("r2"), this, true);
+	m_height.Initialize(_("height"), this, true);
 }
 
 void CCone::GetProperties(std::list<Property *> *list)
@@ -53,7 +53,7 @@ void CCone::glCommands(bool select, bool marked, bool no_color)
 
 	glEnable(GL_LIGHTING);
 	glShadeModel(GL_SMOOTH);
-	Material(m_color).glMaterial(1.0);
+	Material(GetColor()).glMaterial(1.0);
 
 	int num_facets = 20;
 	gp_Pnt pt_top = m_pos.Location().XYZ() + m_pos.Direction().XYZ() * m_height;
@@ -169,7 +169,6 @@ void CCone::MakeTransformedShape(const gp_Trsf &mat)
 	m_r1 = fabs(m_r1 * scale);
 	m_r2 = fabs(m_r2 * scale);
 	m_height = fabs(m_height * scale);
-	m_shape = BRepPrimAPI_MakeCone(m_pos, m_r1, m_r2, m_height).Shape();
 }
 
 wxString CCone::StretchedName(){ return _("Stretched Cone");}
@@ -193,21 +192,16 @@ void CCone::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	list->push_back(GripData(GripperTypeRotateObject,pmx.X(),pmx.Y(),pmx.Z(),NULL));
 }
 
-void CCone::OnPropertyEdit(Property& prop)
+void CCone::OnPropertySet(Property& prop)
 {
 	if (prop == m_r1 || prop == m_r2 || prop == m_height) {
-		CCone* new_object = new CCone(m_pos, m_r1, m_r2, m_height, m_title.c_str(), m_color, m_opacity);
-		new_object->CopyIDsFrom(this);
-		Owner()->Add(new_object, NULL);
-		Owner()->Remove(this);
-		if(wxGetApp().m_marked_list->ObjectMarked(this))
-		{
-			wxGetApp().m_marked_list->Remove(this,false);
-			wxGetApp().m_marked_list->Add(new_object, true);
-		}
+	    m_shape = BRepPrimAPI_MakeCone(m_pos, m_r1, m_r2, m_height).Shape();
+        delete_faces_and_edges();
+        KillGLLists();
+        create_faces_and_edges();
 	}
 	else {
-		CSolid::OnPropertyEdit(prop);
+		CSolid::OnPropertySet(prop);
 	}
 }
 
@@ -272,9 +266,13 @@ bool CCone::Stretch2(const double *p, const double* shift, gp_Ax2& new_pos, doub
 	else if(pz.IsEqual(vp, wxGetApp().m_geom_tol)){
 		pz = pz.XYZ() + vshift.XYZ();
 		new_height = gp_Vec(pz.XYZ()) * gp_Vec(z_dir) - gp_Vec(o.XYZ()) * gp_Vec(z_dir);
-		if(new_height > 0){
+		if(fabs(m_height - new_height) > 0.000000001){
 			make_a_new_cone = true;
 		}
+	}
+	else {
+	    CSolid::Stretch(p, shift, NULL);
+	    return false;
 	}
 
 	return make_a_new_cone;
@@ -282,24 +280,27 @@ bool CCone::Stretch2(const double *p, const double* shift, gp_Ax2& new_pos, doub
 
 bool CCone::Stretch(const double *p, const double* shift, void* data)
 {
-	gp_Ax2 new_pos = m_pos;
-	double new_r1 = m_r1;
-	double new_r2 = m_r2;
-	double new_height = m_height;
+    gp_Ax2 new_pos = m_pos;
+    double new_r1 = m_r1;
+    double new_r2 = m_r2;
+    double new_height = m_height;
 
-	bool make_a_new_cone = Stretch2(p, shift, new_pos, new_r1, new_r2, new_height);
+    bool make_a_new_cone = Stretch2(p, shift, new_pos, new_r1, new_r2, new_height);
 
-	if(make_a_new_cone)
-	{
-		CCone* new_object = new CCone(new_pos, new_r1, new_r2, new_height, m_title.c_str(), m_color, m_opacity);
-		new_object->CopyIDsFrom(this);
-		Owner()->Add(new_object, NULL);
-		Owner()->Remove(this);
-		wxGetApp().m_marked_list->Clear(true);
-		wxGetApp().m_marked_list->Add(new_object, true);
-	}
+    if(make_a_new_cone)
+    {
+        if (m_r1 != new_r1) {
+            m_r1 = new_r1;
+        }
+        if (m_r2 != new_r2) {
+            m_r2 = new_r2;
+        }
+        if (m_height != new_height) {
+            m_height = new_height;
+        }
+    }
 
-	return true;
+    return false;
 }
 
 bool CCone::StretchTemporary(const double *p, const double* shift, void* data)

@@ -10,11 +10,14 @@ class CObjPropsCanvas: public CPropertiesCanvas
 {
 private:
 	wxAuiToolBar *m_toolBar;
-	ObjectCanvas* m_object_canvas;
+	wxChoice *m_unit_dropdown;
 
 	void ClearInitialProperties();
 	void RefreshByRemovingAndAddingAll();
 	void RefreshByMerging();
+
+protected:
+	void AddProperty(Property* property, wxPGProperty* parent_prop = NULL);
 
 public:
 	CObjPropsCanvas(wxWindow* parent);
@@ -23,6 +26,8 @@ public:
 	//virtual void OnDraw(wxDC& dc);
 	void OnSize(wxSizeEvent& event);
 	void OnPropertyGridChange( wxPropertyGridEvent& event );
+	void OnPropertyEditBegin( wxPropertyGridEvent& event );
+    void OnBindButton(wxCommandEvent& event);
 
 	// Observer's virtual functions
 	void WhenMarkedListChanges(bool selection_cleared, const std::list<HeeksObj *>* added_list, const std::list<HeeksObj *>* removed_list);

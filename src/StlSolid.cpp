@@ -3,6 +3,8 @@
 // This program is released under the BSD license. See the file COPYING for details.
 #include "stdafx.h"
 #include "StlSolid.h"
+#include "DexelSolid.h"
+
 
 using namespace std;
 
@@ -24,18 +26,23 @@ CStlTri::CStlTri(const double* t)
 	x[2][2] = (float)t[8];
 }
 
-CStlSolid::CStlSolid(const HeeksColor* col):m_color(*col), m_gl_list(0){
-	m_title.assign(GetTypeString());
+
+CStlSolid::CStlSolid()
+ : IdNamedObj(ObjType), m_color(wxGetApp().current_color), m_gl_list(0)
+{
 }
 
-CStlSolid::CStlSolid():m_color(wxGetApp().current_color), m_gl_list(0){
-	m_title.assign(GetTypeString());
+
+CStlSolid::CStlSolid(const HeeksColor* col)
+ : IdNamedObj(ObjType), m_color(*col), m_gl_list(0)
+{
 }
 
 #ifdef UNICODE
 // constructor for the Boost Python interface
-CStlSolid::CStlSolid(const std::wstring& filepath):m_color(wxGetApp().current_color), m_gl_list(0){
-	m_title.assign(GetTypeString());
+CStlSolid::CStlSolid(const std::wstring& filepath)
+ : IdNamedObj(ObjType), m_color(wxGetApp().current_color), m_gl_list(0)
+{
 	read_from_file(filepath.c_str());
 
 	if(wxGetApp().m_in_OpenFile && wxGetApp().m_file_open_matrix)
@@ -45,14 +52,22 @@ CStlSolid::CStlSolid(const std::wstring& filepath):m_color(wxGetApp().current_co
 }
 #endif
 
-CStlSolid::CStlSolid(const wxChar* filepath, const HeeksColor* col):m_color(*col), m_gl_list(0){
-	m_title.assign(GetTypeString());
+CStlSolid::CStlSolid(const wxChar* filepath, const HeeksColor* col)
+ : IdNamedObj(ObjType), m_color(*col), m_gl_list(0)
+{
 	read_from_file(filepath);
 
 	if(wxGetApp().m_in_OpenFile && wxGetApp().m_file_open_matrix)
 	{
 		ModifyByMatrix(wxGetApp().m_file_open_matrix);
 	}
+}
+
+
+CStlSolid::CStlSolid( const CStlSolid & rhs )
+ : IdNamedObj(rhs), m_gl_list(0)
+{
+    *this = rhs;    // Call the assignment operator.
 }
 
 void CStlSolid::read_from_file(const wxChar* filepath)
@@ -67,6 +82,7 @@ void CStlSolid::read_from_file(const wxChar* filepath)
 	if(strcmp(solid_string, "solid"))
 	{
 		// try binary file read
+	    cout << "STL binary file: " << filepath << endl;
 
 		// read the header
 		char header[81];
@@ -77,8 +93,13 @@ void CStlSolid::read_from_file(const wxChar* filepath)
 		unsigned int num_facets = 0;
 		ifs.read((char*)(&num_facets), 4);
 
+		cout << "STL facets: " << num_facets << endl;
+
 		for(unsigned int i = 0; i<num_facets; i++)
 		{
+		    if (i % 1000 == 0) {
+		        cout << ".";
+		    }
 			CStlTri tri;
 			float n[3];
 			ifs.read((char*)(n), 12);
@@ -87,6 +108,7 @@ void CStlSolid::read_from_file(const wxChar* filepath)
 			ifs.read((char*)(&attr), 2);
 			m_list.push_back(tri);
 		}
+		cout << endl << "done." << endl;
 	}
 	else
 	{
@@ -95,7 +117,9 @@ void CStlSolid::read_from_file(const wxChar* filepath)
 		ifs.getline(&str[5], 1024);
 		char title[1024];
 		if(sscanf(str, "solid %s", title) == 1)
-			m_title.assign(Ctt(title));
+		{
+		    SetTitle(Ctt(title));
+		}
 
 		CStlTri t;
 		char five_chars[6] = "aaaaa";
@@ -155,7 +179,6 @@ const CStlSolid& CStlSolid::operator=(const CStlSolid& s)
 
 	// don't copy id
 	m_box = s.m_box;
-	m_title = s.m_title;
 	KillGLLists();
 
 	m_color = s.m_color;
@@ -169,10 +192,10 @@ const CStlSolid& CStlSolid::operator=(const CStlSolid& s)
 bool CStlSolid::IsDifferent(HeeksObj* other)
 {
 	CStlSolid* shape = (CStlSolid*)other;
-	if(shape->m_color.COLORREF_color() != m_color.COLORREF_color() || shape->m_title.CompareTo(m_title) || shape->m_box != m_box)
+	if(shape->m_color.COLORREF_color() != m_color.COLORREF_color() || shape->m_box != m_box)
 		return true;
 
-	return HeeksObj::IsDifferent(other);
+	return IdNamedObj::IsDifferent(other);
 }
 
 
@@ -273,11 +296,6 @@ void CStlSolid::ModifyByMatrix(const double* m){
 	KillGLLists();
 }
 
-CStlSolid::CStlSolid( const CStlSolid & rhs ) : m_gl_list(0)
-{
-    *this = rhs;    // Call the assignment operator.
-}
-
 HeeksObj *CStlSolid::MakeACopy(void)const{
 	CStlSolid *new_object = new CStlSolid(*this);
 	return new_object;
@@ -286,11 +304,6 @@ HeeksObj *CStlSolid::MakeACopy(void)const{
 void CStlSolid::CopyFrom(const HeeksObj* object)
 {
 	operator=(*((CStlSolid*)object));
-}
-
-void CStlSolid::OnEditString(const wxChar* str){
-	m_title.assign(str);
-	wxGetApp().Changed();
 }
 
 void CStlSolid::GetTriangles(void(*callbackfunc)(const double* x, const double* n), double cusp, bool just_one_average_normal){
@@ -334,6 +347,30 @@ void CStlSolid::GetTriangles(void(*callbackfunc)(const double* x, const double* 
 		{
 		}
 	}
+}
+
+static CStlSolid* solid_for_tools = NULL;
+
+class DexelateTool:public Tool{
+public:
+    // Tool's virtual functions
+    void Run() {
+        DexelSolid* new_object = new DexelSolid();
+        new_object->FromStlSolid(solid_for_tools);
+
+        solid_for_tools->GetOwner()->Add(new_object);
+        solid_for_tools->GetOwner()->Remove(solid_for_tools);
+    }
+    const wxChar* GetTitle(){ return _("Dexelate");}
+    wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/offsetsolid.png");}
+};
+
+static DexelateTool dexelate_tool;
+
+void CStlSolid::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
+{
+    solid_for_tools = this;
+    t_list->push_back(&dexelate_tool);
 }
 
 void CStlSolid::WriteXML(TiXmlNode *root)

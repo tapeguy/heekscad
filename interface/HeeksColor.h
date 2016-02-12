@@ -16,7 +16,9 @@ public:
 	HeeksColor(unsigned char a, unsigned char b, unsigned char c);
 	HeeksColor(long color);
 	HeeksColor(Aci_t aci);
-	long COLORREF_color(void)const;
+	long COLORREF_color() const;
+	wxString ToHtmlColor() const;
+	bool FromHtmlColor(const wxChar * color);
 	bool operator==(const HeeksColor &b)const{if(red == b.red && green == b.green && blue == b.blue)return true;else return false;}
 	HeeksColor best_black_or_white(void)const;
 	void glColor(void)const;

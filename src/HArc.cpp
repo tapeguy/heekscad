@@ -15,45 +15,62 @@
 #include "DigitizeMode.h"
 
 
+HArc::HArc()
+ : EndedObject(ObjType), in_edit(false)
+{
+    InitializeProperties();
+    C = new HPoint(gp_Pnt(), wxGetApp().CurrentColor());
+    C->m_draw_unselected = false;
+    Add(C);
+    C->SetSkipForUndo(true);
+}
+
 HArc::HArc(const HArc &line)
- : EndedObject(line.m_color)
+ : EndedObject(line), in_edit(false)
 {
 	InitializeProperties();
-	C = new HPoint(gp_Pnt(), line.m_color);
-	operator=(line);
+	C = (HPoint *)GetAtIndex(GetNumChildren() - 1);
+    C->m_draw_unselected = false;
+    C->SetSkipForUndo(true);
+    HeeksObj::operator=(line);      // my properties only
 }
 
 HArc::HArc(const gp_Pnt &a, const gp_Pnt &b, const gp_Circ &c, const HeeksColor& col)
- : EndedObject(col)
+ : EndedObject(ObjType, col), in_edit(true)
 {
 	InitializeProperties();
+    C = new HPoint(c.Location(), col);
+    C->m_draw_unselected = false;
+    C->SetSkipForUndo(true);
+    Add(C);
 	A->m_p = a;
 	B->m_p = b;
-	C = new HPoint(c.Location(), col);
-	C->m_draw_unselected = false;
-	m_axis = c.Axis();
-	m_radius = c.Radius();
+	m_axis_direction = c.Axis().Direction();
+	in_edit = false;
 }
 
-HArc::~HArc(){
+HArc::~HArc()
+{
 }
 
 void HArc::InitializeProperties()
 {
-	m_start.Initialize(_("start"), this);
-	m_end.Initialize(_("end"), this);
-	m_centre.Initialize(_("centre"), this);
-	m_axis_direction.Initialize(_("axis"), this);
 	m_length.Initialize(_("length"), this);
 	m_length.SetReadOnly(true);
+	m_length.SetTransient(true);
+
 	m_radius.Initialize(_("radius"), this);
 	m_radius.SetReadOnly(true);
+	m_radius.SetTransient(true);
+
+	m_axis_direction.Initialize(_("axis_direction"), this, true);
 }
 
 const wxBitmap &HArc::GetIcon()
 {
 	static wxBitmap* icon = NULL;
-	if(icon == NULL)icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/arc.png")));
+	if(icon == NULL)
+	    icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/arc.png")));
 	return *icon;
 }
 
@@ -61,40 +78,28 @@ bool HArc::IsDifferent(HeeksObj* other)
 {
 	HArc* arc = (HArc*)other;
 
-	if(arc->C->m_p.Distance(C->m_p) > wxGetApp().m_geom_tol || arc->m_radius != m_radius)
+	if(arc->C->m_p.Distance(C->m_p) > wxGetApp().m_geom_tol)
 		return true;
 
 	return EndedObject::IsDifferent(other);
 }
 
-const HArc& HArc::operator=(const HArc &b){
+const HArc& HArc::operator=(const HArc &b)
+{
 	EndedObject::operator=(b);
-	m_radius = b.m_radius;
-	m_axis = b.m_axis;
 	*C = *b.C;
 	C->SetSkipForUndo(true);
 	return *this;
 }
 
-HeeksObj* HArc::MakeACopyWithID()
-{
-	HArc* pnew = (HArc*)EndedObject::MakeACopyWithID();
-	return pnew;
-}
-
 void HArc::ReloadPointers()
 {
 	EndedObject::ReloadPointers();
-#ifdef MULTIPLE_OWNERS
-	std::list<HeeksObj*>::iterator it = m_objects.begin();
-	it++;it++;
-	C = (HPoint*)*it;
-#endif
 }
 
 HArc* arc_for_tool = NULL;
 
-class ClickArcCentre: public Tool
+class ClickArcCentre : public Tool
 {
 public:
 	HArc *pArc;
@@ -116,7 +121,7 @@ public:
 
 ClickArcCentre click_arc_centre;
 
-class ClickArcEndOne: public Tool
+class ClickArcEndOne : public Tool
 {
 public:
 	HArc *pArc;
@@ -138,7 +143,7 @@ public:
 
 ClickArcEndOne click_arc_first_one;
 
-class ClickArcEndTwo: public Tool
+class ClickArcEndTwo : public Tool
 {
 public:
 	HArc *pArc;
@@ -181,36 +186,41 @@ void HArc::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 
 
 //segments - number of segments per full revolution!
-//d_angle - determines the direction and the ammount of the arc to draw
-void HArc::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point)const
+//d_angle - determines the direction and the amount of the arc to draw
+void HArc::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point) const
 {
-	if(A->m_p.IsEqual(B->m_p, wxGetApp().m_geom_tol)){
-		return;
-	}
+    gp_Pnt start = A->m_p;
+    gp_Pnt end = B->m_p;
+    gp_Pnt centre = C->m_p;
 
-	gp_Ax2 axis(C->m_p,m_axis.Direction());
+    if(start.IsEqual(end, wxGetApp().m_geom_tol)){
+        return;
+    }
+
+	gp_Ax2 axis(centre, m_axis_direction.Normalize());
 	gp_Dir x_axis = axis.XDirection();
 	gp_Dir y_axis = axis.YDirection();
-	gp_Pnt centre = C->m_p;
 
-	double ax = gp_Vec(A->m_p.XYZ() - centre.XYZ()) * x_axis;
-	double ay = gp_Vec(A->m_p.XYZ() - centre.XYZ()) * y_axis;
-	double bx = gp_Vec(B->m_p.XYZ() - centre.XYZ()) * x_axis;
-	double by = gp_Vec(B->m_p.XYZ() - centre.XYZ()) * y_axis;
+	double ax = gp_Vec(start.XYZ() - centre.XYZ()) * x_axis;
+	double ay = gp_Vec(start.XYZ() - centre.XYZ()) * y_axis;
+	double bx = gp_Vec(end.XYZ() - centre.XYZ()) * x_axis;
+	double by = gp_Vec(end.XYZ() - centre.XYZ()) * y_axis;
 
 	double start_angle = atan2(ay, ax);
 	double end_angle = atan2(by, bx);
 
-	if(start_angle > end_angle)end_angle += 6.28318530717958;
+	if(start_angle > end_angle)
+	    end_angle += 6.28318530717958;
 
-	double radius = m_radius;
+	double radius = centre.Distance(start);
 	double d_angle = end_angle - start_angle;
 	int segments = (int)(fabs(pixels_per_mm * radius * d_angle / 6.28318530717958 + 1));
-	if(segments<3)segments = 3;
+	if(segments<3)
+	    segments = 3;
 
 	double theta = d_angle / (double)segments;
 	while(theta>1.0){segments*=2;theta = d_angle / (double)segments;}
-	double tangetial_factor = tan(theta);
+	double tangential_factor = tan(theta);
 	double radial_factor = 1 - cos(theta);
 
 	double x = radius * cos(start_angle);
@@ -227,8 +237,8 @@ void HArc::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_m
 		double tx = -y;
 		double ty = x;
 
-		x += tx * tangetial_factor;
-		y += ty * tangetial_factor;
+		x += tx * tangential_factor;
+		y += ty * tangential_factor;
 
 		double rx = - x;
 		double ry = - y;
@@ -240,9 +250,10 @@ void HArc::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_m
 
 static void glVertexFunction(const double *p){glVertex3d(p[0], p[1], p[2]);}
 
-void HArc::glCommands(bool select, bool marked, bool no_color){
+void HArc::glCommands(bool select, bool marked, bool no_color)
+{
 	if(!no_color){
-		wxGetApp().glColorEnsuringContrast(m_color);
+		wxGetApp().glColorEnsuringContrast(GetColor());
 	}
 	GLfloat save_depth_range[2];
 	if(marked){
@@ -264,7 +275,7 @@ void HArc::glCommands(bool select, bool marked, bool no_color){
 
 void HArc::Draw(wxDC& dc)
 {
-	wxGetApp().PlotSetColor(m_color);
+	wxGetApp().PlotSetColor(GetColor());
 	double s[3], e[3], c[3];
 	extract(A->m_p, s);
 	extract(B->m_p, e);
@@ -272,22 +283,28 @@ void HArc::Draw(wxDC& dc)
 	wxGetApp().PlotArc(s, e, c);
 }
 
-HeeksObj *HArc::MakeACopy(void)const{
+HeeksObj *HArc::MakeACopy(void)const
+{
 		HArc *new_object = new HArc(*this);
 		return new_object;
 }
 
-void HArc::ModifyByMatrix(const double* m){
+void HArc::ModifyByMatrix(const double* m)
+{
+    this->in_edit = true;
 	EndedObject::ModifyByMatrix(m);
 	gp_Trsf mat = make_matrix(m);
-	m_axis.Transform(mat);
+	m_axis_direction.Transform(mat);
 	C->m_p.Transform(mat);
-	m_radius = C->m_p.Distance(A->m_p);
+    this->in_edit = false;
 }
 
-void HArc::GetBox(CBox &box){
+void HArc::GetBox(CBox &box)
+{
 	box.Insert(A->m_p.X(), A->m_p.Y(), A->m_p.Z());
 	box.Insert(B->m_p.X(), B->m_p.Y(), B->m_p.Z());
+
+	m_radius = C->m_p.Distance(A->m_p);
 
 	if(IsIncluded(gp_Pnt(0,m_radius,0)))
 		box.Insert(C->m_p.X(),C->m_p.Y()+m_radius,C->m_p.Z());
@@ -297,25 +314,28 @@ void HArc::GetBox(CBox &box){
 		box.Insert(C->m_p.X()+m_radius,C->m_p.Y(),C->m_p.Z());
 	if(IsIncluded(gp_Pnt(-m_radius,0,0)))
 		box.Insert(C->m_p.X()-m_radius,C->m_p.Y(),C->m_p.Z());
-
 }
 
 bool HArc::IsIncluded(gp_Pnt pnt)
 {
-	gp_Ax2 axis(C->m_p,m_axis.Direction());
+    gp_Pnt start = A->m_p;
+    gp_Pnt end = B->m_p;
+    gp_Pnt centre = C->m_p;
+
+	gp_Ax2 axis(centre, m_axis_direction.Normalize());
 	gp_Dir x_axis = axis.XDirection();
 	gp_Dir y_axis = axis.YDirection();
-	gp_Pnt centre = C->m_p;
 
-	double ax = gp_Vec(A->m_p.XYZ() - centre.XYZ()) * x_axis;
-	double ay = gp_Vec(A->m_p.XYZ() - centre.XYZ()) * y_axis;
-	double bx = gp_Vec(B->m_p.XYZ() - centre.XYZ()) * x_axis;
-	double by = gp_Vec(B->m_p.XYZ() - centre.XYZ()) * y_axis;
+	double ax = gp_Vec(start.XYZ() - centre.XYZ()) * x_axis;
+	double ay = gp_Vec(start.XYZ() - centre.XYZ()) * y_axis;
+	double bx = gp_Vec(end.XYZ() - centre.XYZ()) * x_axis;
+	double by = gp_Vec(end.XYZ() - centre.XYZ()) * y_axis;
 
 	double start_angle = atan2(ay, ax);
 	double end_angle = atan2(by, bx);
 
-	if(start_angle > end_angle)end_angle += 6.28318530717958;
+	if(start_angle > end_angle)
+	    end_angle += 6.28318530717958;
 
 	double pnt_angle = atan2(gp_Vec(pnt.XYZ()) * y_axis, gp_Vec(pnt.XYZ()) * x_axis);
 	if(pnt_angle >= start_angle && pnt_angle <= end_angle)
@@ -323,46 +343,52 @@ bool HArc::IsIncluded(gp_Pnt pnt)
 	return false;
 }
 
-void HArc::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
+void HArc::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
+{
 	EndedObject::GetGripperPositions(list,just_for_endof);
 	list->push_back(GripData(GripperTypeStretch,C->m_p.X(),C->m_p.Y(),C->m_p.Z(),C));
 }
 
-void HArc::OnPropertyEdit(Property& prop)
-{
-	if (prop == m_start || prop == m_end || prop == m_centre)
-	{
-		if (prop == m_start)
-			A->m_p = m_start;
-		else if (prop == m_end)
-			B->m_p = m_start;
-		else if (prop == m_centre)
-			C->m_p = m_start;
-	}
-	else if (prop == m_axis_direction)
-	{
-		const gp_Vec& vt = m_axis_direction;
-		gp_Ax1 a = m_axis;
-		a.SetDirection(vt);
-		m_axis = a;
-	}
-	else {
-		HeeksObj::OnPropertyEdit(prop);
-	}
-}
-
 void HArc::GetProperties(std::list<Property *> *list)
 {
-	m_start = A->m_p;
-	m_end = B->m_p;
-	m_centre = C->m_p;
-	m_axis_direction = m_axis.Direction();
 	m_length = A->m_p.Distance(B->m_p);
-
-	HeeksObj::GetProperties(list);
+    m_radius = C->m_p.Distance(A->m_p);
+    EndedObject::GetProperties(list);
 }
 
-int HArc::Intersects(const HeeksObj *object, std::list< double > *rl)const
+void HArc::OnChildModified(HeeksObj * child, Property& prop)
+{
+    if (in_edit == false && prop.GetPropertyType() == PropertyVertexType)
+    {
+        gp_Pnt centre = C->m_p;
+        gp_Dir axis;
+
+        if(child == A)
+        {
+            gp_Vec vp(centre, B->m_p);
+            gp_Vec direction = -gp_Vec(m_axis_direction) ^ vp;
+            if (direction.Magnitude() < 1.e-10)
+                return;
+            direction.Normalize();
+            HArc::TangentialArc(B->m_p, direction, A->m_p, centre, axis);
+            C->m_p = centre;
+            m_axis_direction = -axis;
+        }
+        else if(child == B)
+        {
+            gp_Vec vp(centre, A->m_p);
+            gp_Vec direction = gp_Vec(m_axis_direction) ^ vp;
+            if (direction.Magnitude() < 1.e-10)
+                return;
+            direction.Normalize();
+            HArc::TangentialArc(A->m_p, direction, B->m_p, centre, axis);
+            C->m_p = centre;
+            m_axis_direction = axis;
+        }
+    }
+}
+
+int HArc::Intersects(const HeeksObj *object, std::list< double > *rl) const
 {
 	int numi = 0;
 
@@ -441,33 +467,37 @@ int HArc::Intersects(const HeeksObj *object, std::list< double > *rl)const
 
 gp_Circ HArc::GetCircle() const
 {
-	return gp_Circ(gp_Ax2(C->m_p,m_axis.Direction()),A->m_p.Distance(C->m_p));
+	return gp_Circ(gp_Ax2(C->m_p, m_axis_direction.Normalize()), A->m_p.Distance(C->m_p));
 }
 
 void HArc::SetCircle(gp_Circ c)
 {
 	m_radius = c.Radius();
 	C->m_p = c.Location();
-	m_axis = c.Axis();
+	m_axis_direction = c.Axis().Direction();
 }
 
-bool HArc::Intersects(const gp_Pnt &pnt)const
+bool HArc::Intersects(const gp_Pnt &pnt) const
 {
-	if(!intersect(pnt, GetCircle()))return false;
+	if(!intersect(pnt, GetCircle()))
+	    return false;
 
-	if(pnt.IsEqual(A->m_p, wxGetApp().m_geom_tol)){
+	if(pnt.IsEqual(A->m_p, wxGetApp().m_geom_tol))
+	{
 		return true;
 	}
 
-	if(pnt.IsEqual(B->m_p, wxGetApp().m_geom_tol)){
+	if(pnt.IsEqual(B->m_p, wxGetApp().m_geom_tol))
+	{
 		return true;
 	}
 
-	if(A->m_p.IsEqual(B->m_p, wxGetApp().m_geom_tol)){
+	if(A->m_p.IsEqual(B->m_p, wxGetApp().m_geom_tol))
+	{
 		return false; // no size arc!
 	}
 
-	gp_Ax2 axis(C->m_p,m_axis.Direction());
+	gp_Ax2 axis(C->m_p,m_axis_direction.Normalize());
 	gp_Dir x_axis = axis.XDirection();
 	gp_Dir y_axis = axis.YDirection();
 	gp_Pnt centre = C->m_p;
@@ -491,7 +521,8 @@ bool HArc::Intersects(const gp_Pnt &pnt)const
 	return pnt_angle < end_angle;
 }
 
-bool HArc::FindNearPoint(const double* ray_start, const double* ray_direction, double *point){
+bool HArc::FindNearPoint(const double* ray_start, const double* ray_direction, double *point)
+{
 	gp_Lin ray(make_point(ray_start), make_vector(ray_direction));
 	std::list< gp_Pnt > rl;
 	ClosestPointsLineAndCircle(ray, GetCircle(), rl);
@@ -508,55 +539,45 @@ bool HArc::FindNearPoint(const double* ray_start, const double* ray_direction, d
 	return false;
 }
 
-#ifdef MULTIPLE_OWNERS
-void HArc::LoadFromDoubles()
+bool HArc::FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point)
 {
-	EndedObject::LoadFromDoubles();
-	C->LoadFromDoubles();
-	m_radius = C->m_p.Distance(A->m_p);
-}
-
-void HArc::LoadToDoubles()
-{
-	EndedObject::LoadToDoubles();
-	C->LoadToDoubles();
-}
-#endif
-
-bool HArc::FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point){
 	// any point on this arc is a possible tangent point
 	return FindNearPoint(ray_start, ray_direction, point);
 }
 
-bool HArc::Stretch(const double *p, const double* shift, void* data){
+bool HArc::Stretch(const double *p, const double* shift, void* data)
+{
 	gp_Pnt vp = make_point(p);
 	gp_Vec vshift = make_vector(shift);
 
-	if(A->m_p.IsEqual(vp, wxGetApp().m_geom_tol)){
+	in_edit = true;
+	if(A->m_p.IsEqual(vp, wxGetApp().m_geom_tol))
+	{
 		gp_Vec direction = -(GetSegmentVector(1.0));
 		gp_Pnt centre;
 		gp_Dir axis;
 		gp_Pnt new_A = gp_Pnt(A->m_p.XYZ() + vshift.XYZ());
 		if(HArc::TangentialArc(B->m_p, direction, new_A, centre, axis))
 		{
-			m_axis = gp_Ax1(centre, -axis);
-			m_radius = new_A.Distance(centre);
+			m_axis_direction = -axis;
 			A->m_p = new_A;
+			C->m_p = centre;
 		}
 	}
-	else if(B->m_p.IsEqual(vp, wxGetApp().m_geom_tol)){
+	else if(B->m_p.IsEqual(vp, wxGetApp().m_geom_tol))
+	{
 		gp_Vec direction = GetSegmentVector(0.0);
 		gp_Pnt centre;
 		gp_Dir axis;
 		gp_Pnt new_B = gp_Pnt(B->m_p.XYZ() + vshift.XYZ());
 		if(HArc::TangentialArc(A->m_p, direction, new_B, centre, axis))
 		{
-			m_axis = gp_Ax1(centre, axis);
-			m_radius = A->m_p.Distance(centre);
+		    m_axis_direction = axis;
 			B->m_p = new_B;
+			C->m_p = centre;
 		}
 	}
-
+	in_edit = false;
 	return false;
 }
 
@@ -566,41 +587,48 @@ bool HArc::GetCentrePoint(double* pos)
 	return true;
 }
 
-gp_Vec HArc::GetSegmentVector(double fraction)const
+gp_Vec HArc::GetSegmentVector(double fraction) const
 {
 	gp_Pnt centre = C->m_p;
 	gp_Pnt p = GetPointAtFraction(fraction);
 	gp_Vec vp(centre, p);
-	gp_Vec vd = gp_Vec(m_axis.Direction()) ^ vp;
+	gp_Vec vd = gp_Vec(m_axis_direction) ^ vp;
 	vd.Normalize();
 	return vd;
 }
 
-gp_Pnt HArc::GetPointAtFraction(double fraction)const
+gp_Pnt HArc::GetPointAtFraction(double fraction) const
 {
-	if(A->m_p.IsEqual(B->m_p, wxGetApp().m_geom_tol)){
-		return A->m_p;
+    gp_Pnt start = A->m_p;
+    gp_Pnt end = B->m_p;
+    gp_Pnt centre = C->m_p;
+
+	if(start.IsEqual(end, wxGetApp().m_geom_tol))
+	{
+		return start;
 	}
 
-	gp_Ax2 axis(C->m_p,m_axis.Direction());
+    double radius = centre.Distance(start);
+
+	gp_Ax2 axis(centre, m_axis_direction.Normalize());
 	gp_Dir x_axis = axis.XDirection();
 	gp_Dir y_axis = axis.YDirection();
-	gp_Pnt centre = C->m_p;
 
-	double ax = gp_Vec(A->m_p.XYZ() - centre.XYZ()) * x_axis;
-	double ay = gp_Vec(A->m_p.XYZ() - centre.XYZ()) * y_axis;
-	double bx = gp_Vec(B->m_p.XYZ() - centre.XYZ()) * x_axis;
-	double by = gp_Vec(B->m_p.XYZ() - centre.XYZ()) * y_axis;
+	double ax = gp_Vec(start.XYZ() - centre.XYZ()) * x_axis;
+	double ay = gp_Vec(start.XYZ() - centre.XYZ()) * y_axis;
+	double bx = gp_Vec(end.XYZ() - centre.XYZ()) * x_axis;
+	double by = gp_Vec(end.XYZ() - centre.XYZ()) * y_axis;
 
 	double start_angle = atan2(ay, ax);
 	double end_angle = atan2(by, bx);
 
-	if(start_angle > end_angle)end_angle += 6.28318530717958;
+	if(start_angle > end_angle)
+	        end_angle += 6.28318530717958;
 
 	double d_angle = end_angle - start_angle;
 	double angle = start_angle + d_angle * fraction;
-	double x = m_radius * cos(angle);
-	double y = m_radius * sin(angle);
+	double x = radius * cos(angle);
+	double y = radius * sin(angle);
 
 	return centre.XYZ() + x * x_axis.XYZ() + y * y_axis.XYZ();
 }
@@ -610,7 +638,8 @@ bool HArc::TangentialArc(const gp_Pnt &p0, const gp_Vec &v0, const gp_Pnt &p1, g
 {
 	// returns false if a straight line is needed
 	// else returns true and sets centre and axis
-	if(p0.Distance(p1) > 0.0000000001 && v0.Magnitude() > 0.0000000001){
+	if(p0.Distance(p1) > 0.0000000001 && v0.Magnitude() > 0.0000000001)
+	{
 		gp_Vec v1(p0, p1);
 		gp_Pnt halfway(p0.XYZ() + v1.XYZ() * 0.5);
 		gp_Pln pl1(halfway, v1);
@@ -629,101 +658,71 @@ bool HArc::TangentialArc(const gp_Pnt &p0, const gp_Vec &v0, const gp_Pnt &p1, g
 	return false; // you'll have to do a line instead
 }
 
-void HArc::WriteXML(TiXmlNode *root)
-{
-	TiXmlElement *element = new TiXmlElement( "Arc" );
-	root->LinkEndChild( element );
-	element->SetAttribute("col", m_color.COLORREF_color());
-	gp_Dir D = m_axis.Direction();
-	element->SetDoubleAttribute("ax", D.X());
-	element->SetDoubleAttribute("ay", D.Y());
-	element->SetDoubleAttribute("az", D.Z());
-	WriteBaseXML(element);
-}
-
 // static member function
 HeeksObj* HArc::ReadFromXMLElement(TiXmlElement* pElem)
 {
-	gp_Pnt p0(1,0,0), p1(0,1,0), centre(0,0,0);
-	double axis[3];
-	HeeksColor c;
-
-	// get the attributes
-	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
-	{
-		std::string name(a->Name());
-		if(name == "col"){c = HeeksColor((long)(a->IntValue()));}
-		else if(name == "sx"){p0.SetX(a->DoubleValue());}
-		else if(name == "sy"){p0.SetY(a->DoubleValue());}
-		else if(name == "sz"){p0.SetZ(a->DoubleValue());}
-		else if(name == "ex"){p1.SetX(a->DoubleValue());}
-		else if(name == "ey"){p1.SetY(a->DoubleValue());}
-		else if(name == "ez"){p1.SetZ(a->DoubleValue());}
-		else if(name == "cx"){centre.SetX(a->DoubleValue());}
-		else if(name == "cy"){centre.SetY(a->DoubleValue());}
-		else if(name == "cz"){centre.SetZ(a->DoubleValue());}
-		else if(name == "ax"){axis[0] = a->DoubleValue();}
-		else if(name == "ay"){axis[1] = a->DoubleValue();}
-		else if(name == "az"){axis[2] = a->DoubleValue();}
-	}
-
-	gp_Circ circle(gp_Ax2(centre, gp_Dir(make_vector(axis))), centre.Distance(p0));
-
-	HArc* new_object = new HArc(p0, p1, circle, c);
+	HArc* new_object = new HArc();
 	new_object->ReadBaseXML(pElem);
 
-	if(new_object->GetNumChildren()>3)
-	{
-		//This is a new style arc, with children points
-		new_object->Remove(new_object->A);
-		new_object->Remove(new_object->B);
-		new_object->Remove(new_object->C);
-		delete new_object->A;
-		delete new_object->B;
-		delete new_object->C;
-		new_object->A = (HPoint*)new_object->GetFirstChild();
-		new_object->B = (HPoint*)new_object->GetNextChild();
-		new_object->C = (HPoint*)new_object->GetNextChild();
-		new_object->A->m_draw_unselected = false;
-		new_object->B->m_draw_unselected = false;
-		new_object->C->m_draw_unselected = false;
-		new_object->A->SetSkipForUndo(true);
-		new_object->B->SetSkipForUndo(true);
-		new_object->C->SetSkipForUndo(true);
-		new_object->m_radius = new_object->C->m_p.Distance(new_object->A->m_p);
-	}
+	new_object->in_edit = true;
+    if(new_object->GetNumChildren()>3)
+    {
+        //This is a new style line, with children points
+        new_object->Remove(new_object->A);
+        new_object->Remove(new_object->B);
+        new_object->Remove(new_object->C);
+        delete new_object->A;
+        delete new_object->B;
+        delete new_object->C;
+        new_object->A = (HPoint*)new_object->GetFirstChild();
+        new_object->B = (HPoint*)new_object->GetNextChild();
+        new_object->C = (HPoint*)new_object->GetNextChild();
+        new_object->A->m_draw_unselected = false;
+        new_object->B->m_draw_unselected = false;
+        new_object->C->m_draw_unselected = false;
+        new_object->A->SetSkipForUndo(true);
+        new_object->B->SetSkipForUndo(true);
+        new_object->C->SetSkipForUndo(true);
+    }
+    new_object->in_edit = false;
 	return new_object;
 }
 
 void HArc::Reverse()
 {
-	HPoint* temp = A;
-	A = B;
-	B = temp;
-	m_axis.Reverse();
-#ifdef MULTIPLE_OWNERS
-	m_objects.pop_front();
-	m_objects.pop_front();
-	m_objects.push_front(B);
-	m_objects.push_front(A);
-#endif
+    in_edit = true;
+	gp_Pnt temp = A->m_p;
+	A->m_p = B->m_p;
+	B->m_p = temp;
+	m_axis_direction.Reverse();
+	in_edit = false;
 }
 
-double HArc::IncludedAngle()const
+double HArc::IncludedAngle() const
 {
-	gp_Vec vs = GetSegmentVector(0.0);
-	gp_Vec ve = GetSegmentVector(1.0);
+    gp_Vec vs = GetSegmentVector(0.0);
+    gp_Vec ve = GetSegmentVector(1.0);
 
-	double inc_ang = vs * ve;
-	int dir = (this->m_axis.Direction().Z() > 0) ? 1:-1;
-	if(inc_ang > 1. - 1.0e-10) return 0;
-	if(inc_ang < -1. + 1.0e-10)
-		inc_ang = M_PI;
-	else {									// dot product,   v1 . v2  =  cos ang
-		if(inc_ang > 1.0) inc_ang = 1.0;
-		inc_ang = acos(inc_ang);									// 0 to M_PI radians
+    double inc_ang = vs * ve;
+    int dir = (m_axis_direction.Z() > 0) ?  1 : -1;
+    if(inc_ang > 1. - 1.0e-10)
+        return 0;
+    if(inc_ang < -1. + 1.0e-10)
+        inc_ang = M_PI;
+    else
+    {
+        // dot product,   v1 . v2  =  cos ang
+        if(inc_ang > 1.0)
+            inc_ang = 1.0;
+        inc_ang = acos(inc_ang);            // 0 to M_PI radians
 
-		if(dir * (vs ^ ve).Z() < 0) inc_ang = 2 * M_PI - inc_ang ;		// cp
-	}
-	return dir * inc_ang;
+        if(dir * (vs ^ ve).Z() < 0)
+            inc_ang = 2 * M_PI - inc_ang ;  // cp
+    }
+    return dir * inc_ang;
+}
+
+double HArc::Radius() const
+{
+    return C->m_p.Distance(A->m_p);
 }

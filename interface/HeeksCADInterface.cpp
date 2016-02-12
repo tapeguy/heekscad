@@ -19,6 +19,7 @@
 #include "Cylinder.h"
 #include "Cuboid.h"
 #include "Cone.h"
+#include "Pyramid.h"
 #include "Sphere.h"
 #include "Wire.h"
 #include "ObjPropsCanvas.h"
@@ -54,6 +55,7 @@
 #include "ViewZooming.h"
 #include "ViewPanning.h"
 #include "Sectioning.h"
+#include "Area.h"
 #include "HArea.h"
 
 double CHeeksCADInterface::GetTolerance()
@@ -128,6 +130,11 @@ wxMenu* CHeeksCADInterface::GetWindowMenu()
 	return wxGetApp().m_frame->m_menuWindow;
 }
 
+wxMenu* CHeeksCADInterface::GetHelpMenu()
+{
+    return wxGetApp().m_frame->m_menuHelp;
+}
+
 wxAuiManager* CHeeksCADInterface::GetAuiManager()
 {
 	return wxGetApp().m_frame->m_aui_manager;
@@ -189,6 +196,36 @@ wxString CHeeksCADInterface::GetResFolder()
 	return wxGetApp().GetResFolder();
 }
 
+void CHeeksCADInterface::AddUndoably(HeeksObj* object, HeeksObj* owner)
+{
+        wxGetApp().AddUndoably(object, owner, NULL);
+}
+
+void CHeeksCADInterface::DeleteUndoably(HeeksObj* object)
+{
+        wxGetApp().DeleteUndoably(object);
+}
+
+void CHeeksCADInterface::CopyUndoably(HeeksObj* object, HeeksObj* copy_with_new_data)
+{
+        wxGetApp().CopyUndoably(object, copy_with_new_data);
+}
+
+void CHeeksCADInterface::DoUndoable(Undoable* undoable)
+{
+        wxGetApp().DoUndoable(undoable);
+}
+
+void CHeeksCADInterface::StartHistory()
+{
+        wxGetApp().StartHistory();
+}
+
+void CHeeksCADInterface::EndHistory(void)
+{
+        wxGetApp().EndHistory();
+}
+
 HeeksObj* CHeeksCADInterface::GetMainObject()
 {
 	return &(wxGetApp());
@@ -202,16 +239,6 @@ void CHeeksCADInterface::Remove(HeeksObj* object)
 void CHeeksCADInterface::Add(HeeksObj* object,HeeksObj* prev)
 {
 	wxGetApp().Add(object,prev);
-}
-
-void CHeeksCADInterface::CreateUndoPoint()
-{
-	wxGetApp().CreateUndoPoint();
-}
-
-void CHeeksCADInterface::WentTransient(HeeksObj* obj, TransientObject *tobj)
-{
-	wxGetApp().WentTransient(obj, tobj);
 }
 
 static std::list<Plugin>::iterator PluginIt;
@@ -229,11 +256,6 @@ const Plugin* CHeeksCADInterface::GetNextPlugin()
 	PluginIt++;
 	if (PluginIt==wxGetApp().m_loaded_libraries.end()) return NULL;
 	return &(*PluginIt);
-}
-
-void CHeeksCADInterface::Changed()
-{
-	wxGetApp().Changed();
 }
 
 const std::list<HeeksObj*>& CHeeksCADInterface::GetMarkedList(void)
@@ -272,7 +294,7 @@ bool CHeeksCADInterface::GetArcCentre(HeeksObj* object, double* c)
 			return true;
 
 		case CircleType:
-			extract(((HCircle*)object)->C->m_p, c);
+		    extract(((HCircle*)object)->m_axis.Location(), c);
 			return true;
 
 	} // End switch
@@ -282,13 +304,13 @@ bool CHeeksCADInterface::GetArcCentre(HeeksObj* object, double* c)
 
 bool CHeeksCADInterface::GetArcRadius(HeeksObj* object, double* r)
 {
-	*r = ((HArc*)object)->m_radius;
+	*r = ((HArc*)object)->Radius();
 	return true;
 }
 
 bool CHeeksCADInterface::GetArcAxis(HeeksObj* object, double* a)
 {
-	extract(((HArc*)object)->m_axis.Direction(), a);
+	extract(((HArc*)object)->Direction(), a);
 	return true;
 }
 
@@ -374,20 +396,8 @@ CInputMode* CHeeksCADInterface::GetSelectMode()
 
 void CHeeksCADInterface::SetLineDrawingMode()
 {
-	wxGetApp().CreateUndoPoint();
 	wxGetApp().m_line_strip.drawing_mode = LineDrawingMode;
 	wxGetApp().SetInputMode(&(wxGetApp().m_line_strip));
-	wxGetApp().Changed();
-}
-
-bool CHeeksCADInterface::EndSketchMode()
-{
-	return wxGetApp().EndSketchMode();
-}
-
-void CHeeksCADInterface::EnterSketchMode(HeeksObj* sketch)
-{
-	wxGetApp().EnterSketchMode((CSketch*)sketch);
 }
 
 void CHeeksCADInterface::SetInputMode(CInputMode* input_mode)
@@ -534,6 +544,12 @@ HeeksObj* CHeeksCADInterface::NewSphere(const double* pos , double radius)
    return new CSphere(gp_Pnt(make_point(pos)), radius,_T("Sphere"), wxGetApp().CurrentColor(), 1.0f);
 }
 
+HeeksObj* CHeeksCADInterface::NewPyramid(const double* c, double x, double y, double z)
+{
+    gp_Dir up(0,0,1);
+    return new CPyramid(gp_Ax2(make_point(c),up),x,y,z,_T("Pyramid"),wxGetApp().CurrentColor(), 1.0f);
+}
+
 HeeksObj* CHeeksCADInterface::NewSolid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col)
 {
 	return(new CSolid(solid, title, col, 1.0f ));
@@ -609,15 +625,14 @@ double CHeeksCADInterface::GetDatumDiry_Z(HeeksObj* c)
 
 // end coordinate system/datum functions
 
+HeeksObj* CHeeksCADInterface::Cut(std::list<HeeksObj*> objects)
+{
+    return CShape::CutShapes(objects);
+}
 
 HeeksObj* CHeeksCADInterface::Fuse(std::list<HeeksObj*> objects)
 {
 	return CShape::FuseShapes(objects);
-}
-
-HeeksObj* CHeeksCADInterface::Cut(std::list<HeeksObj*> objects)
-{
-	return CShape::CutShapes(objects);
 }
 
 HeeksObj* CHeeksCADInterface::Common(std::list<HeeksObj*> objects)
@@ -628,13 +643,11 @@ HeeksObj* CHeeksCADInterface::Common(std::list<HeeksObj*> objects)
 void CHeeksCADInterface::AddText(const wxChar  *text)
 {
     gp_Trsf mat = wxGetApp().GetDrawMatrix(true);
-    HText* new_object = new HText(mat, text, wxGetApp().CurrentColor(), wxGetApp().m_pVectorFont );
-    wxGetApp().CreateUndoPoint();
-	wxGetApp().Add(new_object, NULL);
+    HText* new_object = new HText(mat, text, wxGetApp().CurrentColor(), wxGetApp().m_pVectorFont);
+    wxGetApp().AddUndoably(new_object, NULL, NULL);
 	wxGetApp().m_marked_list->Clear(true);
 	wxGetApp().m_marked_list->Add(new_object, true);
 	wxGetApp().SetInputMode(wxGetApp().m_select_mode);
-	wxGetApp().Changed();
 	wxGetApp().Repaint();
 
 
@@ -796,23 +809,11 @@ void CHeeksCADInterface::OpendxfFile(const wxChar *filepath)
 	//wxGetApp().OpenDXFFile(filepath);
 	HeeksDxfRead dxf_file(filepath);
     dxf_file.DoRead(HeeksDxfRead::m_ignore_errors);
-
-
 }
 
 void CHeeksCADInterface::OpenXMLFile(const wxChar *filepath,HeeksObj* paste_into)
 {
 	wxGetApp().OpenXMLFile(filepath, paste_into);
-}
-
-void CHeeksCADInterface::ObjectWriteBaseXML(HeeksObj* object, TiXmlElement* element)
-{
-	wxGetApp().ObjectWriteBaseXML(object, element);
-}
-
-void CHeeksCADInterface::ObjectReadBaseXML(HeeksObj* object, TiXmlElement* element)
-{
-	wxGetApp().ObjectReadBaseXML(object, element);
 }
 
 HeeksObj* CHeeksCADInterface::GetIDObject(int type, int id)
@@ -871,7 +872,7 @@ void CHeeksCADInterface::SetViewBox(const double* b)
 
 void CHeeksCADInterface::ViewExtents(bool rotate)
 {
-	wxGetApp().m_frame->m_graphics->OnMagExtents(rotate, false);
+	wxGetApp().m_frame->m_graphics->OnMagExtents(rotate, false, 6);
 }
 
 void CHeeksCADInterface::XYZView(bool recalculate_gl_lists )
@@ -966,8 +967,10 @@ HeeksObj* CHeeksCADInterface::GetSketchFromName(const wxChar* name)
 	{
 		if(object->GetType() == SketchType)
 		{
-			const wxChar* n = object->GetShortString();
-			if(!wxString(n).CmpNoCase(name))return object;
+			const wxChar* n = object->GetTitle();
+			if(!wxString(n).CmpNoCase(name)) {
+			    return object;
+			}
 		}
 	}
 
@@ -1228,7 +1231,7 @@ int CHeeksCADInterface::BodyGetShapeType(HeeksObj* body)
 	// 6 - TopAbs_EDGE
 	// 7 - TopAbs_VERTEX
 	// 8 - TopAbs_SHAPE
-	return ((CShape*)body)->Shape().ShapeType();
+	return ((CShape*)body)->GetShape().ShapeType();
 }
 
 int CHeeksCADInterface::EdgeGetCurveType(HeeksObj* edge)
@@ -1379,7 +1382,7 @@ void CHeeksCADInterface::VertexGetPoint(HeeksObj* vertex, double *d3)
 	switch (vertex->GetType())
 	{
 	case VertexType:
-		memcpy(d3, ((HVertex*)vertex)->m_point, 3*sizeof(double));
+	    extract(((HVertex*)vertex)->m_p, d3);
 		break;
 
 	case PointType:
@@ -1605,20 +1608,14 @@ bool CHeeksCADInterface::InputLength(const wxChar* prompt, const wxChar* value_n
 	return wxGetApp().InputLength(prompt, value_name, value);
 }
 
-double CHeeksCADInterface::GetViewUnits()
+EnumUnitType CHeeksCADInterface::GetViewUnits()
 {
-	return wxGetApp().m_view_units;
+	return wxGetApp().GetViewUnits();
 }
 
-void CHeeksCADInterface::SetViewUnits(double units, bool write_to_config)
+void CHeeksCADInterface::SetViewUnits(EnumUnitType units)
 {
-	wxGetApp().m_view_units = units;
-	wxGetApp().OnChangeViewUnits(wxGetApp().m_view_units);
-	if(write_to_config)
-	{
-		HeeksConfig& config = wxGetApp().GetConfig();
-		config.Write(_T("ViewUnits"), wxGetApp().m_view_units);
-	}
+    wxGetApp().SetViewUnits(units);
 }
 
 void CHeeksCADInterface::SplineToBiarcs(HeeksObj* spline, std::list<HeeksObj*> &new_spans, double tolerance)
@@ -1710,19 +1707,19 @@ void CHeeksCADInterface::OnCopyMirrorButton()
 	TransformTools::Mirror(true);
 }
 
-void CHeeksCADInterface::OnMoveScaleButton()
+void CHeeksCADInterface::OnStretchButton()
 {
-	TransformTools::Scale(false);
+	TransformTools::Stretch(false);
 }
 
 void CHeeksCADInterface::OnMagExtentsButton()
 {
-	wxGetApp().m_frame->m_graphics->OnMagExtents(true, true);
+	wxGetApp().m_frame->m_graphics->OnMagExtents(true, true, 6);
 }
 
 void CHeeksCADInterface::OnMagNoRotButton()
 {
-	wxGetApp().m_frame->m_graphics->OnMagExtents(false, true);
+	wxGetApp().m_frame->m_graphics->OnMagExtents(false, true, 6);
 }
 
 void CHeeksCADInterface::OnMagButton()
@@ -1838,12 +1835,12 @@ void CHeeksCADInterface::RegisterOnBeforeFrameDelete(void(*callbackfunc)())
 	wxGetApp().RegisterOnBeforeFrameDelete(callbackfunc);
 }
 
-void CHeeksCADInterface::RegisterUnitsChangeHandler( void (*units_changed_handler)(const double value) )
+void CHeeksCADInterface::RegisterUnitsChangeHandler( void (*units_changed_handler)(const EnumUnitType value) )
 {
     return( wxGetApp().RegisterUnitsChangeHandler( units_changed_handler ));
 }
 
-void CHeeksCADInterface::UnregisterUnitsChangeHandler( void (*units_changed_handler)(const double value) )
+void CHeeksCADInterface::UnregisterUnitsChangeHandler( void (*units_changed_handler)(const EnumUnitType value) )
 {
     return( wxGetApp().UnregisterUnitsChangeHandler( units_changed_handler ));
 }
@@ -1862,6 +1859,17 @@ void CHeeksCADInterface::UnregisterHeeksTypesConverter( wxString (*converter)(co
 wxString CHeeksCADInterface::HeeksType( const int type )
 {
     return(wxGetApp().HeeksType(type));
+}
+
+bool CHeeksCADInterface::GetCoordinateSystemMatrix(HeeksObj* object, double *m)
+{
+    if(object && object->GetType() == CoordinateSystemType)
+    {
+        extract(((CoordinateSystem*)object)->GetMatrix(), m);
+        return true;
+    }
+
+    return false;
 }
 
 void CHeeksCADInterface::MakeMatrix(double* m, const double *origin, const double* x_axis, const double* y_axis)
@@ -2074,7 +2082,7 @@ void CHeeksCADInterface::ObjectAreaString(HeeksObj* object, wxString &s)
 	{
 	case CircleType:
 		{
-			double c[2] = {((HCircle*)object)->C->m_p.X(), ((HCircle*)object)->C->m_p.Y()};
+		    double c[2] = {((HCircle*)object)->m_axis.Location().X(), ((HCircle*)object)->m_axis.Location().Y()};
 			double radius = ((HCircle*)object)->m_radius;
 			s << _T("a = area.Area()\n");
 			s << _T("c = area.Curve()\n");
@@ -2104,3 +2112,28 @@ void CHeeksCADInterface::ObjectAreaString(HeeksObj* object, wxString &s)
 		break;
 	}
 }
+
+HeeksObj* CHeeksCADInterface::NewSketchFromArea(HeeksObj* object)
+{
+        return MakeNewSketchFromArea(((HArea*)object)->m_area);
+}
+
+void CHeeksCADInterface::RegisterMarkedListTools(void(*callbackfunc)(std::list<Tool*>&))
+{
+        wxGetApp().RegisterMarkedListTools(callbackfunc);
+}
+
+void CHeeksCADInterface::RegisterOnRestoreDefaults(void(*callbackfunc)())
+{
+        wxGetApp().RegisterOnRestoreDefaults(callbackfunc);
+}
+
+bool CHeeksCADInterface::UsingRibbon()
+{
+#ifdef USING_RIBBON
+        return true;
+#else
+        return false;
+#endif
+}
+

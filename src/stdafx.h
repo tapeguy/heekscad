@@ -93,6 +93,7 @@
 #include <BRepFilletAPI_MakeFillet2d.hxx>
 #include <BRepGProp.hxx>
 #include <BRepMesh.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepOffsetAPI_DraftAngle.hxx>
 #include <BRepOffsetAPI_MakeEvolved.hxx>
 #include <BRepOffsetAPI_MakeOffset.hxx>
@@ -278,7 +279,6 @@ extern "C" {
 #include "../interface/Material.h"
 #include "../interface/InputMode.h"
 #include "../interface/Tool.h"
-#include "../interface/ObjectCanvas.h"
 #include "HeeksCAD.h"
 
 #include "CoordinateSystem.h"

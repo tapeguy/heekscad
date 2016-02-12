@@ -18,6 +18,9 @@
 	XX(VertexType,, _("Vertex")) \
 	XX(EdgeType,, _("Edge")) \
 	XX(FaceType,, _("Face")) \
+    XX(VertexListType,, _("Vertices")) \
+    XX(EdgeListType,, _("Edges")) \
+    XX(FaceListType,, _("Faces")) \
 	XX(LoopType,, _("Loop")) \
 	XX(SolidType,, _("Solid")) \
 	XX(StlSolidType,, _("STL Solid")) \
@@ -41,6 +44,7 @@
 	XX(GearType,, _("Gear")) \
 	XX(ImageType,, _("Image")) \
 	XX(XmlType,, _("XML")) \
+	XX(DexelSolidType,, _("Dexel")) \
 	XX(ObjectMaximumType,, _("invalid"))
 
 DECLARE_ENUM(ObjType, ENUM_OBJ_TYPE)

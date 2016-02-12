@@ -27,5 +27,17 @@ class Tool
 	virtual bool IsSeparator() const {return false;}
 	virtual wxString BitmapPath(){return _T("");}
 	virtual wxBitmap* Bitmap(){if(m_bitmap && m_icon_size == ToolImage::GetBitmapSize())return m_bitmap; wxString str = BitmapPath(); if(str.Len() > 0){delete m_bitmap; m_bitmap = new wxBitmap(ToolImage(str, true)); m_icon_size = ToolImage::GetBitmapSize();}return m_bitmap;}
-	virtual bool CallChangedOnRun(){return true;}
+};
+
+// splitting Toolbar tools from Undoable tools
+
+class Undoable
+{
+public:
+        virtual ~Undoable() {};
+        virtual void Run(bool redo) = 0;
+        virtual const wxChar* GetTitle() = 0;
+        virtual const wxChar* GetToolTip(){return GetTitle();}
+        //virtual bool IsAToolList() {return false;}
+        virtual void RollBack(){};
 };

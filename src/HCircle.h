@@ -4,36 +4,37 @@
 
 #pragma once
 
+#include "../interface/IdNamedObj.h"
+#include "../interface/HeeksColor.h"
 
-#include "HPoint.h"
-class HCircle: public HeeksObj{
-
+class HCircle : public IdNamedObj
+{
 private:
-    PropertyColor m_color;
     PropertyVertex m_centre;
     PropertyVector m_axis_direction;
 
 public:
-	PropertyLength m_radius;
-	gp_Ax1 m_axis;
-	HPoint *C;
 
-	~HCircle(void);
+    static const int ObjType = CircleType;
+
+
+	PropertyLength m_radius;
+	PropertyAxis m_axis;
+
+	HCircle();
 	HCircle(const gp_Circ &c, const HeeksColor& col);
 	HCircle(const HCircle &c);
+    ~HCircle(void);
 
 	const HCircle& operator=(const HCircle &c);
 
+    // HeeksObj's virtual functions
     void InitializeProperties();
-    void OnPropertyEdit(Property& prop);
+    void OnPropertySet(Property& prop);
     void GetProperties(std::list<Property *> *list);
-
-	// HeeksObj's virtual functions
-	int GetType()const{return CircleType;}
 	int GetMarkingFilter()const{return CircleMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Circle");}
 	int GetIDGroupType()const{return SketchType;}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
@@ -44,13 +45,13 @@ public:
 	bool Stretch(const double *p, const double* shift, void* data);
 	void GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point = true)const;
 	bool GetCentrePoint(double* pos);
-	void WriteXML(TiXmlNode *root);
 	int Intersects(const HeeksObj *object, std::list< double > *rl)const;
 	bool DescendForUndo(){return false;}
 	bool IsDifferent(HeeksObj* other);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
+
 	static bool GetLineTangentPoints(const gp_Circ& c1, const gp_Circ& c2, const gp_Pnt& a, const gp_Pnt& b, gp_Pnt& p1, gp_Pnt& p2);
 	static bool GetLineTangentPoint(const gp_Circ& c, const gp_Pnt& a, const gp_Pnt& b, gp_Pnt& p);
 	static bool GetArcTangentPoints(const gp_Circ& c, const gp_Lin &line, const gp_Pnt& p, double radius, gp_Pnt& p1, gp_Pnt& p2, gp_Pnt& centre, gp_Dir& axis);
@@ -61,6 +62,4 @@ public:
 
 	void SetCircle(gp_Circ c);
 	gp_Circ GetCircle() const;
-	void LoadFromDoubles();
-	void LoadToDoubles();
 };

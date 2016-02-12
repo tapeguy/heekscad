@@ -3,11 +3,14 @@
 // This program is released under the BSD license. See the file COPYING for details.
 #include "PropertiesCanvas.h"
 
-class CInputModeCanvas: public CPropertiesCanvas
+class CInputModeCanvas: public CPropertiesCanvas, public DomainObject
 {
 private:
 	wxAuiToolBar *m_toolBar;
 	std::list<Tool*> m_previous_tools; // to decide whether to remove and reshow toolbar
+	PropertyString m_input_mode;
+
+	void RefreshByRemovingAndAddingAll();
 
 public:
     CInputModeCanvas(wxWindow* parent);
@@ -15,7 +18,6 @@ public:
 
     //virtual void OnDraw(wxDC& dc);
     void OnSize(wxSizeEvent& event);
-    void OnPropertyGridChange( wxPropertyGridEvent& event );
 
 public:
 	// CPropertiesCanvas's virtual functions

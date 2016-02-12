@@ -26,13 +26,20 @@ enum DimensionUnits
 
 class HeeksConfig;
 
-class HDimension: public EndedObject
+class HDimension : public EndedObject
 {
 private:
 	gp_Pnt GetB2(); // return B, possibly flattened
 	gp_Pnt GetC2(); // return m_p2, possibly flattened
 
+	// Private no-args constructor
+	HDimension();
+
 public:
+
+	static const int ObjType = DimensionType;
+
+
 	HPoint* m_p2;
 	PropertyChoice m_units;
 	PropertyChoice m_mode;
@@ -49,12 +56,10 @@ public:
 
 	// HeeksObj's virtual functions
 	void InitializeProperties();
-	int GetType()const{return DimensionType;}
 	int GetMarkingFilter()const{return DimensionMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	bool DrawAfterOthers(){return true;}
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Dimension");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
@@ -62,12 +67,6 @@ public:
 	void GetProperties(std::list<Property *> *list);
 	bool Stretch(const double *p, const double* shift, void* data);
 	void CopyFrom(const HeeksObj* object){operator=(*((HDimension*)object));}
-	void WriteXML(TiXmlNode *root);
-	//const wxChar* GetShortString(void)const{return m_text.c_str();}
-#ifdef MULTIPLE_OWNERS
-	void LoadToDoubles();
-	void LoadFromDoubles();
-#endif
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	bool IsDifferent(HeeksObj* other);
 

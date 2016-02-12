@@ -16,8 +16,8 @@ static TopoDS_Solid CreatePyramid(const gp_Ax2& pos, int sides, double len, doub
         double circumradius = len / (2 * sin(M_PI/sides));
 
         const gp_Pnt& origin = pos.Location();
-        gp_Pnt apex(0, 0, h);
-        gp_Pnt p1(0, circumradius, 0);
+        gp_Pnt apex(origin.X(), origin.Y(), origin.Z() + h);
+        gp_Pnt p1(origin.X(), origin.Y() + circumradius, origin.Z());
 
         BRepBuilderAPI_MakeWire wireMakerBase;
         BRepBuilderAPI_Sewing sewing(0.001);
@@ -25,7 +25,7 @@ static TopoDS_Solid CreatePyramid(const gp_Ax2& pos, int sides, double len, doub
         {
             double x = origin.X() + circumradius * sin(i * angle);
             double y = origin.Y() + circumradius * cos(i * angle);
-            gp_Pnt p2(x, y, 0);
+            gp_Pnt p2(x, y, origin.Z());
             BRepBuilderAPI_MakeWire wireMaker;
             wireMaker.Add(BRepBuilderAPI_MakeEdge (p1, apex));
             wireMaker.Add(BRepBuilderAPI_MakeEdge (p1, p2));
@@ -49,6 +49,7 @@ static TopoDS_Solid CreatePyramid(const gp_Ax2& pos, int sides, double len, doub
         Handle_Standard_Failure e = Standard_Failure::Caught();
         wxMessageBox(wxString(_("Error making pyramid")) + _T(": ") + Ctt(e->GetMessageString()));
     }
+    return TopoDS_Solid();
 }
 
 CPyramid::CPyramid(const gp_Ax2& pos, int sides, double length, double height, const wxChar* title, const HeeksColor& col, float opacity)
@@ -92,10 +93,10 @@ CPyramid & CPyramid::operator= ( const CPyramid & rhs )
 
 void CPyramid::InitializeProperties()
 {
-    m_pos.Initialize(_("coordinates"), this);
-    m_sides.Initialize(_("sides"), this);
-    m_length.Initialize(_("base edge length"), this);
-    m_height.Initialize(_("height ( z )"), this);
+    m_pos.Initialize(_("coordinates"), this, true);
+    m_sides.Initialize(_("sides"), this, true);
+    m_length.Initialize(_("base edge length"), this, true);
+    m_height.Initialize(_("height ( z )"), this, true);
 }
 
 bool CPyramid::IsDifferent(HeeksObj* other)
@@ -117,7 +118,7 @@ void CPyramid::MakeTransformedShape(const gp_Trsf &mat)
 	double scale = gp_Vec(1, 0, 0).Transformed(mat).Magnitude();
 	m_length = fabs(m_length * scale);
 	m_height = fabs(m_height * scale);
-	m_shape = CreatePyramid(m_pos, m_sides, m_length, m_height);
+	CSolid::MakeTransformedShape(mat);
 }
 
 wxString CPyramid::StretchedName(){ return _("Stretched Pyramid");}
@@ -134,20 +135,17 @@ void CPyramid::GetGripperPositions(std::list<GripData> *list, bool just_for_endo
 	list->push_back(GripData(GripperTypeTranslate,o.X(),o.Y(),o.Z(),NULL));
 }
 
-void CPyramid::OnPropertyEdit(Property& prop)
+void CPyramid::OnPropertySet(Property& prop)
 {
 	if (prop == m_pos || prop == m_sides || prop == m_length || prop == m_height) {
-	    CPyramid* new_object = new CPyramid(m_pos, m_sides, m_length, m_height, GetTitle(), GetColor(), m_opacity);
-		new_object->CopyIDsFrom(this);
-		this->GetOwner()->Add(new_object, NULL);
-		this->GetOwner()->Remove(this);
-		if(wxGetApp().m_marked_list->ObjectMarked(this))
-		{
-			wxGetApp().m_marked_list->Remove(this, false);
-			wxGetApp().m_marked_list->Add(new_object, true);
-		}
+	    m_shape = CreatePyramid(m_pos, m_sides, m_length, m_height);
+        delete_faces_and_edges();
+        KillGLLists();
+        create_faces_and_edges();
 	}
-	CSolid::OnPropertyEdit(prop);
+	else {
+	    CSolid::OnPropertySet(prop);
+	}
 }
 
 

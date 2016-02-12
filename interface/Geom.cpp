@@ -145,8 +145,8 @@ double GetEllipseRotation(const gp_Elips& elips)
 double DistanceToFoci(const gp_Pnt &pnt, const gp_Elips &elips)
 {
    //Returns:
-   // 2*Major_Radius() if pnt is on the ellipse. 
-   //<2*Major_Radius if it is inside 
+   // 2*Major_Radius() if pnt is on the ellipse.
+   //<2*Major_Radius if it is inside
    //>2*Major_Radius if it is outside
 
    //Pnt must be coplaner to the ellipse else it won't work. Right now math computes above for elliptic solids.
@@ -181,7 +181,7 @@ void ClosestPointsLineAndEllipse(const gp_Lin& line, const gp_Elips& elips, std:
 		gp_Vec plane_vec(elips.Location(), plane_point);
 		plane_vec.Normalize();
 		double theta = atan2(plane_vec.Y(),plane_vec.X()) + GetEllipseRotation(elips);
-		
+
 		// project point onto ellipse
 
 		gp_Pnt p(elips.Location().XYZ());
@@ -202,7 +202,7 @@ void ClosestPointsLineAndEllipse(const gp_Lin& line, const gp_Elips& elips, std:
 			plane_vec.Normalize();
 
 			double theta = atan2(plane_vec.Y(),plane_vec.X()) + GetEllipseRotation(elips);
-		
+
 			// project point onto ellipse
 
 			gp_Pnt p(elips.Location().XYZ());
@@ -219,7 +219,7 @@ void ClosestPointsLineAndEllipse(const gp_Lin& line, const gp_Elips& elips, std:
 			gp_Vec up(0,0,1);
 			gp_Lin line2 = line.Rotated(gp_Ax1(elips.Location(),up),-GetEllipseRotation(elips));
 			gp_Pnt linepos = line2.Location();
-                        gp_Vec linedir = line2.Direction();
+			gp_Vec linedir = line2.Direction();
 			double ratio = elips.MinorRadius() / elips.MajorRadius();
 			linepos.SetY(linepos.Y() * ratio);
 			linedir.SetY(linedir.Y() * ratio);
@@ -229,7 +229,7 @@ void ClosestPointsLineAndEllipse(const gp_Lin& line, const gp_Elips& elips, std:
 
 			// solving	x = x0 + dx * t			x = y0 + dy * t
 			//			x = xc + R * cos(a)		y = yc + R * sin(a)		for t
-			// gives :-  t² (dx² + dy²) + 2t(dx*dx0 + dy*dy0) + (x0-xc)² + (y0-yc)² - R² = 0
+			// gives :-  t^2 (dx^2 + dy^2) + 2t(dx*dx0 + dy*dy0) + (x0-xc)^2 + (y0-yc)^2 - R^2 = 0
 
 			gp_Vec lv = line2.Direction();
 
@@ -308,7 +308,7 @@ void ClosestPointsLineAndCircle(const gp_Lin& line, const gp_Circ& circle, std::
 
 			// solving	x = x0 + dx * t			x = y0 + dy * t
 			//			x = xc + R * cos(a)		y = yc + R * sin(a)		for t
-			// gives :-  t² (dx² + dy²) + 2t(dx*dx0 + dy*dy0) + (x0-xc)² + (y0-yc)² - R² = 0
+		    // gives :-  t^2 (dx^2 + dy^2) + 2t(dx*dx0 + dy*dy0) + (x0-xc)^2 + (y0-yc)^2 - R^2 = 0
 
 			gp_Vec lv = line.Direction();
 
@@ -564,7 +564,7 @@ void TangentCircles(const gp_Circ& c1, const gp_Circ& c2, const gp_Circ& c3, std
 				// A*x + B*y + C*r = D
 				// A*(d - b*y - c*r)/a + B*y + C*r = D
 				// A/a*(d - c*r) + C*r - A/a*b*y + B*y = D
-				// - A/a*b*y + B*y = D - A/a*(d - c*r) - C*r 
+				// - A/a*b*y + B*y = D - A/a*(d - c*r) - C*r
 				// y = (D - A/a*(d - c*r) - C*r)/(B - A/a*b)
 				// y = (D*a - A*(d - c*r) - C*r*a)/(B*a - A*b)
 				// y = (D*a - A*d + A*c*r - C*r*a)/(B*a - A*b)
@@ -1069,6 +1069,22 @@ void extract(const gp_XYZ &xyz, double *m)
 	m[2] = xyz.Z();
 }
 
+void extract(const gp_GTrsf& tr, double *m)
+{
+    m[0] = tr.Value(1, 1);
+    m[1] = tr.Value(1, 2);
+    m[2] = tr.Value(1, 3);
+    m[3] = tr.Value(1, 4);
+    m[4] = tr.Value(2, 1);
+    m[5] = tr.Value(2, 2);
+    m[6] = tr.Value(2, 3);
+    m[7] = tr.Value(2, 4);
+    m[8] = tr.Value(3, 1);
+    m[9] = tr.Value(3, 2);
+    m[10] = tr.Value(3, 3);
+    m[11] = tr.Value(3, 4);
+}
+
 void extract(const gp_Trsf& tr, double *m)
 {
 	m[0] = tr.Value(1, 1);
@@ -1109,8 +1125,29 @@ void extract_transposed(const gp_Trsf& tr, double *m)
 	m[15] = 1;
 }
 
+// Switch rows and cols for openGL
+void matrix_transpose(double* in, double* out)
+{
+    out[0] = in[0];
+    out[1] = in[4];
+    out[2] = in[8];
+    out[3] = in[12];
+    out[4] = in[1];
+    out[5] = in[5];
+    out[6] = in[9];
+    out[7] = in[13];
+    out[8] = in[2];
+    out[9] = in[6];
+    out[10] = in[10];
+    out[11] = in[14];
+    out[12] = in[3];
+    out[13] = in[7];
+    out[14] = in[11];
+    out[15] = in[15];
+}
+
 gp_Pnt ClosestPointOnPlane(const gp_Pln& pln, const gp_Pnt &p){
-	// returns closest vertex on plane to point pt 
+	// returns closest vertex on plane to point pt
 	gp_Vec n = pln.Axis().Direction().XYZ();
 	gp_Pnt l = pln.Location();
 
@@ -1119,7 +1156,7 @@ gp_Pnt ClosestPointOnPlane(const gp_Pln& pln, const gp_Pnt &p){
 }
 
 gp_Pnt ClosestPointOnLine(const gp_Lin& line, const gp_Pnt &p){
-	// returns closest vertex on line to point pt 
+	// returns closest vertex on line to point pt
 
 	double start_dotp = gp_Vec(line.Location().XYZ()) * line.Direction();
 	double p_dotp = gp_Vec(p.XYZ()) * line.Direction();
@@ -1155,10 +1192,30 @@ gp_Vec make_vector(const double* v)
 	return gp_Vec(v[0], v[1], v[2]);
 }
 
+gp_GTrsf make_general_matrix(const double* m)
+{
+    gp_GTrsf gm;
+    gm.SetValue(1, 1, m[0]);
+    gm.SetValue(1, 2, m[1]);
+    gm.SetValue(1, 3, m[2]);
+    gm.SetValue(1, 4, m[3]);
+
+    gm.SetValue(2, 1, m[4]);
+    gm.SetValue(2, 2, m[5]);
+    gm.SetValue(2, 3, m[6]);
+    gm.SetValue(2, 4, m[7]);
+
+    gm.SetValue(3, 1, m[8]);
+    gm.SetValue(3, 2, m[9]);
+    gm.SetValue(3, 3, m[10]);
+    gm.SetValue(3, 4, m[11]);
+    return gm;
+}
+
 gp_Trsf make_matrix(const double* m)
 {
 	gp_Trsf tr;
-	tr.SetValues(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], 0.0001, 100000000);
+	tr.SetValues(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11]);
 	return tr;
 }
 
@@ -1276,6 +1333,12 @@ bool IsEqual(gp_Ax1 ax1, gp_Ax1 ax2)
 		return false;
 
 	return true;
+}
+
+bool IsZeroVector(const gp_Vec &vec)
+{
+    gp_Vec zero (0.0, 0.0, 0.0);
+    return vec.IsEqual(zero, GEOM_TOL, GEOM_TOL);
 }
 
 static char buf[256];

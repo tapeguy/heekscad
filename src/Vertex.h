@@ -9,7 +9,8 @@
 class CFace;
 class CEdge;
 
-class HVertex:public HeeksObj{
+class HVertex : public HeeksObj
+{
 private:
 	TopoDS_Vertex m_topods_vertex;
 	std::list<CEdge*>::iterator m_edgeIt;
@@ -17,23 +18,26 @@ private:
 	void FindEdges();
 
 public:
+
+	static const int ObjType = VertexType;
+
+
 	std::list<CEdge*> m_edges;
-	std::list<CFace*> m_faces;
-	double m_point[3];
+	PropertyVertex m_p;
 
 	HVertex(const TopoDS_Vertex &vertex);
 	~HVertex();
 
-	int GetType()const{return VertexType;}
+    // HeeksObj's virtual functions
+    void InitializeProperties();
 	int GetMarkingFilter()const{return VertexMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	HeeksObj *MakeACopy(void)const{ return new HVertex(*this);}
 	const wxBitmap &GetIcon();
-	const wxChar* GetTypeString(void)const{return _("Vertex");}
-	bool UsesID(){return true;}
 
-	const TopoDS_Shape &Vertex(){return m_topods_vertex;}
+	TopoDS_Vertex& Vertex(){return m_topods_vertex;}
+	void ModifyByMatrix(const double *m);
 	CEdge* GetFirstEdge();
 	CEdge* GetNextEdge();
 	CShape* GetParentBody();

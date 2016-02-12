@@ -11,7 +11,6 @@ public:
 
 	int GetType()const{return WireType;}
 	int GetMarkingFilter()const{return WireMarkingFilter;}
-	const wxChar* GetTypeString(void)const{return _("Wire");}
 	HeeksObj *MakeACopy(void)const{ return new CWire(*this);}
 	const wxBitmap &GetIcon();
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);

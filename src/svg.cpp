@@ -6,7 +6,7 @@
 // Status and my 2 cents:
 //		Most of the SVG spec is completely implemented. A bnf parser would be better,
 //		but most of the attribute strings should be parsed correctly.
-//		
+//
 //		SVG tags and attribute names should not be case sensitive, but they are.
 //		they should also be able to be inside of namespaces, not sure if this works
 //
@@ -24,10 +24,10 @@
 //		arc element at time of writing
 //
 //		Line widths and colors are not imported
-//	
+//
 //		there are fundamentally different ways of deserializing the stream, ie.
 //			exploding curves
-//			using rects instead of lines	
+//			using rects instead of lines
 //			grouping all objects in <g> tags with sketches
 //			creating lines with linewidths, or faces of the right width
 //		maybe the import command should give a dialog that populates a CDeserializationProfile?
@@ -144,7 +144,7 @@ void CSvgRead::ReadSVGElement(TiXmlElement* pElem)
 	{
 		ReadEllipse(pElem);
 	}
-	
+
 	if(name == "line")
 	{
 		ReadLine(pElem);
@@ -162,7 +162,7 @@ void CSvgRead::ReadSVGElement(TiXmlElement* pElem)
 
 	m_transform = m_transform_stack.back();
 	m_transform_stack.pop_back();
-	
+
 
 }
 
@@ -209,10 +209,10 @@ void CSvgRead::ReadTransform(TiXmlElement *pElem)
 				double d = m[0]*m[5]-m[4]*m[1];
 				m[10] = sqrt(d); //The Z component must be of the same magnitude as the rest of
 				//the matrix. It really makes no difference what it is, since all z's are 0
-				
-				//TODO: Uncomment the following lines for matrix support. 
+
+				//TODO: Uncomment the following lines for matrix support.
 				//Opencascade doesn't support assymetric transforms(non uniform matrices)
-				//unforunately most matrix transforms are non uniform, so this usually just 
+				//unforunately most matrix transforms are non uniform, so this usually just
 				//throws exceptions
 
 				//In all probability we will have to transform all shapes by the assymetric matrix
@@ -220,9 +220,9 @@ void CSvgRead::ReadTransform(TiXmlElement *pElem)
 				//probably a v3 feature
 
 				//:JonPry
-				
+
 				// ntrsf = make_matrix(m);
-				// m_transform.Multiply(ntrsf);	
+				// m_transform.Multiply(ntrsf);
 				pos+=count;
 			}
 			if(strncmp(&d[pos],"skewX",5)==0)
@@ -268,7 +268,7 @@ void CSvgRead::ReadTransform(TiXmlElement *pElem)
 void CSvgRead::ReadRect(TiXmlElement *pElem)
 {
 	double x = 0,y = 0,width = 0,height = 0;
-	double rx=0; 
+	double rx=0;
 	double ry=0;
 	// get the attributes
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
@@ -301,7 +301,7 @@ void CSvgRead::ReadEllipse(TiXmlElement *pElem)
 {
 	double x=0;
 	double y=0;
-	double rx=0; 
+	double rx=0;
 	double ry=0;
 	// get the attributes
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
@@ -330,7 +330,7 @@ void CSvgRead::ReadLine(TiXmlElement *pElem)
 {
 	double x1=0;
 	double y1=0;
-	double x2=0; 
+	double x2=0;
 	double y2=0;
 	// get the attributes
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
@@ -473,7 +473,7 @@ struct TwoPoints CSvgRead::ReadCubic(const char *text,gp_Pnt ppnt,bool isupper)
 	struct TwoPoints retpts;
 	double x1, y1, x2, y2, x3, y3;
 	sscanf(text, "%lf%lf%lf%lf%lf%lf", &x1, &y1, &x2, &y2, &x3, &y3);
-	y1 = -y1; y2 = -y2; y3 = -y3;	
+	y1 = -y1; y2 = -y2; y3 = -y3;
 cout << "x1=" << x1 << "y1=" << y1 << "x2=" << x2 << "y2=" << y2 << "x3=" << x3 << "y3=" << y3 << "\n";
 // All points appear to be relative to the first
 	if(!isupper)
@@ -499,7 +499,7 @@ struct TwoPoints CSvgRead::ReadCubic(const char *text,gp_Pnt ppnt, gp_Pnt pcpnt,
 	struct TwoPoints retpts;
 	double x2, y2, x3, y3;
 	sscanf(text, "%lf%lf%lf%lf", &x2, &y2, &x3, &y3);
-	y2 = -y2; y3 = -y3;	
+	y2 = -y2; y3 = -y3;
 
 	if(!isupper)
 	{
@@ -524,7 +524,7 @@ struct TwoPoints CSvgRead::ReadQuadratic(const char *text,gp_Pnt ppnt,bool isupp
 	struct TwoPoints retpts;
 	double x1, y1, x2, y2;
 	sscanf(text, "%lf%lf%lf%lf", &x1, &y1, &x2, &y2);
-	y1 = -y1; y2 = -y2; 
+	y1 = -y1; y2 = -y2;
 
 	if(!isupper)
 	{
@@ -582,7 +582,7 @@ gp_Pnt CSvgRead::ReadEllipse(const char *text,gp_Pnt ppnt,bool isupper)
 
 	gp_Vec mid((ppnt.XYZ()-ept.XYZ())/2);
 	mid.Rotate(gp_Ax1(zp,up),-xrot);
-	
+
 	double error = mid.X() * mid.X()/(rx*rx) + mid.Y()*mid.Y()/(ry*ry);
 		if(error > 1-wxGetApp().m_geom_tol)
 	{
@@ -623,7 +623,7 @@ gp_Pnt CSvgRead::ReadEllipse(const char *text,gp_Pnt ppnt,bool isupper)
 		end_angle+=2*M_PI;
 
 	double d_angle = end_angle - start_angle;
-	
+
 	if(d_angle < 0)
 		d_angle += 2*M_PI;
 
@@ -721,14 +721,14 @@ void CSvgRead::ReadPath(TiXmlElement* pElem)
 					pos+=JumpValues(&d[pos],4);
 				}
 				else if(toupper(cmd) == 'Q'){
-					// add a quadratic bezier curve 
+					// add a quadratic bezier curve
 					struct TwoPoints ret = ReadQuadratic(&d[pos+1],ppnt,isupper(cmd)!=0);
 					ppnt = ret.ppnt;
 					pcpnt = ret.pcpnt;
 					pos+=JumpValues(&d[pos],4);
 				}
 				else if(toupper(cmd) == 'T'){
-               		// add a quadratic bezier curve 
+               		// add a quadratic bezier curve
 					struct TwoPoints ret = ReadQuadratic(&d[pos],ppnt,pcpnt,isupper(cmd)!=0);
 					ppnt = ret.ppnt;
 					pcpnt = ret.pcpnt;
@@ -775,7 +775,7 @@ void HeeksSvgRead::ModifyByMatrix(HeeksObj* object)
 void HeeksSvgRead::OnReadStart()
 {
 		m_sketch = new CSketch();
-		wxGetApp().Add(m_sketch, NULL);
+		wxGetApp().Add(m_sketch);
 }
 
 void HeeksSvgRead::OnReadCubic(gp_Pnt s, gp_Pnt c1, gp_Pnt c2, gp_Pnt e)
@@ -841,6 +841,6 @@ void HeeksSvgRead::AddSketchIfNeeded()
 	if(m_sketch == NULL)
 	{
 		m_sketch = new CSketch();
-		wxGetApp().Add(m_sketch, NULL);
+		wxGetApp().Add(m_sketch);
 	}
 }

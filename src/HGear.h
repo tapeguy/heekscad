@@ -4,11 +4,18 @@
 
 #pragma once
 
-class HGear: public HeeksObj{
+#include "../interface/IdNamedObj.h"
+
+class HGear: public IdNamedObj
+{
 	void SetSegmentsVariables(void(*callbackfunc)(const double *p))const;
 
 public:
-	gp_Ax2 m_pos; // coordinate system defining position and orientation
+
+	static const int ObjType = GearType;
+
+
+	PropertyCoord m_pos; // coordinate system defining position and orientation
 	PropertyInt m_num_teeth;
 	PropertyDouble m_module;
 	PropertyDouble m_addendum_offset;
@@ -28,17 +35,14 @@ public:
 
 	// HeeksObj's virtual functions
 	void InitializeProperties();
-	int GetType()const{return GearType;}
 	int GetMarkingFilter()const{return GearMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Gear");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	bool GetScaleAboutMatrix(double *m);
-	void WriteXML(TiXmlNode *root);
 	bool DescendForUndo(){return false;}
 	bool IsDifferent(HeeksObj* other);
 	void GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point = true)const;

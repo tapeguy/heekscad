@@ -5,13 +5,17 @@
 
 #include "HXml.h"
 
-HXml::HXml(TiXmlElement* pElem):m_element(*pElem){
+HXml::HXml(TiXmlElement* pElem)
+ : HeeksObj(ObjType), m_element(*pElem)
+{
 }
 
-HXml::~HXml(){
+HXml::~HXml()
+{
 }
 
-HeeksObj *HXml::MakeACopy(void)const{
+HeeksObj *HXml::MakeACopy(void)const
+{
 	HXml *new_object = new HXml(*this);
 	return new_object;
 }

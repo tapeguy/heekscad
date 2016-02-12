@@ -1,10 +1,12 @@
 // StlSolid.h
 // Copyright (c) 2009, Dan Heeks
 // This program is released under the BSD license. See the file COPYING for details.
+#pragma once
 
-#include "../interface/HeeksObj.h"
+#include "../interface/IdNamedObj.h"
 
-class CStlTri{
+class CStlTri
+{
 public:
 	float x[3][3];
 	CStlTri(){}
@@ -12,16 +14,20 @@ public:
 	CStlTri(const double* t);
 };
 
-class CStlSolid:public HeeksObj{
+class CStlSolid : public IdNamedObj
+{
 private:
 	HeeksColor m_color;
 	int m_gl_list;
 	CBox m_box;
-	wxString m_title;
 
 	void read_from_file(const wxChar* filepath);
 
 public:
+
+	static const int ObjType = StlSolidType;
+
+
 	std::list<CStlTri> m_list;
 
 	CStlSolid();
@@ -35,19 +41,15 @@ public:
 
 	virtual const CStlSolid& operator=(const CStlSolid& s);
 
-	int GetType()const{return StlSolidType;}
 	int GetMarkingFilter()const{return StlSolidMarkingFilter;}
 	int GetIDGroupType()const{return SolidType;}
-	const wxChar* GetTypeString(void)const{return _("STL Solid");}
 	const wxBitmap &GetIcon();
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	void KillGLLists(void);
 	void ModifyByMatrix(const double* m);
-	const wxChar* GetShortString(void)const{return m_title.c_str();}
-	bool CanEditString(void)const{return true;}
-	void OnEditString(const wxChar* str);
 	void GetTriangles(void(*callbackfunc)(const double* x, const double* n), double cusp, bool just_one_average_normal = true);
+	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	void CopyFrom(const HeeksObj* object);
 	HeeksObj *MakeACopy()const;
 	void WriteXML(TiXmlNode *root);

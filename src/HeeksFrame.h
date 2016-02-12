@@ -84,15 +84,16 @@ public:
 	CInputModeCanvas* m_input_canvas;
 	wxAuiManager* m_aui_manager;
 
-        wxAuiToolBar *m_toolBar;
-        wxAuiToolBar *m_geometryBar;
-        wxAuiToolBar *m_solidBar;
-        wxAuiToolBar *m_viewingBar;
-        wxAuiToolBar *m_transformBar;
+    wxAuiToolBar *m_toolBar;
+    wxAuiToolBar *m_geometryBar;
+    wxAuiToolBar *m_solidBar;
+    wxAuiToolBar *m_viewingBar;
+    wxAuiToolBar *m_transformBar;
 
 	wxMenuBar *m_menuBar;
 	wxMenu* m_recent_files_menu;
 	wxMenu *m_menuWindow;
+	wxMenu *m_menuHelp;
 	HeeksPrintout* m_printout;
 	wxString m_extra_about_box_str;
 
@@ -134,8 +135,10 @@ public:
 	int AddMenuItem(wxMenu* menu, const wxString& text, const wxBitmap& bitmap, void(*onButtonFunction)(wxCommandEvent&), void(*onUpdateButtonFunction)(wxUpdateUIEvent&) = NULL, wxMenu* submenu = NULL, bool check_item = false);
 	void Draw(wxDC& dc);
 	void OnChangeBitmapSize();
-	void MakeMenus();
-	void AddToolBars();
+#ifndef USING_RIBBON
+    void MakeMenus();
+    void AddToolBars();
+#endif
 	void LoadPerspective(const wxString& str);
 	void SetDefaultLayout(const wxString& str); // call this from dll's OnStartUp
 	void SetToolBarsToLeft();

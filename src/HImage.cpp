@@ -8,24 +8,36 @@
 #include "Gripper.h"
 
 HImage::HImage(const wxChar* file_path)
+ : HeeksObj(ObjType), m_file_path(file_path)
 {
+    InitializeProperties();
 	m_rectangle_intialized = false;
-	m_file_path.assign(file_path);
 	m_texture_number = 0; // texture not loaded
 	m_lots_of_quads = true;
     width = 0;
 	height = 0;
 	textureWidth = 0;
 	textureHeight = 0;
+    wxString pic_string(_("Picture - "));
+    pic_string.append((const wxString&)m_file_path);
+    this->SetTitle(pic_string);
 }
 
-HImage::HImage(const HImage &p){
+HImage::HImage(const HImage &p)
+: HeeksObj(p)
+{
+    InitializeProperties();
 	m_texture_number = 0; // texture not loaded
-
 	operator=(p);
 }
 
-const HImage& HImage::operator=(const HImage &p){
+void HImage::InitializeProperties()
+{
+    m_file_path.Initialize(_("file path"), this);
+}
+
+const HImage& HImage::operator=(const HImage &p)
+{
 	HeeksObj::operator =(p);
 
 	m_rectangle_intialized = p.m_rectangle_intialized;
@@ -46,14 +58,16 @@ HImage::~HImage()
 	destroy_texture();
 }
 
-void HImage::destroy_texture(){
+void HImage::destroy_texture()
+{
 	if(m_texture_number){
 		glDeleteTextures (1, &m_texture_number);
 		m_texture_number = 0;
 	}
 }
 
-void HImage::do_vertex_for_lots_of_quads( double x, double y ){
+void HImage::do_vertex_for_lots_of_quads( double x, double y )
+{
 	double p5[3], p6[3], vt[3];
 	for(int i = 0; i<3; i++)
 	{
@@ -77,7 +91,7 @@ void HImage::glCommands(bool select, bool marked, bool no_color)
 {
 	if(m_texture_number == 0){
 
-		unsigned int* t = loadImage(m_file_path.c_str(), &width, &height, &textureWidth, &textureHeight);
+		unsigned int* t = loadImage(m_file_path, &width, &height, &textureWidth, &textureHeight);
 		if(t)
 		{
 			m_texture_number= *t;
@@ -149,14 +163,6 @@ void HImage::GetBox(CBox &box)
 	for(int i = 0; i<4; i++)box.Insert(m_x[i]);
 }
 
-wxString m_global_pic_string;
-
-const wxChar* HImage::GetShortString(void)const{
-	m_global_pic_string.assign(_("Picture - "));
-	m_global_pic_string.append(m_file_path.c_str());
-	return m_global_pic_string.c_str();
-}
-
 HeeksObj *HImage::MakeACopy(void)const
 {
 	return new HImage(*this);
@@ -179,11 +185,6 @@ void HImage::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	}
 }
 
-void HImage::GetProperties(std::list<Property *> *list)
-{
-	HeeksObj::GetProperties(list);
-}
-
 bool HImage::Stretch(const double *p, const double* shift, void* data){
 	gp_Pnt vp = make_point(p);
 	gp_Vec vshift = make_vector(shift);
@@ -204,7 +205,6 @@ void HImage::WriteXML(TiXmlNode *root)
 	TiXmlElement * element;
 	element = new TiXmlElement( "Image" );
 	root->LinkEndChild( element );
-	element->SetAttribute("filepath", m_file_path.utf8_str());
 
 	element->SetDoubleAttribute("x00", m_x[0][0]);
 	element->SetDoubleAttribute("x01", m_x[0][1]);
@@ -232,8 +232,7 @@ HeeksObj* HImage::ReadFromXMLElement(TiXmlElement* pElem)
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
 	{
 		std::string name(a->Name());
-		if(name == "filepath"){filepath.assign(Ctt(a->Value()));}
-		else if(name == "x00"){x[0][0] = a->DoubleValue();}
+		if(name == "x00"){x[0][0] = a->DoubleValue();}
 		else if(name == "x01"){x[0][1] = a->DoubleValue();}
 		else if(name == "x02"){x[0][2] = a->DoubleValue();}
 		else if(name == "x10"){x[1][0] = a->DoubleValue();}
@@ -247,7 +246,7 @@ HeeksObj* HImage::ReadFromXMLElement(TiXmlElement* pElem)
 		else if(name == "x32"){x[3][2] = a->DoubleValue();}
 	}
 
-	HImage *new_object = new HImage(filepath.c_str());
+	HImage *new_object = new HImage(_(""));
 	memcpy(new_object->m_x[0], x[0], 12*sizeof(double));
 	new_object->m_rectangle_intialized = true;
 	new_object->ReadBaseXML(pElem);

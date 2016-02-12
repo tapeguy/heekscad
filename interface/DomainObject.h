@@ -46,7 +46,10 @@ public:
 
     virtual ~DomainObject ( );
 
-    virtual void AddProperty ( Property * property );
+    // Returns false if the property already exists - in which case it copies the value only
+    virtual bool AddProperty ( Property * property );
+
+    virtual void RemoveProperty ( Property * property );
 
     Property * GetProperty ( const wxChar * prop_name ) const;
 
@@ -62,6 +65,11 @@ public:
         _name = name;
     }
 
+    unsigned int PropertyCount ( ) const
+    {
+        return _propertyList.size();
+    }
+
     DomainObjectIterator begin() const
     {
         return DomainObjectIterator ( _propertyList.begin() );
@@ -73,11 +81,13 @@ public:
     }
 
     // Override these callbacks:
-    virtual bool OnPropertySet(Property&);      // Assignment via the equals operator
+    virtual bool OnPrePropertySet ( Property& );      // Before modification
+
+    virtual void OnPropertySet ( Property& );
 
     virtual void GetProperties ( std::list<Property*> *list );
 
-    virtual void OnPropertyEdit (Property&);
+    virtual void OnPropertyEdit ( Property& );
 
 protected:
 

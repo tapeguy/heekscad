@@ -7,7 +7,7 @@
 
 #include "../interface/Tool.h"
 
-class StretchTool: public Tool{
+class StretchTool: public Undoable{
 private:
 	double m_pos[3];
 	double m_shift[3];
@@ -22,9 +22,24 @@ public:
 
 	// Tool's virtual functions
 	const wxChar* GetTitle();
-	void Run();
+	void Run(bool redo);
 	void RollBack();
-	bool Undoable(){return true;}
+};
+
+
+class StretchObjectsTool: public Undoable{
+private:
+    double m_shift[3];
+    std::list<HeeksObj*> m_list;
+
+public:
+    StretchObjectsTool(const std::list<HeeksObj*>& list, const double* shift);
+    ~StretchObjectsTool(void);
+
+    // Tool's virtual functions
+    const wxChar* GetTitle();
+    void Run(bool redo);
+    void RollBack();
 };
 
 #endif

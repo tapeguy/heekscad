@@ -6,7 +6,8 @@
 #include "Group.h"
 #include "Shape.h"
 
-CGroup::CGroup() : m_custom_grippers(false), m_custom_grippers_just_one_axis(true)
+CGroup::CGroup()
+ : ObjList(ObjType), m_custom_grippers(false), m_custom_grippers_just_one_axis(true)
 {
 	InitializeProperties();
 	m_title = _("Group");
@@ -23,7 +24,7 @@ void CGroup::InitializeProperties()
 	m_pz.Initialize(_("z"), this);
 }
 
-void CGroup::OnPropertyEdit(Property& prop)
+void CGroup::OnPropertySet(Property& prop)
 {
 	if(prop == m_custom_grippers_just_one_axis) {
 		bool enabled = m_custom_grippers_just_one_axis.IsSet();
@@ -33,7 +34,7 @@ void CGroup::OnPropertyEdit(Property& prop)
 		m_pz.SetVisible(enabled);
 	}
 	else {
-		ObjList::OnPropertyEdit(prop);
+		ObjList::OnPropertySet(prop);
 	}
 }
 
@@ -96,19 +97,19 @@ HeeksObj* CGroup::ReadFromXMLElement(TiXmlElement* element)
 		element->Attribute("ox", &o[0]);
 		element->Attribute("oy", &o[1]);
 		element->Attribute("oz", &o[2]);
-		new_object->m_o.SetValue(make_point(o));
+		new_object->m_o = make_point(o);
 		element->Attribute("pxx", &px[0]);
 		element->Attribute("pxy", &px[1]);
 		element->Attribute("pxz", &px[2]);
-		new_object->m_px.SetValue(make_point(px));
+		new_object->m_px = make_point(px);
 		element->Attribute("pyx", &py[0]);
 		element->Attribute("pyy", &py[1]);
 		element->Attribute("pyz", &py[2]);
-		new_object->m_py.SetValue(make_point(py));
+		new_object->m_py = make_point(py);
 		element->Attribute("pzx", &pz[0]);
 		element->Attribute("pzy", &pz[1]);
 		element->Attribute("pzz", &pz[2]);
-		new_object->m_pz.SetValue(make_point(pz));
+		new_object->m_pz = make_point(pz);
 	}
 
 	// loop through all the objects
@@ -125,7 +126,7 @@ HeeksObj* CGroup::ReadFromXMLElement(TiXmlElement* element)
 		{
 			// load other objects normal
 			HeeksObj* object = wxGetApp().ReadXMLElement(pElem);
-			if(object)new_object->Add(object, NULL);
+			if(object)new_object->Add(object);
 		}
 	}
 
@@ -153,13 +154,9 @@ void CGroup::MoveSolidsToGroupsById(HeeksObj* object)
 			HeeksObj* o = wxGetApp().GetIDObject(SolidType, id);
 			if (o != NULL)
 			{
-                o->Owner()->Remove(o);
-#ifdef MULTIPLE_OWNERS
-                o->RemoveOwner(o->Owner());
-#else
+                o->GetOwner()->Remove(o);
 				o->RemoveOwner();
-#endif
-                group->Add(o, NULL);
+                group->Add(o);
 			}
 		}
 	}
@@ -176,10 +173,6 @@ const wxBitmap &CGroup::GetIcon()
 	static wxBitmap* icon = NULL;
 	if(icon == NULL)icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/group.png")));
 	return *icon;
-}
-
-void CGroup::OnEditString(const wxChar* str){
-	m_title.assign(str);
 }
 
 bool CGroup::Stretch(const double *p, const double* shift, void* data){
@@ -247,13 +240,11 @@ static void on_set_pos(const double* pos)
 class PickPos: public Tool{
 	// Tool's virtual functions
 	void Run(){
-		wxGetApp().CreateUndoPoint();
 		callback_for_pick_pos = on_set_pos;
 		SetVertexPtr();
 		double p[3];
 		extract(*vertex_for_pick_pos, p);
 		wxGetApp().PickPosition(GetTitle(), p, callback_for_pick_pos);
-		wxGetApp().Changed();
 	}
 	wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/pickpos.png");}
 	virtual void SetVertexPtr()=0;

@@ -8,13 +8,14 @@
 #include "OrientationModifier.h"
 
 HText::HText(const gp_Trsf &trsf, const wxString &text, const HeeksColor& col, VectorFont *pFont)
- : m_trsf(trsf), m_text(text), m_pFont(pFont)
+ : ObjList(ObjType), m_trsf(trsf), m_text(text), m_pFont(pFont)
 {
 	InitializeProperties();
 	m_color = col;
 }
 
 HText::HText(const HText &b)
+ : ObjList(b)
 {
 	InitializeProperties();
 	operator=(b);
@@ -29,9 +30,7 @@ const HText& HText::operator=(const HText &b)
     if (this != &b)
     {
         ObjList::operator=(b);
-        m_trsf = b.m_trsf;
         m_text = b.m_text;
-        m_color = b.m_color;
         m_pFont = b.m_pFont;
     }
 
@@ -40,7 +39,7 @@ const HText& HText::operator=(const HText &b)
 
 void HText::InitializeProperties()
 {
-	m_trsf.Initialize(_("orientation"), this);
+	m_trsf.Initialize(_("orientation"), this, true);
 
 	if (wxGetApp().m_pVectorFonts.get() == NULL)
 	{
@@ -192,9 +191,13 @@ void HText::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 	list->push_back(GripData(GripperTypeScale,point[3].X(),point[3].Y(),point[3].Z(),NULL));
 }
 
-void HText::OnPropertyEdit(Property& prop)
+
+void HText::OnPropertySet(Property& prop)
 {
-	if (prop == m_font) {
+    if (prop == this->GetTitleProperty()) {
+        m_text.assign((const wxString&)this->GetTitleProperty());
+    }
+    else if (prop == m_font) {
 		if (m_font == 0)
 		{
 			m_pFont = NULL;
@@ -209,21 +212,15 @@ void HText::OnPropertyEdit(Property& prop)
 		{
 			m_pFont = wxGetApp().GetAvailableFonts()->Font( VectorFont::Name_t(vector_names[m_font].c_str()) );
 		}
-		wxGetApp().Changed();
 	}
 	else {
-		ObjList::OnPropertyEdit(prop);
+		ObjList::OnPropertySet(prop);
 	}
 }
 
 bool HText::Stretch(const double *p, const double* shift, void* data)
 {
 	return false;
-}
-
-void HText::OnEditString(const wxChar* str){
-	m_text.assign(str);
-	wxGetApp().Changed();
 }
 
 void HText::WriteXML(TiXmlNode *root)
@@ -353,7 +350,7 @@ class AddOrientationModifierTool:public Tool{
 public:
 	void Run(){
 		HeeksObj *orientation = new COrientationModifier();
-		pOrientationForTextTool->Add( orientation, NULL);
+		pOrientationForTextTool->Add(orientation);
 		pOrientationForTextTool = NULL;
 	}
 	const wxChar* GetTitle(){return _("Add Orientation Modifier");}

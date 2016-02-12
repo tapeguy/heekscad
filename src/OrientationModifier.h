@@ -36,7 +36,7 @@ public:
 	COrientationModifierParams(COrientationModifier * parent);
 
 	void InitializeProperties();
-	void OnPropertyEdit(Property& prop);
+	void OnPropertySet(Property& prop);
 	void GetProperties(std::list<Property *> *list);
 	void set_initial_values();
 	void write_values_to_config();
@@ -63,16 +63,21 @@ public:
 class COrientationModifier : public ObjList
 {
 public:
+
+    static const int ObjType = OrientationModifierType;
+
     COrientationModifierParams m_params;
 
-    COrientationModifier() : m_params(this)  { m_params.set_initial_values(); }
+    COrientationModifier() : ObjList(ObjType), m_params(this), m_total_edge_length(0.0)
+    {
+        m_params.set_initial_values();
+    }
+
 	~COrientationModifier() { }
     COrientationModifier & operator= ( const COrientationModifier & rhs );
     COrientationModifier(const COrientationModifier & rhs );
 
     // HeeksObj's virtual functions
-	int GetType()const{return OrientationModifierType;}
-	const wxChar* GetTypeString(void)const{return _T("OrientationModifier");}
 	void glCommands(bool select, bool marked, bool no_color);
 
     bool OneOfAKind(){return false;}

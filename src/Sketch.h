@@ -1,4 +1,4 @@
-// Sketch.h
+     // Sketch.h
 // Copyright (c) 2009, Dan Heeks
 // This program is released under the BSD license. See the file COPYING for details.
 
@@ -9,19 +9,23 @@
 
 class CoordinateSystem;
 
-class CSketch:public ObjList
+class CSketch : public IdNamedObjList
 {
 private:
-    PropertyColor m_color;
 
-	wxString m_title;
 	bool IsClockwise()const{return GetArea()>0;}
 	std::map<int, int> order_map_for_properties; // maps drop-down index to SketchOrderType
 	static std::string m_sketch_order_str[MaxSketchOrderTypes];
 
 public:
+
+	static const int ObjType = SketchType;
+
+
+    PropertyVertex m_center;
 	PropertyInt m_num_children;
-	PropertyChoice m_order;
+	PropertyChoice m_order_choice;
+	PropertyInt m_order;
 	PropertyCheck m_solidify;
 	bool m_draw_with_transform;
 	CoordinateSystem* m_coordinate_system;
@@ -37,30 +41,18 @@ public:
 
 	bool IsDifferent( HeeksObj *other ) { return(*this != (*(CSketch *)other)); }
 
-	std::vector<TopoDS_Face> GetFaces();
-
+	virtual bool UsesColor() { return true; }
 	void InitializeProperties();
-	int GetType()const{return SketchType;}
 	int GetMarkingFilter()const{return SketchMarkingFilter;}
-	const wxChar* GetTypeString(void)const{return _("Sketch");}
 	const wxBitmap &GetIcon();
-	void OnPropertyEdit(Property& prop);
+	void OnPropertySet(Property& prop);
+	bool GetCentrePoint(double* pos);
 	void GetProperties(std::list<Property *> *list);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	HeeksObj *MakeACopy(void)const;
 	void CopyFrom(const HeeksObj* object){operator=(*((CSketch*)((ObjList*)object)));}
-	void WriteXML(TiXmlNode *root);
-	bool UsesID(){return true;}
-	void SetColor(const HeeksColor &col);
-	const wxChar* GetShortString(void)const{return m_title.c_str();}
-	bool CanEditString(void)const{return true;}
-	void OnEditString(const wxChar* str);
-	bool Add(HeeksObj* object, HeeksObj* prev_object);
+	bool Add(HeeksObj* object, HeeksObj* prev_object = NULL);
 	void Remove(HeeksObj* object);
-	void glCommands(bool select, bool marked, bool no_color);
-	void ReloadPointers();
-	bool IsTransient(){return true;}
-	void ModifyByMatrix(const double *m);
 
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
 
@@ -69,6 +61,7 @@ public:
 	bool ReOrderSketch(SketchOrderType new_order); // returns true if done
 	void ReLinkSketch();
 	void ReverseSketch();
+	void RemoveDuplicates();
 	void ExtractSeparateSketches(std::list<HeeksObj*> &new_separate_sketches, const bool allow_individual_objects = false);
 	int Intersects(const HeeksObj *object, std::list< double > *rl) const;
 	HeeksObj *Parallel( const double distance );

@@ -4,12 +4,7 @@
 
 #pragma once
 
-#ifdef MULTIPLE_OWNERS
-#include "../interface/ObjList.h"
-class HPoint;
-#else
 #include "HPoint.h"
-#endif
 
 enum AngularDimensionTextMode
 {
@@ -24,13 +19,20 @@ class HAngularDimension: public HeeksObj
 private:
     PropertyColor m_color;
 
+    // Private no-arg constructor
+    HAngularDimension();
+
 public:
-	wxString m_text;
+
+    static const int ObjType = AngularDimensionType;
+
+
 	HPoint* m_p0;
 	HPoint* m_p1;
 	HPoint* m_p2;
 	HPoint* m_p3;
 	HPoint* m_p4;
+    PropertyString m_text;
 	PropertyChoice m_text_mode;
 	PropertyDouble m_scale; // to do - text, gaps, and arrow heads will be scaled by this factor
 
@@ -45,22 +47,16 @@ public:
 
 	// HeeksObj's virtual functions
 	void InitializeProperties();
-	int GetType()const{return AngularDimensionType;}
 	int GetMarkingFilter()const{return DimensionMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	bool DrawAfterOthers(){return true;}
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Dimension");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void ModifyByMatrix(const double *mat);
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	bool Stretch(const double *p, const double* shift, void* data);
 	void CopyFrom(const HeeksObj* object){operator=(*((HAngularDimension*)object));}
-	void WriteXML(TiXmlNode *root);
-	//const wxChar* GetShortString(void)const{return m_text.c_str();}
-	bool CanEditString(void)const{return true;}
-	void OnEditString(const wxChar* str);
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	bool IsDifferent(HeeksObj* other);
 	void ReloadPointers();

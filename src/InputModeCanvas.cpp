@@ -21,6 +21,7 @@ END_EVENT_TABLE()
 CInputModeCanvas::CInputModeCanvas(wxWindow* parent)
         : CPropertiesCanvas(parent)
 {
+    m_input_mode.Initialize(_("input_mode"), this);
 	m_toolBar = NULL;
 	AddToolBar();
 }
@@ -61,78 +62,78 @@ void CInputModeCanvas::OnSize(wxSizeEvent& event)
     event.Skip();
 }
 
-void CInputModeCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
-	CPropertiesCanvas::OnPropertyGridChange(event);
+void CInputModeCanvas::RefreshByRemovingAndAddingAll() {
+    ClearProperties();
+
+    std::list<Property *> list;
+
+    // add the input_mode mode's properties
+    m_input_mode = wxGetApp().input_mode_object->GetTitle();
+    if(wxGetApp().input_mode_object->TitleHighlighted())
+        m_input_mode.SetHighlighted(true);
+    list.push_back(&m_input_mode);
+    wxGetApp().input_mode_object->GetProperties(&list);
+
+    // add the properties to the grid
+    std::list<Property *>::iterator It;
+    for(It = list.begin(); It != list.end(); It++)
+    {
+            Property* property = *It;
+            CPropertiesCanvas::AddProperty(property);
+    }
+
+    // add toolbar buttons
+    std::list<Tool*> t_list;
+    wxGetApp().input_mode_object->GetTools(&t_list, NULL);
+
+    // compare to previous_list
+    bool tools_changed = false;
+    if(t_list.size() != m_previous_tools.size())tools_changed = true;
+    else
+    {
+        std::list<Tool*>::iterator TIt = t_list.begin();
+        for(std::list<Tool*>::iterator It = m_previous_tools.begin(); It != m_previous_tools.end(); It++, TIt++){
+            Tool* pt = *It;
+            Tool* t = *TIt;
+            if(t != pt)
+            {
+                tools_changed = true;
+                break;
+            }
+        }
+    }
+
+    if(tools_changed)
+    {
+        // remake tool bar
+        wxGetApp().m_frame->ClearToolBar(m_toolBar);
+        for(std::list<Tool*>::iterator It = t_list.begin(); It != t_list.end(); It++)
+        {
+            Tool* tool = *It;
+            wxGetApp().m_frame->AddToolBarTool(m_toolBar, tool);
+        }
+
+        m_toolBar->Realize();
+
+        wxSize size = GetClientSize();
+        if(m_toolBar->GetToolCount() > 0){
+            int toolbar_height = ToolImage::GetBitmapSize() + EXTRA_TOOLBAR_HEIGHT;
+            m_pg->SetSize(0, 0, size.x, size.y - toolbar_height );
+            m_toolBar->SetSize(0, size.y - toolbar_height , size.x, toolbar_height );
+            m_toolBar->Show();
+        }
+        else{
+            m_pg->SetSize(0, 0, size.x, size.y );
+            m_toolBar->Show(false);
+        }
+
+        m_previous_tools = t_list;
+    }
 }
 
-void CInputModeCanvas::RefreshProperties2(){
-	ClearProperties();
-
-	std::list<Property *> list;
-
-	// add the input_mode mode's properties
-	PropertyString* title = new PropertyString(_("input_mode"), _("Input Mode"), NULL);
-	title->SetValue ( wxGetApp().input_mode_object->GetTitle() );
-	if(wxGetApp().input_mode_object->TitleHighlighted())
-			title->SetHighlighted(true);
-	list.push_back(title);
-	wxGetApp().input_mode_object->GetProperties(&list);
-
-	// add the properties to the grid
-	std::list<Property *>::iterator It;
-	for(It = list.begin(); It != list.end(); It++)
-	{
-	    Property * property = (Property *)*It;
-		AddProperty(property);
-	}
-
-	// add toolbar buttons
-	std::list<Tool*> t_list;
-	wxGetApp().input_mode_object->GetTools(&t_list, NULL);
-
-	// compare to previous_list
-	bool tools_changed = false;
-	if(t_list.size() != m_previous_tools.size())tools_changed = true;
-	else
-	{
-		std::list<Tool*>::iterator TIt = t_list.begin();
-		for(std::list<Tool*>::iterator It = m_previous_tools.begin(); It != m_previous_tools.end(); It++, TIt++){
-			Tool* pt = *It;
-			Tool* t = *TIt;
-			if(t != pt)
-			{
-				tools_changed = true;
-				break;
-			}
-		}
-	}
-
-	if(tools_changed)
-	{
-		// remake tool bar
-		wxGetApp().m_frame->ClearToolBar(m_toolBar);
-		for(std::list<Tool*>::iterator It = t_list.begin(); It != t_list.end(); It++)
-		{
-			Tool* tool = *It;
-			wxGetApp().m_frame->AddToolBarTool(m_toolBar, tool);
-		}
-
-		m_toolBar->Realize();
-
-		wxSize size = GetClientSize();
-		if(m_toolBar->GetToolCount() > 0){
-			int toolbar_height = ToolImage::GetBitmapSize() + EXTRA_TOOLBAR_HEIGHT;
-			m_pg->SetSize(0, 0, size.x, size.y - toolbar_height );
-			m_toolBar->SetSize(0, size.y - toolbar_height , size.x, toolbar_height );
-			m_toolBar->Show();
-		}
-		else{
-			m_pg->SetSize(0, 0, size.x, size.y );
-			m_toolBar->Show(false);
-		}
-
-		m_previous_tools = t_list;
-	}
-
+void CInputModeCanvas::RefreshProperties2()
+{
+    RefreshByRemovingAndAddingAll();
 }
+
 

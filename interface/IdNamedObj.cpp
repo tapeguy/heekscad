@@ -7,10 +7,10 @@
 static wxString temp_pattern_string;
 
 
-void IdNamedObj::OnSetID(int id)
+void IdNamedObj::OnSetID(ObjectId_t id)
 {
     if (m_title_made_from_id) {
-        temp_pattern_string = wxString::Format(_T("%s %d"), GetTypeString(), id);
+        temp_pattern_string = wxString::Format(_T("%s %d"), GetTypeString(), (int)id);
         HeeksObj::SetTitle(temp_pattern_string);
     }
     HeeksObj::OnSetID(id);

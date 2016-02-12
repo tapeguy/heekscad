@@ -27,7 +27,9 @@ const DomainObject& DomainObject::operator= ( const DomainObject &domobj )
     for ( DomainObjectIterator It = this->begin(); It != this->end(); It++ )
     {
         Property * new_prop = (*It)->Clone ( );
-        this->AddProperty ( new_prop );
+        if ( ! this->AddProperty ( new_prop ) ) {
+            delete new_prop;    // already exists
+        }
     }
     return *this;
 }
@@ -53,12 +55,24 @@ DomainObject::~DomainObject ( )
 }
 
 
-void DomainObject::AddProperty ( Property * property )
+bool DomainObject::AddProperty ( Property * property )
 {
+    Property * existing = this->GetProperty(property->GetName());
+    if (existing)
+    {
+        *existing = *property;
+        return false;
+    }
     property->SetOwner ( this );
     _propertyList.push_back ( property );
+    return true;
 }
 
+void DomainObject::RemoveProperty ( Property * property )
+{
+    property->SetOwner ( NULL );
+    _propertyList.remove ( property );
+}
 
 void DomainObject::RemoveAllProperties ( )
 {
@@ -77,17 +91,18 @@ Property * DomainObject::GetProperty ( const wxChar * prop_name ) const
     return NULL;
 }
 
-
-bool DomainObject::OnPropertySet ( Property& )
+bool DomainObject::OnPrePropertySet ( Property& )
 {
-	return true;
+    return true;
 }
 
+void DomainObject::OnPropertySet ( Property& )
+{
+}
 
 void DomainObject::OnPropertyEdit ( Property& )
 {
 }
-
 
 void DomainObject::GetProperties ( std::list<Property*> *list )
 {

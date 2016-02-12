@@ -7,23 +7,20 @@
 #include "../interface/HeeksObj.h"
 #include "HPoint.h"
 
-class EndedObject: public HeeksObj{
-protected:
-    PropertyColor m_color;
+class EndedObject: public ObjList {
 
 public:
 	HPoint* A, *B;
 
-	~EndedObject(void);
-	EndedObject(const HeeksColor& color);
+	EndedObject(int obj_type);
+	EndedObject(int obj_type, const HeeksColor& color);
 	EndedObject(const EndedObject& e);
+    ~EndedObject();
 
 	const EndedObject& operator=(const EndedObject &b);
 
-	void SetColor(const HeeksColor &col) { m_color = col; }
-	const HeeksColor& GetColor() const { return m_color; }
-
 	// HeeksObj's virtual functions
+	virtual bool UsesColor() { return true; }
 	bool Stretch(const double *p, const double* shift, void* data);
 	void ModifyByMatrix(const double* m);
 	bool GetStartPoint(double* pos);
@@ -31,8 +28,5 @@ public:
 	void CopyFrom(const HeeksObj* object){operator=(*((EndedObject*)object));}
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
 	void glCommands(bool select, bool marked, bool no_color);
-	HeeksObj* MakeACopyWithID();
 	bool IsDifferent(HeeksObj* other);
-//	void WriteBaseXML(TiXmlElement *element);
-
 };

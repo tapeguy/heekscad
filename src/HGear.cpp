@@ -9,12 +9,15 @@
 #include "HArc.h"
 #include "HSpline.h"
 
-HGear::HGear(const HGear &o){
+HGear::HGear(const HGear &o)
+ : IdNamedObj(o)
+{
 	InitializeProperties();
-	operator=(o);
 }
 
-HGear::HGear(){
+HGear::HGear()
+: IdNamedObj(ObjType)
+{
 	InitializeProperties();
 	m_num_teeth = 12;
 	m_module = 1.0;
@@ -28,23 +31,36 @@ HGear::HGear(){
 	m_angle = 0.0;
 }
 
-HGear::~HGear(){
+HGear::~HGear()
+{
 }
 
-const HGear& HGear::operator=(const HGear &o){
-	HeeksObj::operator=(o);
+const HGear& HGear::operator=(const HGear &o)
+{
+    IdNamedObj::operator=(o);
 	return *this;
 }
 
 void HGear::InitializeProperties()
 {
-	m_num_teeth.Initialize(_("num teeth"), this);
+    m_pos.Initialize(_("m_pos"), this);
+    m_pos.SetVisible(false);
+
+	m_num_teeth.Initialize(_("num_teeth"), this);
 	m_module.Initialize(_("module"), this);
-	m_pressure_angle.Initialize(_("pressure angle"), this);
-	m_tip_relief.Initialize(_("tip relief"), this);
+
+    m_addendum_offset.Initialize(_("m_addendum_offset"), this);
+    m_addendum_offset.SetVisible(false);
+    m_addendum_multiplier.Initialize(_("m_addendum_offset"), this);
+    m_addendum_multiplier.SetVisible(false);
+    m_dedendum_multiplier.Initialize(_("m_dedendum_multiplier"), this);
+    m_dedendum_multiplier.SetVisible(false);
+
+	m_pressure_angle.Initialize(_("pressure_angle"), this);
+	m_tip_relief.Initialize(_("tip_relief"), this);
 	m_depth.Initialize(_("depth"), this);
-	m_cone_half_angle.Initialize(_("cone half angle"), this);
-	m_angle.Initialize(_("drawn angle"), this);
+	m_cone_half_angle.Initialize(_("cone_half_angle"), this);
+	m_angle.Initialize(_("drawn_angle"), this);
 }
 
 const wxBitmap &HGear::GetIcon()
@@ -60,7 +76,7 @@ bool HGear::IsDifferent(HeeksObj* other)
 	//if(cir->C->m_p.Distance(C->m_p) > wxGetApp().m_geom_tol)
 	//	return true;
 
-	return HeeksObj::IsDifferent(other);
+	return IdNamedObj::IsDifferent(other);
 }
 
 class PhiAndAngle{
@@ -133,7 +149,7 @@ void transform_for_cone_and_depth(gp_Pnt &p)
 void point(double x, double y)
 {
 	// input - a point as if for a spur gear at 0, 0, 0
-	
+
 	// this transforms the point to put it on the cone, for a bevel gear
 	// then calls the callback function
 
@@ -146,7 +162,7 @@ void point(double x, double y)
 	{
 		spline_points_for_gear.push_back(p);
 	}
-	
+
 	if(callbackfunc_for_point)
 	{
 		double pp[3];
@@ -249,7 +265,7 @@ void clearance_point(double tooth_angle, ClearancePointType point_type, double c
 	switch(point_type)
 	{
 	case CLEARANCE_POINT1_TYPE:
-		point(p1_clearance.X(), p1_clearance.Y());	
+		point(p1_clearance.X(), p1_clearance.Y());
 		break;
 
 	case CLEARANCE_POINT2_TYPE:
@@ -267,7 +283,7 @@ void base_point(double tooth_angle, ClearancePointType point_type)
 	switch(point_type)
 	{
 	case CLEARANCE_POINT1_TYPE:
-		point(p1.X(), p1.Y());	
+		point(p1.X(), p1.Y());
 		break;
 	}
 }
@@ -359,7 +375,7 @@ void tooth(int i, bool want_start_point, bool make_closed_tooth_form)
 	{
 		add_spline();
 		if(sketch_for_gear)
-		{			
+		{
 			line_arc_line(tooth_angle);
 		}
 		else
@@ -612,99 +628,11 @@ void HGear::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 	t_list->push_back(&make_one_tooth_sketches);
 }
 
-void HGear::WriteXML(TiXmlNode *root)
-{
-	TiXmlElement * element;
-	element = new TiXmlElement( "Gear" );
-	root->LinkEndChild( element );
-
-	element->SetAttribute("num_teeth", m_num_teeth);
-	element->SetDoubleAttribute("module", m_module);
-	element->SetDoubleAttribute("addendum_offset", m_addendum_offset);
-	element->SetDoubleAttribute("addendum_multiplier", m_addendum_multiplier);
-	element->SetDoubleAttribute("dedendum_multiplier", m_dedendum_multiplier);
-	element->SetDoubleAttribute("pressure_angle", m_pressure_angle);
-	element->SetDoubleAttribute("tip_relief", m_tip_relief);
-	element->SetDoubleAttribute("depth", m_depth);
-	element->SetDoubleAttribute("cone_half_angle", m_cone_half_angle);
-	element->SetDoubleAttribute("drawn_angle", m_angle);
-
-	const gp_Pnt& l = m_pos.Location();
-	element->SetDoubleAttribute("lx", l.X());
-	element->SetDoubleAttribute("ly", l.Y());
-	element->SetDoubleAttribute("lz", l.Z());
-
-	const gp_Dir& d = m_pos.Direction();
-	element->SetDoubleAttribute("dx", d.X());
-	element->SetDoubleAttribute("dy", d.Y());
-	element->SetDoubleAttribute("dz", d.Z());
-
-	const gp_Dir& x = m_pos.XDirection();
-	element->SetDoubleAttribute("xx", x.X());
-	element->SetDoubleAttribute("xy", x.Y());
-	element->SetDoubleAttribute("xz", x.Z());
-
-	WriteBaseXML(element);
-}
-
 // static member function
 HeeksObj* HGear::ReadFromXMLElement(TiXmlElement* element)
 {
 	HGear* new_object = new HGear();
-	
-	int iv;
-	double dv;
-
-	element->Attribute("num_teeth", &iv);
-	new_object->m_num_teeth = iv;
-
-	element->Attribute("module", &dv);
-	new_object->m_module = dv;
-
-	element->Attribute("addendum_offset", &dv);
-	new_object->m_addendum_offset = dv;
-
-	element->Attribute("addendum_multiplier", &dv);
-	new_object->m_addendum_multiplier = dv;
-
-	element->Attribute("dedendum_multiplier", &dv);
-	new_object->m_dedendum_multiplier =dv;
-
-	element->Attribute("pressure_angle", &dv);
-	new_object->m_pressure_angle = dv;
-
-	element->Attribute("tip_relief", &dv);
-	new_object->m_tip_relief = dv;
-
-	element->Attribute("depth", &dv);
-	new_object->m_depth = dv;
-
-	element->Attribute("cone_half_angle", &dv);
-	new_object->m_cone_half_angle = dv;
-
-	element->Attribute("drawn_angle", &dv);
-	new_object->m_angle = dv;
-
-	double l[3] = {0.0, 0.0, 0.0};
-	double d[3] = {0.0, 0.0, 1.0};
-	double x[3] = {1.0, 0.0, 0.0};
-
-	element->Attribute("lx", &l[0]);
-	element->Attribute("ly", &l[1]);
-	element->Attribute("lz", &l[2]);
-
-	element->Attribute("dx", &d[0]);
-	element->Attribute("dy", &d[1]);
-	element->Attribute("dz", &d[2]);
-
-	element->Attribute("xx", &x[0]);
-	element->Attribute("xy", &x[1]);
-	element->Attribute("xz", &x[2]);
-
-	new_object->m_pos = gp_Ax2(gp_Pnt(l[0], l[1], l[2]), gp_Dir(d[0], d[1], d[2]), gp_Dir(x[0], x[1], x[2]));
-
 	new_object->ReadBaseXML(element);
-
 	return new_object;
 }
 

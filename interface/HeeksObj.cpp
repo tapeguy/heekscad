@@ -12,88 +12,147 @@
 #include "../src/HeeksFrame.h"
 #include "../src/ObjPropsCanvas.h"
 #include "../src/Sketch.h"
-#include "../src/Pad.h"
 #else
 #include "GripperTypes.h"
 #include "GripData.h"
 #endif
 
 
-
-PropertyDescriptor desc[] = {
-        { PropertyStringType,       _("type"),       _("Object Type"),       { {  PROP_READONLY,  "TRUE"  }, { NULL } }    },
-        { PropertyStringType,       _("title"),      _("Object Title")       },
-        { PropertyIntType,          _("id"),         _("ID")                 },
-        { PropertyCheckType,        _("visible"),    _("Visible")            },
-        { PropertyInvalidType }
-};
+const TopoDS_Shape empty_shape;
 
 
-PropertyString& HeeksObj::GetTypeProperty() const    {   return *((PropertyString *)GetProperty ( _("type") ));      }
-PropertyString& HeeksObj::GetTitleProperty() const   {   return *((PropertyString *)GetProperty ( _("title") ));     }
-PropertyInt& HeeksObj::GetIDProperty() const         {   return *((PropertyInt *)GetProperty ( _("id") ));           }
-PropertyCheck& HeeksObj::GetVisibleProperty() const  {   return *((PropertyCheck *)GetProperty ( _("visible") ));    }
+//PropertyDescriptor desc[] = {
+//        { PropertyStringType,       _("type"),       _("Object Type"),       { {  PROP_READONLY,  "TRUE"  }, { NULL } }    },
+//        { PropertyStringType,       _("title"),      _("Object Title")       },
+//        { PropertyIntType,          _("id"),         _("ID")                 },
+//        { PropertyColorType,        _("color"),      _("Color")              },
+//        { PropertyInvalidType }
+//};
+//
+//
+//PropertyString& HeeksObj::GetTypeProperty() const    {   return *((PropertyString *)GetProperty ( _("type") ));      }
+//PropertyString& HeeksObj::GetTitleProperty() const   {   return *((PropertyString *)GetProperty ( _("title") ));     }
+//PropertyInt& HeeksObj::GetIDProperty() const         {   return *((PropertyInt *)GetProperty ( _("id") ));           }
+//PropertyColor& HeeksObj::GetColorProperty() const    {   return *((PropertyColor *)GetProperty ( _("color") ));      }
+
+// : DomainObject(GetShortString((ObjType)obj_type), PropertyFactory(), (unsigned char *)&desc, sizeof(PropertyDescriptor)),
 
 
-HeeksObj::HeeksObj(void)
- : DomainObject(GetTypeString(), PropertyFactory(), (unsigned char *)&desc, sizeof(PropertyDescriptor)),
+HeeksObj::HeeksObj(int obj_type)
+ : DomainObject(GetShortString((ObjType)obj_type)),
    m_owner(NULL),
+   m_obj_type(obj_type),
+   m_copy_id(false),
    m_skip_for_undo(false),
    m_layer(0),
-   m_preserving_id(false),
    m_index(0)
 {
-    GetTypeProperty().SetValue(GetTypeString());
-    SetTitle(_(""));
-    SetID(0);
-    SetVisible(true);
+//    wxString type = this->GetTypeString();
+//    printf ( "Constructing object %s: %lx\n", (const char *)type, this );
 
-	InitializeProperties();
+    InitializeProperties();
+    m_type.SetValue(GetTypeString());
+    SetVisible(true);
 }
 
 HeeksObj::HeeksObj(const HeeksObj& ho)
- : DomainObject(GetTypeString(), PropertyFactory(), (unsigned char *)&desc, sizeof(PropertyDescriptor)),
+ : DomainObject(GetShortString((ObjType)ho.m_obj_type)),
    m_owner(NULL),
+   m_obj_type(ho.m_obj_type),
    m_skip_for_undo(false),
    m_layer(0),
-   m_preserving_id(false),
    m_index(0)
 {
-	InitializeProperties();
-	operator=(ho);
+//    wxString type = this->GetTypeString();
+//    printf ( "Constructing object %s: %lx (copy)\n", (const char *)type, this );
+
+    InitializeProperties();
+    m_copy_id = ho.m_copy_id;
+    operator=(ho);
+}
+
+
+HeeksObj::~HeeksObj()
+{
+//    wxString type = this->GetTypeString();
+//    printf ( "Destructing object %s: %lx\n", (const char *)type, this );
+
+    if (m_owner)
+    {
+        m_owner->Remove(this);
+    }
+
+    HeeksCADapp& app = wxGetApp();
+    if (&app != NULL)
+    {
+        if (m_index)
+        {
+            app.ReleaseIndex(m_index);
+        }
+
+        app.RemoveID(this);
+    }
 }
 
 void HeeksObj::InitializeProperties()
 {
+    m_type.Initialize(_("type"), this);
+    m_type.SetTitle(_("object type"));
+    m_type.SetReadOnly(true);
+
+    m_title.Initialize(_("title"), this);
+    m_title.SetTitle(_("object title"));
+
+    m_id.Initialize(_("id"), this);
+    m_visible.Initialize(_("visible"), this);
+
+    m_color.Initialize(_("color"), this, true);
 }
 
-bool HeeksObj::OnPropertySet(Property& prop)
+bool HeeksObj::OnPrePropertySet(Property& prop)
 {
-	if(prop == GetTitleProperty()) {
-		OnEditString(GetTitleProperty());
-	}
-	else if(prop == GetIDProperty() && GetID() != 0) {
-		OnSetID(GetIDProperty() );
-	}
-	return TRUE;
+    if(prop == m_id && (int)m_id != 0)
+    {
+        OnPreSetID(m_id);
+    }
+
+    if(prop == m_title)
+    {
+        OnPreSetTitle(m_title);
+    }
+    return true;
+}
+
+void HeeksObj::OnPropertySet(Property& prop)
+{
+    if(prop == m_id && (int)m_id != 0)
+    {
+        OnSetID(m_id);
+    }
+
+    if(prop == m_title)
+    {
+        OnSetTitle(m_title);
+    }
+
+    if (m_owner)
+    {
+        m_owner->OnChildModified(this, prop);
+    }
 }
 
 const HeeksObj& HeeksObj::operator=(const HeeksObj &ho)
 {
-    int id = ho.m_preserving_id ? ho.GetID() : GetID();
+    int id = ho.m_copy_id ? ho.GetID() : GetID();
 
-    for ( DomainObjectIterator itr = ho.begin(); itr != ho.end(); itr++ )
+    for ( DomainObjectIterator it = ho.begin(); it != ho.end(); it++ )
     {
-        Property * prop = *itr;
+        Property * prop = *it;
         Property * my_prop = this->GetProperty ( prop->GetName ( ) );
-        if ( my_prop )
+        if ( my_prop && my_prop != &m_id )
         {
             *my_prop = *prop;
         }
-//        else
-//        {
-//            this->AddProperty ( (Property *)prop.Clone ( ) );
-//        }
     }
 	m_layer = ho.m_layer;
 	m_skip_for_undo = ho.m_skip_for_undo;
@@ -103,40 +162,36 @@ const HeeksObj& HeeksObj::operator=(const HeeksObj &ho)
 	return *this;
 }
 
-HeeksObj::~HeeksObj()
+HeeksObj* HeeksObj::MakeACopyWithSameID()
 {
-	if(m_owner)
-	    m_owner->Remove(this);
-
-#ifdef HEEKSCAD
-	if (m_index) wxGetApp().ReleaseIndex(m_index);
-#else
-	if (m_index) heeksCAD->ReleaseIndex(m_index);
-#endif
+    m_copy_id = true;
+	HeeksObj* ret = MakeACopy();
+	m_copy_id = false;
+	return ret;
 }
 
-HeeksObj* HeeksObj::MakeACopyWithID()
+const wxChar* HeeksObj::GetTypeString(void) const
 {
-	m_preserving_id = true;
-	HeeksObj* ret = MakeACopy();
-	m_preserving_id = false;
-	return ret;
+    int type = GetType();
+    if (type <= ObjectMaximumType)
+        return GetShortString((ObjType)type);
+    return wxGetApp().HeeksType(GetType());
 }
 
 const wxBitmap &HeeksObj::GetIcon()
 {
 	static wxBitmap* icon = NULL;
-#ifdef HEEKSCAD
-	if(icon == NULL)icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/unknown.png")));
-#else
-	if(icon == NULL)icon = new wxBitmap(wxImage(heeksCAD->GetResFolder() + _T("/icons/unknown.png")));
-#endif
+
+	if(icon == NULL)
+	{
+	    icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/unknown.png")));
+	}
+
 	return *icon;
 }
 
 bool HeeksObj::GetScaleAboutMatrix(double *m)
 {
-#ifdef HEEKSCAD
 	// return the bottom left corner of the box
 	CBox box;
 	GetBox(box);
@@ -145,86 +200,15 @@ bool HeeksObj::GetScaleAboutMatrix(double *m)
 	mat.SetTranslationPart(gp_Vec(box.m_x[0], box.m_x[1], box.m_x[2]));
 	extract(mat, m);
 	return true;
-#else
-	return false;
-#endif
-}
-
-bool HeeksObj::StretchTemporaryTransformed(const double *p, const double* shift, void* data)
-{
-#ifdef HEEKSCAD
-	gp_Trsf mat;
-
-	HeeksObj* owner = m_owner;
-	CSketch *sketch = dynamic_cast<CSketch*>(owner);
-
-	if(sketch && sketch->m_coordinate_system)
-		mat = sketch->m_coordinate_system->GetMatrix();
-
-	//mat.Invert();
-
-	gp_Pnt vp = make_point(p);
-	gp_Vec vshift = make_vector(shift);
-
-	//vp.Transform(mat);
-	//vshift.Transform(mat);
-
-	double np[3];
-	double nshift[3];
-	extract(vp,np);
-	extract(vshift,nshift);
-
-	return StretchTemporary(np,nshift,data);
-#else
-	return StretchTemporary(p,shift,data);
-#endif
 }
 
 void HeeksObj::GetGripperPositionsTransformed(std::list<GripData> *list, bool just_for_endof)
 {
-#ifdef HEEKSCAD
-
-	//TODO: We want to transform these coords by whatever has happened to the draw matrix on the way down to our level
-	//For right now we are just grabbing the sketches coord system, but this isn't right and won't work when parts or
-	//assemblies come around.
-	//For that matter it has gotten out of control with the addition of faces and edges to pads
-	std::list<GripData> newlist;
-	GetGripperPositions(&newlist,just_for_endof);
-
-	gp_Trsf mat;
-
-	CSketch *sketch = dynamic_cast<CSketch*>(m_owner);
-
-	if(sketch && sketch->m_coordinate_system)
-		mat = sketch->m_coordinate_system->GetMatrix();
-
-	CPad *pad = dynamic_cast<CPad*>(m_owner);
-	if(!pad && m_owner)
-		pad = dynamic_cast<CPad*>(m_owner->m_owner);
-
-	if(pad && pad->m_sketch->m_coordinate_system)
-		mat = pad->m_sketch->m_coordinate_system->GetMatrix();
-
-	std::list<GripData>::iterator it;
-	for(it = newlist.begin(); it != newlist.end(); ++it)
-	{
-		GripData gd = *it;
-
-		gp_Pnt pnt(gd.m_x,gd.m_y,gd.m_z);
-		pnt.Transform(mat);
-		gd.m_x = pnt.X();
-		gd.m_y = pnt.Y();
-		gd.m_z = pnt.Z();
-		list->push_back(gd);
-	}
-#else
-	GetGripperPositions(list,just_for_endof);
-#endif
+    GetGripperPositions(list,just_for_endof);
 }
 
 void HeeksObj::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 {
-//#ifdef HEEKSCAD
 	CBox box;
 	GetBox(box);
 	if(!box.m_valid)return;
@@ -235,19 +219,20 @@ void HeeksObj::GetGripperPositions(std::list<GripData> *list, bool just_for_endo
 	list->push_back(GripData(GripperTypeRotateObject,box.m_x[3],box.m_x[1],box.m_x[2],NULL));
 	list->push_back(GripData(GripperTypeRotateObject,box.m_x[0],box.m_x[4],box.m_x[2],NULL));
 	list->push_back(GripData(GripperTypeScale,box.m_x[3],box.m_x[4],box.m_x[2],NULL));
-//#endif
 }
 
 void HeeksObj::GetProperties(std::list<Property *> *list)
 {
-    GetTypeProperty().SetValue(GetTypeString());
     if (!UsesID())
-        GetIDProperty().SetVisible(false);
+        m_id.SetVisible(false);
+
+    if (!UsesColor())
+        m_color.SetVisible(false);
 
     DomainObject::GetProperties ( list );
 }
 
-bool HeeksObj::Add(HeeksObj* object, HeeksObj* prev_object)
+bool HeeksObj::Add(HeeksObj* object, HeeksObj* prev_object /* = NULL */ )
 {
 	object->m_owner = this;
 	object->OnAdd();
@@ -256,72 +241,73 @@ bool HeeksObj::Add(HeeksObj* object, HeeksObj* prev_object)
 
 void HeeksObj::OnRemove()
 {
-	if(m_owner == NULL)
+	if(m_owner == NULL) {
 	    KillGLLists();
+	}
 }
 
-void HeeksObj::OnSetID(int id)
+void HeeksObj::OnPreSetID(ObjectId_t id)
 {
-#ifdef HEEKSCAD
-	wxGetApp().SetObjectID(this, id);
-#else
-	heeksCAD->SetObjectID(this, id);
-#endif
+    wxGetApp().RemoveID(this);
+}
+
+void HeeksObj::OnSetID(ObjectId_t id)
+{
+    wxGetApp().SetObjectID(this, id);
+}
+
+void HeeksObj::WriteXML(TiXmlNode *root)
+{
+    TiXmlElement * element;
+    wxString type = this->GetTypeString();
+    element = new TiXmlElement ( type );
+    root->LinkEndChild ( element );
+    WriteBaseXML ( element );
 }
 
 void HeeksObj::WriteBaseXML(TiXmlElement *element)
 {
-#ifdef HEEKSCAD
-	wxGetApp().ObjectWriteBaseXML(this, element);
-#else
-	heeksCAD->ObjectWriteBaseXML(this, element);
-#endif
-}
+    std::list<Property *> list;
+    GetProperties(&list);
 
-#ifdef CONSTRAINT_TESTER
-//JT
-void HeeksObj::AuditHeeksObjTree4Constraints( HeeksObj * SketchPtr ,HeeksObj * mom, int level,bool ShowMsgInConsole,bool * constraintError)
-{
-
-    //If this routine is firing it probably means that either this has nothing to do with constraints or
-    //a virtual function was not implemented in a function.
-    //Most of the information needed can be fulled from ConstrainedObject::AuditHeeksObjTree4Constraints
-
-    wxString message=wxString::Format(wxT("Level:%d  %s ID=%d (From HeekObj::AuditHeeksObjTree4Constraints") ,level,GetTypeString(),m_id);
-    if (ShowMsgInConsole)wxPuts(message);
-
-}
-
-void HeeksObj::HeeksObjOccurrenceInSketch(HeeksObj * Sketch,HeeksObj * Object, int * OccurenceOfObjectInSketch,int FromLevel,bool ShowMsgInConsole)
-{
-    *OccurenceOfObjectInSketch =0;
-    if (Sketch!=NULL)
-    Sketch->FindConstrainedObj(Sketch,Object,OccurenceOfObjectInSketch,FromLevel,0,ShowMsgInConsole);//This initiates the recursion
-    else
-    wxMessageBox(_("Sketch Pointer == NULL in HeeksObjOccurrenceInSketch"));
-
-
-}
-void HeeksObj::FindConstrainedObj(HeeksObj * CurrentObject,HeeksObj * ObjectToFind,int * OccurenceOfObjectInSketch,int FromLevel,int Level,bool ShowMsgInConsole)
-{
-    //if we hit this it's the end of the line
-    if (this == ObjectToFind)
+    std::list<Property *>::iterator It;
+    for ( It = list.begin(); It != list.end(); It++ )
     {
-       (*OccurenceOfObjectInSketch)++;
+        Property * prop = *It;
+        if ( prop->IsTransient() ||
+             prop->GetName() == _("type") ||
+             ( prop->GetName() == _("title") && this->GetTitle().empty() ) ||
+             ( prop->GetName() == _("id") && ! this->UsesID ( ) ) ||
+             ( prop->GetName() == _("visible") && this->IsVisible() ) )
+        {
+            continue;
+        }
+        else
+        {
+            prop->WriteToXmlElement ( element );
+        }
     }
-
 }
-
-
-#endif
 
 void HeeksObj::ReadBaseXML(TiXmlElement* element)
 {
-#ifdef HEEKSCAD
-	wxGetApp().ObjectReadBaseXML(this, element);
-#else
-	heeksCAD->ObjectReadBaseXML(this, element);
-#endif
+    std::list<Property *> list;
+    GetProperties(&list);
+
+    for ( TiXmlElement* c = element->FirstChildElement ( ); c; c = c->NextSiblingElement ( ) )
+    {
+        wxString name = c->Value ( );
+        std::list<Property *>::iterator It;
+        for ( It = list.begin(); It != list.end(); It++ )
+        {
+            Property * prop = *It;
+            if ( prop->GetXmlName() == name )
+            {
+                prop->ReadFromXmlElement ( c );
+                break;
+            }
+        }
+    }
 }
 
 bool HeeksObj::OnVisibleLayer()
@@ -330,8 +316,7 @@ bool HeeksObj::OnVisibleLayer()
 	return true;
 }
 
-
-HeeksObj* HeeksObj::Owner()
+HeeksObj* HeeksObj::GetOwner()
 {
 	return m_owner;
 }
@@ -345,6 +330,35 @@ void HeeksObj::RemoveOwner()
 {
 	m_owner = NULL;
 }
+//
+//void HeeksObj::ReplaceWithCopy(HeeksObj* new_object, bool call_OnChanged)
+//{
+//    // Copy all bindings and metadata(such as units)
+//    for ( DomainObjectIterator it = new_object->begin(); it != new_object->end(); it++ )
+//    {
+//        Property * prop = *it;
+//        Property * my_prop = this->GetProperty ( prop->GetName ( ) );
+//        if (my_prop) {
+//            prop->ImportBindings ( *my_prop );
+//            prop->CopyMetadata ( *my_prop );
+//        }
+//    }
+//
+//    if (this->GetOwner()) {
+//        this->GetOwner()->Add(new_object);
+//        this->GetOwner()->Remove(this);
+//    }
+//    if(wxGetApp().m_marked_list->ObjectMarked(this))
+//    {
+//        wxGetApp().m_marked_list->Remove(this, call_OnChanged);
+//        wxGetApp().m_marked_list->Add(new_object, call_OnChanged);
+//    }
+//    std::set<HeeksObj*>::iterator iter = wxGetApp().m_hidden_for_drag.find(this);
+//    if( iter != wxGetApp().m_hidden_for_drag.end()) {
+//        wxGetApp().m_hidden_for_drag.erase(iter);
+//        wxGetApp().m_hidden_for_drag.insert(new_object);
+//    }
+//}
 
 const std::list<HeeksObj*>& HeeksObj::GetLinks ( ) const
 {
@@ -362,18 +376,12 @@ HeeksObj *HeeksObj::Find( const int type, const unsigned int id )
 #define snprintf _snprintf
 #endif
 
-void HeeksObj::ToString(char *str, unsigned int* rlen, unsigned int len)
+wxString HeeksObj::ToString() const
 {
-	unsigned int printed;
-	*rlen = 0;
-
-	printed = snprintf(str,len,"ID: 0x%X, Type: 0x%X, MarkingFilter: 0x%X, IDGroup: 0x%X\n",GetID(),GetType(),(unsigned int)GetMarkingFilter(),GetIDGroupType());
-	if(printed >= len)
-		goto abort;
-	*rlen += printed; len -= printed;
-
-abort:
-	*rlen = 0;
+	wxString rtn;
+	rtn.Printf("ID: %u, Type: %s, MarkingFilter: 0x%X, IDGroup: 0x%X\n",
+	            GetID(), GetShortString((ObjType)GetType()), (unsigned int)GetMarkingFilter(), GetIDGroupType());
+	return rtn;
 }
 
 unsigned int HeeksObj::GetIndex() {

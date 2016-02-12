@@ -5,6 +5,7 @@
 #pragma once
 
 #include "HeeksObj.h"
+#include "Tool.h"
 
 #include <list>
 #include <vector>
@@ -12,7 +13,10 @@
 
 class ObjList : public HeeksObj
 {
+    friend class ReorderTool;
+
 protected:
+    bool did_remove;
 	std::list<HeeksObj*> m_objects;
 	std::list<HeeksObj*>::iterator LoopIt;
 	std::list<std::list<HeeksObj*>::iterator> LoopItStack;
@@ -20,10 +24,9 @@ protected:
 	bool m_index_list_valid;
 
 	void recalculate_index_list();
-	void copy_objects(const ObjList& objlist);
 
 public:
-	ObjList():m_index_list_valid(true){}
+	ObjList(int obj_type);
 	ObjList(const ObjList& objlist);
 	virtual ~ObjList(){}
 
@@ -33,12 +36,11 @@ public:
 	bool operator!=( const ObjList & rhs ) const { return(! (*this == rhs)); }
 	bool IsDifferent(HeeksObj *other) { return( *this != (*(ObjList *)other) ); }
 
-    void GetProperties(std::list<Property *> *list);
-
 	void ClearUndoably(void);
 	void Clear();
 	void Clear(std::set<HeeksObj*> &to_delete);
 
+    virtual void SetColor(const HeeksColor& color);
 	HeeksObj* MakeACopy(void) const;
 	void GetBox(CBox &box);
 	void glCommands(bool select, bool marked, bool no_color);
@@ -49,7 +51,7 @@ public:
 	int GetNumChildren();
 	std::list<HeeksObj *> GetChildren() const;
 	bool CanAdd(HeeksObj* object){return true;}
-	virtual bool Add(HeeksObj* object, HeeksObj* prev_object);
+	virtual bool Add(HeeksObj* object, HeeksObj* prev_object = NULL);
 	virtual void Add(std::list<HeeksObj*> objects);
 	virtual void Remove(HeeksObj* object);
 	virtual void Remove(std::list<HeeksObj*> objects);
@@ -60,8 +62,21 @@ public:
 	void GetTriangles(void(*callbackfunc)(const double* x, const double* n), double cusp, bool just_one_average_normal = true);
 	bool IsList(){return true;}
 	void ReloadPointers();
-	void OnChangeViewUnits(const double units);
+	void OnChangeViewUnits(const EnumUnitType units);
 
 	HeeksObj *Find( const int type, const unsigned int id );	// Search for an object by type/id from this or any child objects.
-	/* virtual */ void SetIdPreservation(const bool flag);
+	wxString ToString() const;
+};
+
+class ReorderTool: public Undoable
+{
+        ObjList* m_object;
+        std::list<HeeksObj *> m_original_order;
+        std::list<HeeksObj *> m_new_order;
+
+public:
+        ReorderTool(ObjList* object, std::list<HeeksObj *> &new_order);
+        const wxChar* GetTitle(){return _("Reorder");}
+        void Run(bool redo);
+        void RollBack();
 };

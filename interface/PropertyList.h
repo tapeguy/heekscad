@@ -19,18 +19,26 @@ public:
 	void SetHighlighted(bool value);
 	void SetReadOnly(bool value);
 
-	int GetPropertyType(){return PropertyListType;}
+	int GetPropertyType() const {return PropertyListType;}
+    const wxChar* GetPropertyTypeName() const { return _("List"); }
+    bool IsTypeBindable() const {return false;}
+    bool IsContainer() const {return true;}
 	bool PropertyEditable() const {return false;}
 	void CallSetFunction() { }
 
 	// DomainObject virtual functions - call thru to the owner object
-	void AddProperty(Property *prop);	// Add to both the PropertyList and the DomainObject list
-
-	bool OnPropertySet(Property&);      // Assignment via the equals operator
+	bool AddProperty(Property *prop);	// Add to both the PropertyList and the DomainObject list
+	void RemoveProperty(Property *prop);
+	bool OnPrePropertySet(Property&);      // Assignment via the equals operator
+	void OnPropertySet(Property&);      // Assignment via the equals operator
 	void OnPropertyEdit(Property&);
+	void Clear();
 
     void operator = ( const Property& prop );
     Property * Clone ( ) const;
+
+    void DefaultReadFromXmlElement ( TiXmlElement *element );
+    void DefaultWriteToXmlElement ( TiXmlElement *element ) const;
 };
 
 #endif

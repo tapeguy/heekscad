@@ -10,11 +10,14 @@
 #include "../interface/Tool.h"
 #include "Gripper.h"
 #include "ConversionTools.h"
+#include <ShapeBuild_ReShape.hxx>
 
 
 CEdge::CEdge(const TopoDS_Edge &edge)
- : m_topods_edge(edge), m_vertex0(NULL), m_vertex1(NULL), m_midpoint_calculated(false), m_temp_attr(0)
+ : HeeksObj(ObjType), m_topods_edge(edge), m_vertex0(NULL), m_vertex1(NULL),
+   m_midpoint_calculated(false), m_temp_attr(0)
 {
+    InitializeProperties();
 	GetCurveParams2(&m_start_u, &m_end_u, &m_isClosed, &m_isPeriodic);
 	Evaluate(m_start_u, &m_start_x, &m_start_tangent_x);
 	double t[3];
@@ -22,12 +25,25 @@ CEdge::CEdge(const TopoDS_Edge &edge)
 	m_orientation = Orientation();
 }
 
-CEdge::~CEdge(){
+CEdge::~CEdge()
+{
 }
 
 void CEdge::InitializeProperties()
 {
 	m_length.Initialize(_("length"), this);
+	m_length.SetReadOnly(true);
+	m_length.SetTransient(true);
+	m_curve.Initialize(_("curve type"), this);
+	m_curve.SetReadOnly(true);
+	m_curve.SetTransient(true);
+}
+
+void CEdge::GetProperties(std::list<Property *> *list)
+{
+    m_length = Length();
+    m_curve.SetValue(this->GetCurveTypeStr());
+    HeeksObj::GetProperties(list);
 }
 
 const wxBitmap &CEdge::GetIcon()
@@ -37,12 +53,15 @@ const wxBitmap &CEdge::GetIcon()
 	return *icon;
 }
 
-void CEdge::glCommands(bool select, bool marked, bool no_color){
+void CEdge::glCommands(bool select, bool marked, bool no_color)
+{
 	if(!no_color){
 		wxGetApp().glColorEnsuringContrast(HeeksColor(0, 0, 0));
 	}
 
-	if(Owner() && Owner()->Owner() && Owner()->Owner()->GetType() == SolidType)
+	if(this->GetOwner() &&
+	   this->GetOwner()->GetOwner() &&
+	   this->GetOwner()->GetOwner()->GetType() == SolidType)
 	{
 		// triangulate a face on the edge first
 		if(this->m_faces.size() > 0)
@@ -82,11 +101,13 @@ void CEdge::glCommands(bool select, bool marked, bool no_color){
 	{
 		bool glwidth_done = false;
 		GLfloat save_depth_range[2];
-		if(Owner() == NULL || Owner()->Owner() == NULL || Owner()->Owner()->GetType() != WireType)
+	    if(this->GetOwner() &&
+	       this->GetOwner()->GetOwner() &&
+	       this->GetOwner()->GetOwner()->GetType() != WireType)
 		{
 			BRepTools::Clean(m_topods_edge);
 			double pixels_per_mm = wxGetApp().GetPixelScale();
-			BRepMesh::Mesh(m_topods_edge, 1/pixels_per_mm);
+			BRepMesh_IncrementalMesh(m_topods_edge, 1/pixels_per_mm);
 			if(marked){
 				glGetFloatv(GL_DEPTH_RANGE, save_depth_range);
 				glDepthRange(0, 0);
@@ -116,7 +137,8 @@ void CEdge::glCommands(bool select, bool marked, bool no_color){
 	}
 }
 
-void CEdge::GetBox(CBox &box){
+void CEdge::GetBox(CBox &box)
+{
 	// just use the vertices for speed
 	for (TopExp_Explorer expVertex(m_topods_edge, TopAbs_VERTEX); expVertex.More(); expVertex.Next())
 	{
@@ -128,7 +150,8 @@ void CEdge::GetBox(CBox &box){
 	}
 }
 
-void CEdge::GetGripperPositions(std::list<GripData> *list, bool just_for_endof){
+void CEdge::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
+{
 	if(just_for_endof)
 	{
 		list->push_back(GripData(GripperTypeTranslate,m_start_x,m_start_y,m_start_z,NULL));
@@ -172,7 +195,7 @@ public:
 static FilletTool fillet_tool;
 
 
-class ChamferTool:public Tool
+class ChamferTool : public Tool
 {
 public:
 	const wxChar* GetTitle(){return _("Chamfer");}
@@ -200,7 +223,7 @@ public:
 	void Run(){
 		CSketch* new_object = new CSketch();
 		ConvertEdgeToSketch2(edge_for_tools->Edge(), new_object, FaceToSketchTool::deviation);
-		wxGetApp().Add(new_object, NULL);
+		wxGetApp().Add(new_object);
 	}
 };
 
@@ -208,7 +231,7 @@ static EdgeToSketchTool make_sketch_tool;
 
 static bool EdgeIsFlat(CEdge* edge)
 {
-	bool flat = fabs(edge->GetVertex0()->m_point[2] - edge->GetVertex1()->m_point[2]) < wxGetApp().m_geom_tol;
+	bool flat = fabs(edge->GetVertex0()->m_p.Z() - edge->GetVertex1()->m_p.Z()) < wxGetApp().m_geom_tol;
 	return flat;
 }
 
@@ -245,7 +268,6 @@ public:
 		for(std::set<CEdge*>::iterator It = edges_to_mark.begin(); It != edges_to_mark.end(); It++)obj_list.push_back(*It);
 		wxGetApp().m_marked_list->Add(obj_list, true);
 	}
-	bool CallChangedOnRun(){return false;}
 };
 
 static SelectLinkedEdgesTool link_flat_tool;
@@ -261,28 +283,27 @@ void CEdge::GetTools(std::list<Tool*>* t_list, const wxPoint* p){
 
 void CEdge::Blend(double radius,  bool chamfer_not_fillet){
 	try{
-		wxGetApp().CreateUndoPoint();
 		CShape* body = GetParentBody();
 		if(body){
 			if(chamfer_not_fillet)
 			{
-				BRepFilletAPI_MakeChamfer chamfer(body->Shape());
+				BRepFilletAPI_MakeChamfer chamfer(body->GetShape());
 				for(std::list<CFace*>::iterator It = m_faces.begin(); It != m_faces.end(); It++)
 				{
 					CFace* face = *It;
 					chamfer.Add(radius, m_topods_edge, TopoDS::Face(face->Face()));
 				}
 				TopoDS_Shape new_shape = chamfer.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge chamfer"), body->GetColor(), body->GetOpacity()), NULL);
+				wxGetApp().AddUndoably(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge chamfer"), body->GetColor(), body->GetOpacity()), NULL, NULL);
 			}
 			else
 			{
-				BRepFilletAPI_MakeFillet fillet(body->Shape());
+				BRepFilletAPI_MakeFillet fillet(body->GetShape());
 				fillet.Add(radius, m_topods_edge);
 				TopoDS_Shape new_shape = fillet.Shape();
-				wxGetApp().Add(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), body->GetColor(), body->GetOpacity()), NULL);
+				wxGetApp().AddUndoably(new CSolid(*((TopoDS_Solid*)(&new_shape)), _("Solid with edge blend"), body->GetColor(), body->GetOpacity()), NULL, NULL);
 			}
-			wxGetApp().Remove(body);
+			wxGetApp().DeleteUndoably(body);
 		}
 	}
 	catch (Standard_Failure) {
@@ -330,6 +351,47 @@ int CEdge::GetCurveType()
 	BRepAdaptor_Curve curve(m_topods_edge);
 	GeomAbs_CurveType curve_type = curve.GetType();
 	return curve_type;
+}
+
+wxString CEdge::GetCurveTypeStr()
+{
+    wxString curve_type = _("unknown");
+    switch(GetCurveType())
+    {
+    case GeomAbs_Line:
+        curve_type = "line";
+    break;
+
+    case GeomAbs_Circle:
+        curve_type = "circle";
+    break;
+
+    case GeomAbs_Ellipse:
+        curve_type = "ellipse";
+    break;
+
+    case GeomAbs_Hyperbola:
+        curve_type = "hyperbola";
+    break;
+
+    case GeomAbs_Parabola:
+        curve_type = "parabola";
+    break;
+
+    case GeomAbs_BezierCurve:
+        curve_type = "bezier";
+    break;
+
+    case GeomAbs_BSplineCurve:
+        curve_type = "bspline";
+    break;
+
+    case GeomAbs_OtherCurve:
+        curve_type = "other";
+    break;
+    }
+
+    return curve_type;
 }
 
 void CEdge::GetCurveParams(double* start, double* end, double* uStart, double* uEnd, int* Reversed)
@@ -382,7 +444,8 @@ void CEdge::Evaluate(double u, double *p, double *tangent)
 	if(tangent)extract(V, tangent);
 }
 
-bool CEdge::GetClosestPoint(const gp_Pnt &pos, gp_Pnt &closest_pnt, double &u)const{
+bool CEdge::GetClosestPoint(const gp_Pnt &pos, gp_Pnt &closest_pnt, double &u) const
+{
     Standard_Real start_u, end_u;
 	Handle(Geom_Curve) curve = BRep_Tool::Curve(m_topods_edge, start_u, end_u);
 	GeomAPI_ProjectPointOnCurve projection(pos, curve);
@@ -416,7 +479,8 @@ bool CEdge::GetCircleParams(double *d7)
 {
 	//center.x, center.y, center.z, axis.x, axis.y, axis.z, radius
 	BRepAdaptor_Curve curve(m_topods_edge);
-	if(curve.GetType() != GeomAbs_Circle)return false;
+	if(curve.GetType() != GeomAbs_Circle)
+	    return false;
 	gp_Circ c = curve.Circle();
 	const gp_Pnt& pos = c.Location();
 	const gp_Dir& dir = c.Axis().Direction();
@@ -473,6 +537,44 @@ double CEdge::Length2(double uStart, double uEnd)
 	return len;
 }
 
+void CEdge::ReplaceVertex(ShapeBuild_ReShape& reshaper, const TopoDS_Vertex& vertex, const TopoDS_Vertex& new_vertex)
+{
+    BRepAdaptor_Curve curve(m_topods_edge);
+    const TopoDS_Vertex& vertex0 = GetVertex0()->Vertex();
+    const TopoDS_Vertex& vertex1 = GetVertex1()->Vertex();
+
+    TopoDS_Edge new_edge;
+    if (curve.GetType() == GeomAbs_Line)
+    {
+        if (vertex0.IsEqual(vertex))
+        {
+            new_edge = BRepBuilderAPI_MakeEdge(new_vertex, vertex1);
+        }
+        else if (vertex1.IsEqual(vertex))
+        {
+            new_edge = BRepBuilderAPI_MakeEdge(vertex0, new_vertex);
+        }
+    }
+    else if (curve.GetType() == GeomAbs_Circle)
+    {
+        gp_Circ c = curve.Circle();
+        double distance = c.Distance(BRep_Tool::Pnt(new_vertex));
+        c.SetRadius(distance);
+        new_edge = BRepBuilderAPI_MakeEdge(c);
+    }
+
+    if ( ! new_edge.IsNull() )
+    {
+        if ( this->GetOwner() == NULL )
+        {
+            reshaper.Replace(m_topods_edge, new_edge);
+        }
+
+        m_topods_edge = new_edge;
+        FindVertices();
+    }
+}
+
 void CEdge::FindVertices()
 {
 	CShape* body = GetParentBody();
@@ -487,8 +589,10 @@ void CEdge::FindVertices()
 				HVertex* v = (HVertex*)object;
 				if(v->Vertex().IsSame(V))
 				{
-					if(i == 0)m_vertex0 = v;
-					else m_vertex1 = v;
+					if(i == 0)
+					    m_vertex0 = v;
+					else
+					    m_vertex1 = v;
 					break;
 				}
 			}
@@ -498,22 +602,27 @@ void CEdge::FindVertices()
 
 HVertex* CEdge::GetVertex0()
 {
-	if(m_vertex0 == NULL)FindVertices();
+	if(m_vertex0 == NULL)
+	    FindVertices();
 	return m_vertex0;
 }
 
 HVertex* CEdge::GetVertex1()
 {
-	if(m_vertex1 == NULL)FindVertices();
+	if(m_vertex1 == NULL)
+	    FindVertices();
 	return m_vertex1;
 }
 
 CShape* CEdge::GetParentBody()
 {
-	if(Owner() == NULL)return NULL;
-	if(Owner()->Owner() == NULL)return NULL;
-	if(Owner()->Owner()->GetType() != SolidType)return NULL;
-	return (CShape*)(Owner()->Owner());
+    if ( this->GetOwner() == NULL )
+        return NULL;
+    if ( this->GetOwner()->GetOwner() == NULL )
+        return NULL;
+    if ( this->GetOwner()->GetOwner()->GetType() != SolidType )
+        return NULL;
+    return (CShape*) ( this->GetOwner()->GetOwner() );
 }
 
 bool CEdge::GetMidPoint(double* pos)

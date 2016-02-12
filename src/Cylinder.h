@@ -13,7 +13,8 @@ protected:
 	wxString StretchedName();
 
 public:
-	gp_Ax2 m_pos;
+
+	PropertyCoord m_pos;
 	PropertyLength m_diameter;
 	PropertyLength m_height;
 
@@ -21,8 +22,7 @@ public:
 	CCylinder(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity);
 
     void InitializeProperties();
-    void GetProperties(std::list<Property *> *list);
-    void OnPropertyEdit(Property& prop);
+    void OnPropertySet(Property& prop);
 
 	// HeeksObj's virtual functions
 	bool IsDifferent(HeeksObj* other);

@@ -27,6 +27,10 @@ private:
 	int m_marking_gl_list; // simply has material commands, inserted in the parent body's display list
 
 public:
+
+	static const int ObjType = FaceType;
+
+
 	CBox m_box;
 	int m_temp_attr; // not saved with the model
 	std::list<CEdge*>::iterator m_edgeIt;
@@ -38,24 +42,23 @@ public:
 	CFace(const TopoDS_Face &face);
 	~CFace();
 
+	void InitializeProperties();
     void GetProperties(std::list<Property *> *list);
-
-	int GetType()const{return FaceType;}
 	int GetMarkingFilter()const{return FaceMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
 	const wxBitmap &GetIcon();
 	HeeksObj *MakeACopy(void)const{ return new CFace(*this);}
-	const wxChar* GetTypeString(void)const{return _("Face");}
 	void GetTriangles(void(*callbackfunc)(const double* x, const double* n), double cusp, bool just_one_average_normal = false);
 	double Area()const;
 	void ModifyByMatrix(const double* m);
 	void WriteXML(TiXmlNode *root);
-	bool UsesID(){return true;}
 	void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 	void GetGripperPositionsTransformed(std::list<GripData> *list, bool just_for_endof);
 
-	const TopoDS_Face &Face(){return m_topods_face;}
+	const TopoDS_Face& Face() { return m_topods_face; }
+	const TopoDS_Shape& GetShape() const { return m_topods_face; }
+
 	gp_Dir GetMiddleNormal(gp_Pnt *pos = NULL)const;
 	gp_Dir GetNormalAtUV(double u, double v, gp_Pnt *pos = NULL)const;
 	bool GetUVAtPoint(const gp_Pnt &pos, double *u, double *v)const;
@@ -70,6 +73,7 @@ public:
 	int GetSurfaceType();
 	bool IsAPlane(gp_Pln *returned_plane);
 	wxString GetSurfaceTypeStr();
+	void ReplaceEdges(ShapeBuild_ReShape& reshaper, HVertex * common_vertex, std::list<CEdge*>& edges, std::list<TopoDS_Face>& added_faces);
 	CEdge* GetFirstEdge();
 	CEdge* GetNextEdge();
 	CLoop* GetFirstLoop();
@@ -81,6 +85,11 @@ public:
 	void MakeSureMarkingGLListExists();
 	void KillMarkingGLList();
 	void UpdateMarkingGLList(bool marked);
+
+protected:
+
+	void ReplaceEdgesOnPlane(ShapeBuild_ReShape& reshaper, HVertex * common_vertex, std::list<CEdge*>& edges, std::list<TopoDS_Face>& added_faces);
+    void ReplaceEdgesOnCylinder(ShapeBuild_ReShape& reshaper, HVertex * common_vertex, std::list<CEdge*>& edges, std::list<TopoDS_Face>& added_faces);
 };
 
 class FaceToSketchTool : public Tool

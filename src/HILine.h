@@ -6,28 +6,35 @@
 
 #include "EndedObject.h"
 
-class HILine: public EndedObject{
-public:
-        PropertyVertex m_start;
-        PropertyVertex m_end;
-        PropertyLength m_length;
+class HILine: public EndedObject
+{
+private:
 
-	~HILine(void);
+    // Private no-arg constructor
+    HILine();
+
+public:
+
+    static const int ObjType = ILineType;
+
+
+    PropertyVertex m_start;
+    PropertyVertex m_end;
+    PropertyLength m_length;
+
 	HILine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col);
 	HILine(const HILine &line);
+    ~HILine(void);
 
 	const HILine& operator=(const HILine &b);
 
+    // HeeksObj's virtual functions
     void InitializeProperties();
-    void OnPropertyEdit(Property& prop);
+    void OnPropertySet(Property& prop);
     void GetProperties(std::list<Property *> *list);
-
-	// HeeksObj's virtual functions
-	int GetType()const{return ILineType;}
 	int GetMarkingFilter()const{return ILineMarkingFilter;}
 	void glCommands(bool select, bool marked, bool no_color);
 	void GetBox(CBox &box);
-	const wxChar* GetTypeString(void)const{return _("Infinite Line");}
 	HeeksObj *MakeACopy(void)const;
 	const wxBitmap &GetIcon();
 	void GetGripperPositions(std::list<GripData> *list, bool just_for_endof);
@@ -35,8 +42,7 @@ public:
 	bool FindPossTangentPoint(const double* ray_start, const double* ray_direction, double *point);
 	int Intersects(const HeeksObj *object, std::list< double > *rl)const;
 	void CopyFrom(const HeeksObj* object){operator=(*((HILine*)object));}
-	void WriteXML(TiXmlNode *root);
-	bool GetEndPoint(double* pos);
+ 	bool GetEndPoint(double* pos);
 	bool GetStartPoint(double* pos);
 
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);

@@ -27,7 +27,7 @@ public:
 
     void InitializeProperties();
     void GetProperties(std::list<Property *> *list);
-    void OnPropertyEdit(Property& prop);
+    void OnPropertySet(Property& prop);
 
 	// HeeksObj's virtual functions
 	const wxChar* GetTypeString(void)const{return _("Cone");}

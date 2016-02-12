@@ -5,61 +5,76 @@
 #include "TransformTool.h"
 #include "../interface/HeeksObj.h"
 
-TransformTool::TransformTool(HeeksObj *o, const gp_Trsf &t, const gp_Trsf &i){
+
+TransformTool::TransformTool(HeeksObj *o, const gp_Trsf &t, const gp_Trsf &i)
+{
 	object = o;
 	extract(t, modify_matrix);
 	extract(i, revert_matrix);
 }
 
-TransformTool::~TransformTool(void){
+TransformTool::~TransformTool(void)
+{
 }
 
 wxString global_string;
 
 // Tool's virtual functions
-const wxChar* TransformTool::GetTitle(){
-	global_string.assign(wxString::Format(_T("%s %s"), _("Transform"), object->GetShortStringOrTypeString()));
+const wxChar* TransformTool::GetTitle()
+{
+    wxString str = object->GetTitle();
+    if ( str.IsEmpty()) {
+            str = object->GetTypeString();
+    }
+	global_string.assign(wxString::Format(_T("%s %s"), _("Transform"), str));
 	return global_string.c_str();
 }
 
-void TransformTool::Run(){
+void TransformTool::Run(bool redo)
+{
 	object->ModifyByMatrix(modify_matrix);
+	wxGetApp().WasModified(object);
 }
 
-void TransformTool::RollBack(){
+void TransformTool::RollBack()
+{
 	object->ModifyByMatrix(revert_matrix);
+	wxGetApp().WasModified(object);
 }
 
-TransformObjectsTool::TransformObjectsTool(const std::list<HeeksObj*> &list, const gp_Trsf &t, const gp_Trsf &i){
+TransformObjectsTool::TransformObjectsTool(const std::list<HeeksObj*> &list, const gp_Trsf &t, const gp_Trsf &i)
+{
 	m_list = list;
 	extract(t, modify_matrix);
 	extract(i, revert_matrix);
 }
 
-TransformObjectsTool::~TransformObjectsTool(void){
+TransformObjectsTool::~TransformObjectsTool(void)
+{
 }
 
 // Tool's virtual functions
-const wxChar* TransformObjectsTool::GetTitle(){
+const wxChar* TransformObjectsTool::GetTitle()
+{
 	return _("Transform Objects");
 }
 
-void TransformObjectsTool::Run(){
+void TransformObjectsTool::Run(bool redo)
+{
 	std::list<HeeksObj*>::iterator It;
-	for(It = m_list.begin(); It != m_list.end(); It++){
+	for(It = m_list.begin(); It != m_list.end(); It++) {
 		HeeksObj* object = *It;
 		object->ModifyByMatrix(modify_matrix);
 	}
-
-	wxGetApp().Changed();
+	wxGetApp().WereModified(m_list);
 }
 
-void TransformObjectsTool::RollBack(){
+void TransformObjectsTool::RollBack()
+{
 	std::list<HeeksObj*>::const_iterator It;
-	for(It = m_list.begin(); It != m_list.end(); It++){
+	for(It = m_list.begin(); It != m_list.end(); It++) {
 		HeeksObj* object = *It;
 		object->ModifyByMatrix(revert_matrix);
 	}
-
-	wxGetApp().Changed();
+	wxGetApp().WereModified(m_list);
 }
