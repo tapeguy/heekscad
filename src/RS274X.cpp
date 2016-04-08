@@ -1882,7 +1882,7 @@ gp_Pnt RS274X::Trace::Centre() const
 
 			double radius = Radius();
 
-			// There are four possible centre points based on the ± sign applied
+			// There are four possible centre points based on the ï¿½ sign applied
 			// to each of the i and j terms.  The correct one will have a distance
 			// of radius between it and each of the two endpoints.
 

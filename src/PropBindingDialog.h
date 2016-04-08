@@ -1,8 +1,8 @@
 #pragma once
 
 #include "stdafx.h"
-
 #include "wx/dataview.h"
+#include "interface/Observer.h"
 
 class wxStaticLine;
 
@@ -81,7 +81,7 @@ public:
     bool IsContainer ( const wxDataViewItem &item ) const;
     unsigned int GetChildren ( const wxDataViewItem &parent,
                                wxDataViewItemArray &array ) const;
-//    bool HasContainerColumns ( const wxDataViewItem & item ) const { return true; }
+    bool HasContainerColumns (const wxDataViewItem &item) const { return true; }
 };
 
 
@@ -154,11 +154,11 @@ public:
     bool IsContainer ( const wxDataViewItem &item ) const;
     unsigned int GetChildren ( const wxDataViewItem &parent,
                                wxDataViewItemArray &array ) const;
-//    bool HasContainerColumns ( const wxDataViewItem & item ) const { return true; }
+    bool HasContainerColumns (const wxDataViewItem &item) const { return true; }
 };
 
 
-class PropBindingDialog : public wxDialog
+class PropBindingDialog : public wxDialog, public Observer
 {
 protected:
 
@@ -190,6 +190,10 @@ public:
 
     void OnBindButton ( wxCommandEvent& event );
     void OnUnbindButton ( wxCommandEvent& event );
+
+    void WhenMarkedListChanges(bool selection_cleared,
+                               const std::list<HeeksObj*>* added_list,
+                               const std::list<HeeksObj*>* removed_list);
 
 private:
 

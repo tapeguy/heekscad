@@ -40,7 +40,8 @@ public:
 	void Clear();
 	void Clear(std::set<HeeksObj*> &to_delete);
 
-    virtual void SetColor(const HeeksColor& color);
+    virtual void PropagateProperty(const Property& prop);
+
 	HeeksObj* MakeACopy(void) const;
 	void GetBox(CBox &box);
 	void glCommands(bool select, bool marked, bool no_color);

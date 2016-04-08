@@ -1,61 +1,18 @@
 #pragma once
 
 #include "wx/propgrid/propgrid.h"
+#include "interface/MarkedObject.h"
 
 
-class BindButtonRenderer : public wxPGCellRenderer
+class PropBindingTool : public Tool
 {
-private:
-
-    wxButton* m_btn;
-    wxPGCellRenderer* m_renderer;
-
 public:
+        MarkedObject *m_marked_object;
 
-    BindButtonRenderer(wxButton* btn, wxPGCellRenderer* default_renderer)
-     : m_btn(btn), m_renderer(default_renderer)
-    {
-    }
+        PropBindingTool(MarkedObject *marked_object) : m_marked_object(marked_object){}
 
-protected:
+        // Tool's virtual functions
+        const wxChar* GetTitle(){return _("Property Bindings");}
 
-    virtual bool Render(wxDC &dc, const wxRect &rect,
-                       const wxPropertyGrid *propertyGrid, wxPGProperty *property,
-                       int column, int item, int flags) const;
-};
-
-class DoubleBindProperty : public wxFloatProperty {
-
-private:
-
-    wxButton* m_btn; // the button attached to the property
-    mutable BindButtonRenderer m_renderer; // the button mover
-
-public:
-
-    DoubleBindProperty(wxWindow* parent, wxObjectEventFunction func, PropertyDouble* p);
-
-protected:
-
-    virtual wxPGCellRenderer* GetCellRenderer ( int column ) const {
-        return ( column == 0 ) ? &m_renderer : wxFloatProperty::GetCellRenderer ( column );
-    }
-};
-
-class LengthBindProperty : public wxFloatProperty {
-
-private:
-
-    wxButton* m_btn; // the button attached to the property
-    mutable BindButtonRenderer m_renderer; // the button mover
-
-public:
-
-    LengthBindProperty(wxWindow* parent, wxObjectEventFunction func, PropertyLength* p);
-
-protected:
-
-    virtual wxPGCellRenderer* GetCellRenderer ( int column ) const {
-        return ( column == 0 ) ? &m_renderer : wxFloatProperty::GetCellRenderer ( column );
-    }
+        void Run();
 };

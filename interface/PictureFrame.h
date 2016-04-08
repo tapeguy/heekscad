@@ -15,7 +15,7 @@ public:
     void OnPaint ( wxPaintEvent &event );
 
 private:
-    DECLARE_EVENT_TABLE()
+    DECLARE_EVENT_TABLE();
 };
 
 class PictureWindow : public wxWindow
@@ -36,5 +36,5 @@ public:
     void SetPicture ( const wxString& filepath, long image_type );
 
 private:
-    DECLARE_EVENT_TABLE()
+    DECLARE_EVENT_TABLE();
 };

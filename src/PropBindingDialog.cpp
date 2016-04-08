@@ -416,6 +416,7 @@ void PropBindingDialog::AddSubscriberModel ( PropBindingSubscriberModel* model )
     prop1->AssociateModel ( model );
     wxDataViewItem root ( NULL );
     ExpandSubscriberRecursive ( model, root );
+    wxGetApp().RegisterObserver ( this );
 }
 
 void PropBindingDialog::ExpandObservedRecursive ( PropBindingObservedModel* model,
@@ -440,16 +441,18 @@ void PropBindingDialog::AddObservedModel ( PropBindingObservedModel* model )
 
 void PropBindingDialog::OnBindButton ( wxCommandEvent& event )
 {
-    wxDataViewItem selected1 = prop1->GetSelection();
-    if (!selected1.IsOk()) {
+    wxDataViewItem selected1 = prop1->GetSelection ( );
+    if ( !selected1.IsOk ( ) )
+    {
         return;
     }
-    PropBindingSubscriberModelNode* subscriber = (PropBindingSubscriberModelNode*) selected1.GetID();
-    wxDataViewItem selected2 = prop2->GetSelection();
-    if (!selected2.IsOk()) {
+    PropBindingSubscriberModelNode* subscriber = (PropBindingSubscriberModelNode*) selected1.GetID ( );
+    wxDataViewItem selected2 = prop2->GetSelection ( );
+    if ( !selected2.IsOk ( ) )
+    {
         return;
     }
-    PropBindingObservedModelNode* observed = (PropBindingObservedModelNode*) selected2.GetID();
+    PropBindingObservedModelNode* observed = (PropBindingObservedModelNode*) selected2.GetID ( );
     new EqualityBinding ( subscriber->m_subscriber, observed->m_observed );
 
     // At this point, the subscriber may be a completely new object.
@@ -461,3 +464,16 @@ void PropBindingDialog::OnBindButton ( wxCommandEvent& event )
 void PropBindingDialog::OnUnbindButton ( wxCommandEvent& event )
 {
 }
+
+void PropBindingDialog::WhenMarkedListChanges ( bool selection_cleared,
+                                                const std::list<HeeksObj*>* added_list,
+                                                const std::list<HeeksObj*>* removed_list )
+{
+    if ( !added_list || added_list->empty ( ) ) {
+        return;
+    }
+    HeeksObj* observed = added_list->back ( );
+    PropBindingObservedModel* observed_model = new PropBindingObservedModel ( observed );
+    this->AddObservedModel ( observed_model );
+}
+

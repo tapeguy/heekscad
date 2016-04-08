@@ -239,10 +239,18 @@ HeeksObj *HSpline::MakeACopy(void) const
     return new_object;
 }
 
-void HSpline::ModifyByMatrix(const double* m)
+void HSpline::ModifyByMatrix ( const double* m )
 {
-	gp_Trsf mat = make_matrix(m);
-	m_spline->Transform(mat);
+    gp_GTrsf gm = make_general_matrix ( m );
+
+    for ( int i = 1; i <= m_spline->NbPoles ( ); i++ )
+    {
+        gp_XYZ pole = m_spline->Pole ( i ).XYZ ( );
+        gm.Transforms ( pole );
+        {
+            m_spline->SetPole ( i, gp_Pnt ( pole ) );
+        }
+    }
 }
 
 void HSpline::GetBox(CBox &box)

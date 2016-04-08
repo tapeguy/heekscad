@@ -88,6 +88,8 @@ gp_Trsf make_matrix(const double* m);
 gp_Trsf make_matrix(const gp_Pnt &origin, const gp_Vec &x_axis, const gp_Vec &y_axis);
 gp_GTrsf make_general_matrix(const double* m);
 
+bool IsMatrixDifferentialScale(const double *mat);
+
 std::string AsString(const gp_XYZ& xyz);
 std::string AsString(const gp_Pnt& p);
 std::string AsString(const gp_Lin& l);

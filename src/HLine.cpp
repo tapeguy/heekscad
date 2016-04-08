@@ -24,8 +24,8 @@ HLine::HLine()
 HLine::HLine(const HLine &line)
  : EndedObject(line)
 {
-	InitializeProperties();
     HeeksObj::operator=(line);      // my properties only
+	InitializeProperties();
 }
 
 HLine::HLine(const gp_Pnt &a, const gp_Pnt &b, const HeeksColor& col)

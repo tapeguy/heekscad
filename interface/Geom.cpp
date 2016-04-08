@@ -46,7 +46,7 @@ bool intersect(const gp_Lin& lin, const gp_Lin& lin2, gp_Pnt &pnt)
 	gp_Pnt p1, p2;
 	ClosestPointsOnLines(lin, lin2, p1, p2);
 	if(p1.IsEqual(p2, GEOM_TOL)){
-		pnt = (p1.XYZ() + p2.XYZ()) /2;
+		pnt = (p1.XYZ() + p2.XYZ()) / 2;
 		return true;
 	}
 
@@ -1210,6 +1210,19 @@ gp_GTrsf make_general_matrix(const double* m)
     gm.SetValue(3, 3, m[10]);
     gm.SetValue(3, 4, m[11]);
     return gm;
+}
+
+bool IsMatrixDifferentialScale(const double *mat)
+{
+    gp_GTrsf trsf = make_general_matrix(mat);
+    gp_Mat vect = trsf.VectorialPart();
+    double scalex = gp_Vec ( vect.Row(1) ).Magnitude();
+    double scaley = gp_Vec ( vect.Row(2) ).Magnitude();
+    double scalez = gp_Vec ( vect.Row(3) ).Magnitude();
+
+    if(fabs(scalex - scaley) > 0.000000000001)return true;
+    if(fabs(scalex - scalez) > 0.000000000001)return true;
+    return false;
 }
 
 gp_Trsf make_matrix(const double* m)

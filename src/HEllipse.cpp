@@ -23,8 +23,8 @@ HEllipse::HEllipse()
 HEllipse::HEllipse(const HEllipse &e)
 : IdNamedObjList(e)
 {
-	InitializeProperties();
     HeeksObj::operator=(e);      // my properties only
+    InitializeProperties();
 	C = new HPoint(*(e.C));
     C->m_draw_unselected = false;
     C->SetSkipForUndo(true);

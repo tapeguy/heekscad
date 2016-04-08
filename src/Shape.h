@@ -66,7 +66,6 @@ public:
 	void WriteXML(TiXmlNode *root);
 	void SetClickMarkPoint(MarkedObject* marked_object, const double* ray_start, const double* ray_direction);
 	bool CanAddTo(HeeksObj* owner){return ((owner != NULL) && (owner->GetType() == GroupType));}
-	bool Stretch(const double *p, const double* shift, void* data);
 	bool DescendForUndo(){return false;}
 	bool DrawAfterOthers(){return m_opacity < 0.9999;}
 
@@ -88,7 +87,6 @@ public:
 	static bool ExportSolidsFile(const std::list<HeeksObj*>& objects, const wxChar* filepath, std::map<int, CShapeData> *index_map = NULL);
 	static HeeksObj* MakeObject(const TopoDS_Shape &shape, const wxChar* title, SolidTypeEnum solid_type, const HeeksColor& col, float opacity);
 	static bool IsTypeAShape(int t);
-	static bool IsMatrixDifferentialScale(const double *mat);
 
 	virtual void SetXMLElement(TiXmlElement* element){}
 	virtual void SetFromXMLElement(TiXmlElement* pElem){}

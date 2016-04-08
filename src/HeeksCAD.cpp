@@ -39,6 +39,7 @@
 #include "InputModeCanvas.h"
 #include "TreeCanvas.h"
 #include "ObjPropsCanvas.h"
+#include "PropBinding.h"
 #include "SelectMode.h"
 #include "MagDragWindow.h"
 #include "ViewRotating.h"
@@ -212,7 +213,14 @@ HeeksCADapp::HeeksCADapp(): wxApp(), ObjList(ObjType)
 	m_dragging_moves_objects.SetValue(false);
 	m_no_creation_mode = false;
 
+#ifdef WIN32
+    m_font_paths = _T("C:\\Program Files\\HeeksCAD\\fonts");
+#elif MACOSX
+    m_font_paths = _T("/Applications/HeeksCAD.app/Contents/share/heekscad/fonts");
+#else
 	m_font_paths = _T("/usr/share/qcad/fonts");
+#endif
+
 	m_word_space_percentage = 100.0;
 	m_character_space_percentage = 25.0;
 	m_stl_facet_tolerance = 0.1;
@@ -407,7 +415,7 @@ bool HeeksCADapp::OnInit()
 	config.Read(_T("NumberOfSamplePoints"), m_number_of_sample_points);
 	config.Read(_T("CorrelateByColor"), m_correlate_by_color);
 
-	config.Read(_T("FontPaths"), m_font_paths, _T("/usr/share/qcad/fonts"));
+	config.Read(_T("FontPaths"), m_font_paths);
 	config.Read(_T("STLFacetTolerance"), m_stl_facet_tolerance, 0.1);
 
 	config.Read(_T("AutoSaveInterval"), m_auto_save_interval, 0);
@@ -2626,11 +2634,6 @@ void on_set_geom_tol(double value, HeeksObj* object)
 	TiXmlBase::SetRequiredDecimalPlaces( DecimalPlaces(value) );
 }
 
-void on_set_face_to_sketch_deviation(double value, HeeksObj* object)
-{
-	FaceToSketchTool::deviation = value;
-}
-
 void on_set_rotate_mode(int value, HeeksObj* object)
 {
 	wxGetApp().m_rotate_mode = value;
@@ -2724,41 +2727,6 @@ static void on_dimension_draw_flat(bool value, HeeksObj* object)
 {
 	HDimension::DrawFlat = value;
 	wxGetApp().Repaint();
-}
-
-static void on_edit_font_paths(const wxChar* value, HeeksObj* object)
-{
-	if (wxGetApp().m_pVectorFonts.get()) delete wxGetApp().m_pVectorFonts.release();
-	wxGetApp().GetAvailableFonts(true);
-
-	HeeksConfig& config = wxGetApp().GetConfig();
-	config.Write(_T("FontPaths"), wxGetApp().m_font_paths);
-}
-
-static void on_edit_word_space_percentage(const double value, HeeksObj* object)
-{
-	wxGetApp().m_word_space_percentage = value;
-
-	HeeksConfig& config = wxGetApp().GetConfig();
-	config.Write(_T("FontWordSpacePercentage"), wxGetApp().m_word_space_percentage);
-
-	if (wxGetApp().m_pVectorFonts.get())
-	{
-	    wxGetApp().m_pVectorFonts->SetWordSpacePercentage(value);
-	}
-}
-
-static void on_edit_character_space_percentage(const double value, HeeksObj* object)
-{
-	wxGetApp().m_character_space_percentage = value;
-
-	HeeksConfig& config = wxGetApp().GetConfig();
-	config.Write(_T("FontCharacterSpacePercentage"), wxGetApp().m_character_space_percentage);
-
-	if (wxGetApp().m_pVectorFonts.get())
-	{
-	    wxGetApp().m_pVectorFonts->SetCharacterSpacePercentage(value);
-	}
 }
 
 void HeeksCADapp::InitializeProperties()
@@ -2922,6 +2890,37 @@ void HeeksCADapp::OnPropertyEdit(Property& prop)
         m_frame->RefreshInputCanvas();
         m_ruler->KillGLLists();
         Repaint();
+    }
+    else if ( prop == m_font_paths )
+    {
+        if (m_pVectorFonts.get())
+        {
+            delete m_pVectorFonts.release();
+        }
+        GetAvailableFonts(true);
+
+        HeeksConfig& config = GetConfig();
+        config.Write(_T("FontPaths"), m_font_paths);
+    }
+    else if ( prop == m_word_space_percentage )
+    {
+        HeeksConfig& config = GetConfig();
+        config.Write(_T("FontWordSpacePercentage"), m_word_space_percentage);
+
+        if (m_pVectorFonts.get())
+        {
+            m_pVectorFonts->SetWordSpacePercentage(m_word_space_percentage);
+        }
+    }
+    else if ( prop == m_character_space_percentage )
+    {
+        HeeksConfig& config = GetConfig();
+        config.Write(_T("FontCharacterSpacePercentage"), m_character_space_percentage);
+
+        if (m_pVectorFonts.get())
+        {
+            m_pVectorFonts->SetCharacterSpacePercentage(m_character_space_percentage);
+        }
     }
     ObjList::OnPropertyEdit(prop);
 }
@@ -3117,9 +3116,6 @@ public:
 				return _("Mark");
 			}
 		}
-#ifndef PYHEEKSCAD
-		if(wxGetApp().m_frame->m_properties)return _("Properties");
-#endif
 		return _("Mark");
 	}
 
@@ -3137,12 +3133,6 @@ public:
 		else{
 			wxGetApp().m_marked_list->Clear(true);
 			wxGetApp().m_marked_list->Add(m_marked_object->GetObject(), true);
-#ifndef PYHEEKSCAD
-			if(wxGetApp().m_frame->m_properties && !(wxGetApp().m_frame->m_properties->IsShown())){
-				wxGetApp().m_frame->m_aui_manager->GetPane(wxGetApp().m_frame->m_properties).Show();
-				wxGetApp().m_frame->m_aui_manager->Update();
-			}
-#endif
 		}
 		if(m_point.x >= 0){
 			gp_Lin ray = wxGetApp().m_current_viewport->m_view_point.SightLine(m_point);
@@ -3234,7 +3224,11 @@ void HeeksCADapp::GetTools2(MarkedObject* marked_object, std::list<Tool*>& t_lis
 		marked_object->GetObject()->GetTools(&tools, &point);
 		if(tools.size() > 0)tools.push_back(new MenuSeparator);
 
+#ifdef PYHEEKSCAD
 		tools.push_back(new MarkObjectTool(marked_object, point, control_pressed));
+#endif
+
+		tools.push_back(new PropBindingTool(marked_object));
 
         bool (*callback) ( HeeksObj* ) = NULL;
         marked_object->GetObject ( )->GetOnEdit ( &callback );
@@ -3416,8 +3410,14 @@ int HeeksCADapp::OnRun()
 	{
 		return wxApp::OnRun();
 	}
+	catch(Standard_Failure)
+	{
+        Handle_Standard_Failure e = Standard_Failure::Caught();
+        wxMessageBox(wxString(_("Geometry exception:")) + _T(": ") + Ctt(e->GetMessageString()));
+	}
 	catch(...)
 	{
+
 		return 0;
 	}
 }

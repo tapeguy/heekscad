@@ -207,6 +207,17 @@ void HeeksObj::GetGripperPositionsTransformed(std::list<GripData> *list, bool ju
     GetGripperPositions(list,just_for_endof);
 }
 
+bool HeeksObj::Stretch(const double *p, const double* shift, void* data)
+{
+    double mat[12] = {
+            shift[0], 0, 0, p[0],
+            0, shift[1], 0, p[1],
+            0, 0, shift[2], p[2]
+    };
+    this->ModifyByMatrix(mat);
+    return false;
+}
+
 void HeeksObj::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 {
 	CBox box;

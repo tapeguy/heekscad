@@ -513,10 +513,7 @@ bool PropertyVertex::OnPrePropertySet(Property& prop)
     if (m_changing) {
         return TRUE;
     }
-    DomainObject * owner = this->GetOwner();
-    if (owner)
-        return owner->OnPrePropertySet(prop);
-    return TRUE;
+    return CallPreSetFunction();
 }
 
 void PropertyVertex::OnPropertySet(Property& prop)
@@ -524,9 +521,7 @@ void PropertyVertex::OnPropertySet(Property& prop)
     if (m_changing) {
         return;
     }
-    DomainObject * owner = this->GetOwner();
-    if (owner)
-        owner->OnPropertySet(prop);
+    CallSetFunction();
 }
 
 void PropertyVertex::OnPropertyEdit(Property& prop)
@@ -534,9 +529,7 @@ void PropertyVertex::OnPropertyEdit(Property& prop)
     if (m_changing) {
         return;
     }
-    DomainObject * owner = this->GetOwner();
-    if (owner)
-        return owner->OnPropertyEdit(prop);
+    CallEditFunction();
 }
 
 double PropertyVertex::X() const
@@ -570,31 +563,49 @@ const PropertyLength& PropertyVertex::ZProp() const
 }
 
 void PropertyVertex::SetX(double x) {
+    if (!CallPreSetFunction()) {
+        return;
+    }
     m_x.SetValue(x);
     m_value.SetX(x);
 }
 
 void PropertyVertex::SetY(double y) {
+    if (!CallPreSetFunction()) {
+        return;
+    }
     m_y.SetValue(y);
     m_value.SetY(y);
 }
 
 void PropertyVertex::SetZ(double z) {
+    if (!CallPreSetFunction()) {
+        return;
+    }
     m_z.SetValue(z);
     m_value.SetZ(z);
 }
 
 void PropertyVertex::SetActualX(double x) {
+    if (!CallPreSetFunction()) {
+        return;
+    }
     m_x.SetActualValue(x);
     m_value.SetX(x);
 }
 
 void PropertyVertex::SetActualY(double y) {
+    if (!CallPreSetFunction()) {
+        return;
+    }
     m_y.SetActualValue(y);
     m_value.SetY(y);
 }
 
 void PropertyVertex::SetActualZ(double z) {
+    if (!CallPreSetFunction()) {
+        return;
+    }
     m_z.SetActualValue(z);
     m_value.SetZ(z);
 }

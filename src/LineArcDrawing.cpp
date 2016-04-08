@@ -77,7 +77,7 @@ void LineArcDrawing::OnPropertyEdit(Property& prop)
 
 void LineArcDrawing::GetProperties(std::list<Property *> *list)
 {
-    arc_mode.SetVisible ( drawing_mode == ArcDrawingMode );
+    arc_mode.SetVisible ( drawing_mode != ArcDrawingMode );
     circle_mode.SetVisible ( drawing_mode == CircleDrawingMode );
     radius_for_circle.SetVisible ( drawing_mode == CircleDrawingMode );
     Drawing::GetProperties(list);
@@ -535,21 +535,37 @@ const wxChar* LineArcDrawing::GetTitle()
 	case LineDrawingMode:
 		str_for_GetTitle = wxString(_("Line drawing mode"));
 		str_for_GetTitle.Append(wxString(_T(" : ")));
-		if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on start point")));
-		else str_for_GetTitle.Append(wxString(_("click on end of line")));
+		if(GetDrawStep() == 0) {
+		    str_for_GetTitle.Append(wxString(_("click on start point")));
+		    str_for_GetTitle.Append(wxString(_T("\n  ")));
+		    str_for_GetTitle.Append(wxString(_("press 'a' to switch to arc mode")));
+		}
+		else {
+		    str_for_GetTitle.Append(wxString(_("click on end of line")));
+		}
 		return str_for_GetTitle;
 
 	case ArcDrawingMode:
 		str_for_GetTitle = wxString(_("Arc drawing mode"));
 		str_for_GetTitle.Append(wxString(_T(" : ")));
-		if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on start point")));
-		else str_for_GetTitle.Append(wxString(_("click on end of arc")));
+		if(GetDrawStep() == 0) {
+		    str_for_GetTitle.Append(wxString(_("click on start point")));
+		}
+		else {
+		    str_for_GetTitle.Append(wxString(_("click on end of arc")));
+		    if (! m_previous_direction_set) {
+	            str_for_GetTitle.Append(wxString(_T("\n  ")));
+		        str_for_GetTitle.Append(wxString(_("press 'f' to flip arc direction")));
+		    }
+		}
 		return str_for_GetTitle;
 
 	case ILineDrawingMode:
 		str_for_GetTitle = wxString(_("Infinite line drawing"));
 		str_for_GetTitle.Append(wxString(_T(" : ")));
-		if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on first point")));
+		if(GetDrawStep() == 0) {
+		    str_for_GetTitle.Append(wxString(_("click on first point")));
+		}
 		else str_for_GetTitle.Append(wxString(_("click on second point")));
 		return str_for_GetTitle;
 
@@ -559,7 +575,9 @@ const wxChar* LineArcDrawing::GetTitle()
 
 		str_for_GetTitle.Append(wxString(_("center and 2 points mode")));
 		str_for_GetTitle.Append(wxString(_T("\n  ")));
-		if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on center point")));
+		if(GetDrawStep() == 0) {
+		    str_for_GetTitle.Append(wxString(_("click on center point")));
+		}
 		else if(GetDrawStep() == 1)
 		{
 			str_for_GetTitle.Append(wxString(_("click on point on ellipse")));
@@ -613,25 +631,39 @@ const wxChar* LineArcDrawing::GetTitle()
 			{
 				str_for_GetTitle.Append(wxString(_("center and point mode")));
 				str_for_GetTitle.Append(wxString(_T("\n  ")));
-				if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on center point")));
-				else str_for_GetTitle.Append(wxString(_("click on point on circle")));
+				if(GetDrawStep() == 0) {
+				    str_for_GetTitle.Append(wxString(_("click on center point")));
+				}
+				else {
+				    str_for_GetTitle.Append(wxString(_("click on point on circle")));
+				}
 			}
 			break;
 		case ThreePointsCircleMode:
 			{
 				str_for_GetTitle.Append(wxString(_("three points mode")));
 				str_for_GetTitle.Append(wxString(_T("\n  ")));
-				if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on first point")));
-				else if(GetDrawStep() == 1)str_for_GetTitle.Append(wxString(_("click on second point")));
-				else str_for_GetTitle.Append(wxString(_("click on third point")));
+				if(GetDrawStep() == 0) {
+				    str_for_GetTitle.Append(wxString(_("click on first point")));
+				}
+				else if(GetDrawStep() == 1) {
+				    str_for_GetTitle.Append(wxString(_("click on second point")));
+				}
+				else {
+				    str_for_GetTitle.Append(wxString(_("click on third point")));
+				}
 			}
 			break;
 		case TwoPointsCircleMode:
 			{
 				str_for_GetTitle.Append(wxString(_("two points mode")));
 				str_for_GetTitle.Append(wxString(_T("\n  ")));
-				if(GetDrawStep() == 0)str_for_GetTitle.Append(wxString(_("click on first point")));
-				else str_for_GetTitle.Append(wxString(_("click on second point")));
+				if(GetDrawStep() == 0) {
+				    str_for_GetTitle.Append(wxString(_("click on first point")));
+				}
+				else {
+				    str_for_GetTitle.Append(wxString(_("click on second point")));
+				}
 			}
 			break;
 		case CentreAndRadiusCircleMode:
@@ -671,21 +703,29 @@ void LineArcDrawing::OnKeyDown(wxKeyEvent& event)
 
 void LineArcDrawing::OnKeyUp(wxKeyEvent& event)
 {
-	switch(event.GetKeyCode()){
-	case 'A':
-		// switch back to previous drawing mode
-		if(m_save_drawing_mode.size()>0){
-			drawing_mode = m_save_drawing_mode.back();
-			m_save_drawing_mode.pop_back();
-		}
-		wxGetApp().m_frame->RefreshInputCanvas();
-		RecalculateAndRedraw(wxPoint(event.GetX(), event.GetY()));
-		wxGetApp().OnInputModeTitleChanged();
-		m_A_down = false;
-		return;
-	}
-
-	Drawing::OnKeyUp(event);
+    switch ( event.GetKeyCode ( ) )
+    {
+    case 'A':
+        // switch back to previous drawing mode
+        if ( m_save_drawing_mode.size ( ) > 0 )
+        {
+            drawing_mode = m_save_drawing_mode.back ( );
+            m_save_drawing_mode.pop_back ( );
+        }
+        wxGetApp ( ).m_frame->RefreshInputCanvas ( );
+        RecalculateAndRedraw ( wxPoint ( event.GetX ( ), event.GetY ( ) ) );
+        wxGetApp ( ).OnInputModeTitleChanged ( );
+        m_A_down = false;
+        return;
+    case 'F':
+        // Flip the arc
+        if ( drawing_mode == ArcDrawingMode && ! m_previous_direction_set )
+        {
+            m_previous_direction ^= gp_Vec(0, 0, 1);
+        }
+        return;
+    }
+    Drawing::OnKeyUp ( event );
 }
 
 void LineArcDrawing::set_cursor(void){

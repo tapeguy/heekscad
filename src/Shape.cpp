@@ -1115,20 +1115,6 @@ bool CShape::IsTypeAShape(int t){
 	}
 }
 
-// static
-bool CShape::IsMatrixDifferentialScale(const double *mat)
-{
-    gp_GTrsf trsf = make_general_matrix(mat);
-    gp_Mat vect = trsf.VectorialPart();
-    double scalex = gp_Vec ( vect.Row(1) ).Magnitude();
-    double scaley = gp_Vec ( vect.Row(2) ).Magnitude();
-    double scalez = gp_Vec ( vect.Row(3) ).Magnitude();
-
-    if(fabs(scalex - scaley) > 0.000000000001)return true;
-    if(fabs(scalex - scalez) > 0.000000000001)return true;
-    return false;
-}
-
 void CShape::CopyFrom(const HeeksObj* object)
 {
 	*this = *((CShape*)object);
@@ -1158,17 +1144,6 @@ void CShape::SetClickMarkPoint(MarkedObject* marked_object, const double* ray_st
 			}
 		}
 	}
-}
-
-bool CShape::Stretch(const double *p, const double* shift, void* data)
-{
-    double mat[12] = {
-            shift[0], 0, 0, p[0],
-            0, shift[1], 0, p[1],
-            0, 0, shift[2], p[2]
-    };
-    this->ModifyByMatrix(mat);
-    return true;
 }
 
 float CShape::GetOpacity()

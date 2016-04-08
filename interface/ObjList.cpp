@@ -91,16 +91,17 @@ void ObjList::ClearUndoably(void)
 	m_index_list_valid = true;
 }
 
-void ObjList::SetColor(const HeeksColor &col)
+void ObjList::PropagateProperty(const Property& prop)
 {
     std::list<HeeksObj*>::iterator It;
     for(It=m_objects.begin(); It!=m_objects.end() ;It++)
     {
         HeeksObj* object = *It;
-        if (object->UsesColor())
-            object->SetColor(col);
+        Property * other_prop = object->GetProperty(prop.GetName());
+        if (other_prop && prop.GetPropertyType() == other_prop->GetPropertyType()) {
+            *other_prop = prop;
+        }
     }
-    HeeksObj::SetColor(col);
 }
 
 HeeksObj* ObjList::MakeACopy(void) const

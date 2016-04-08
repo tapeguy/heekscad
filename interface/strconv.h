@@ -19,7 +19,7 @@ inline wxString Ctt(const char String[] = "")
 #define Ctt(x) x
 #endif
 
-std::vector<wxString> Tokens( const wxString wxLine, const wxString wxDelimiters );
+std::vector<wxString> Tokens( const wxString& wxLine, const wxString& wxDelimiters );
 bool AllNumeric( const wxString wxLine );
 
 

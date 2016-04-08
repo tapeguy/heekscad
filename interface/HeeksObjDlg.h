@@ -34,7 +34,7 @@ public:
 	void OnChildFocus(wxChildFocusEvent& event);
 	void OnComboOrCheck( wxCommandEvent& event );
 
-    DECLARE_EVENT_TABLE()
+    DECLARE_EVENT_TABLE();
 };
 
 #endif

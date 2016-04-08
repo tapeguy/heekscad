@@ -16,9 +16,6 @@ private:
 	void RefreshByRemovingAndAddingAll();
 	void RefreshByMerging();
 
-protected:
-	void AddProperty(Property* property, wxPGProperty* parent_prop = NULL);
-
 public:
 	CObjPropsCanvas(wxWindow* parent);
 	virtual ~CObjPropsCanvas();

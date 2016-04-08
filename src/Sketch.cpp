@@ -96,18 +96,6 @@ const wxBitmap &CSketch::GetIcon()
 	return *icon;
 }
 
-class SetOrderUndoable : public Undoable{
-        CSketch* m_object;
-        SketchOrderType m_old_order;
-
-public:
-        SketchOrderType m_new_order;
-        SetOrderUndoable(CSketch* object, SketchOrderType old_order):m_object(object),m_old_order(old_order){}
-        void Run(bool redo){if(redo)m_object->m_order = m_new_order;}
-        const wxChar* GetTitle(){return _("Reorder Object");}
-        void RollBack(){m_object->m_order = m_old_order;}
-};
-
 static bool SketchOrderAvailable(SketchOrderType old_order, SketchOrderType new_order)
 {
 	// can we change from the older order type to the new order type?
@@ -164,21 +152,35 @@ static bool SketchOrderAvailable(SketchOrderType old_order, SketchOrderType new_
 
 void CSketch::OnPropertySet(Property& prop)
 {
-	if (prop == m_order_choice)
-	{
-		std::map<int, int>::iterator FindIt = order_map_for_properties.find(m_order_choice);
-		if(FindIt != order_map_for_properties.end())
-		{
-			if(ReOrderSketch((SketchOrderType)FindIt->second))
-			{
-				wxGetApp().m_frame->RefreshProperties();
-			}
-		}
-	}
-	else
-	{
-	    IdNamedObjList::OnPropertySet(prop);
-	}
+    if ( prop == m_order_choice )
+    {
+        std::map<int, int>::iterator FindIt = order_map_for_properties.find ( m_order_choice );
+        if ( FindIt != order_map_for_properties.end ( ) )
+        {
+            if ( ReOrderSketch ( (SketchOrderType) FindIt->second ) )
+            {
+                wxGetApp ( ).m_frame->RefreshProperties ( );
+            }
+        }
+    }
+    else if ( prop == GetColorProperty ( ) )
+    {
+        IdNamedObjList::PropagateProperty ( prop );
+    }
+    else
+    {
+        IdNamedObjList::OnPropertySet ( prop );
+    }
+}
+
+bool CSketch::GetStartPoint(double* pos)
+{
+    CBox box;
+    this->GetBox(box);
+    pos[0] = box.MinX();
+    pos[0] = box.MinY();
+    pos[0] = box.MinZ();
+    return true;
 }
 
 bool CSketch::GetCentrePoint(double* pos)
@@ -186,6 +188,16 @@ bool CSketch::GetCentrePoint(double* pos)
     CBox box;
     this->GetBox(box);
     box.Centre(pos);
+    return true;
+}
+
+bool CSketch::GetEndPoint(double* pos)
+{
+    CBox box;
+    this->GetBox(box);
+    pos[0] = box.MaxX();
+    pos[0] = box.MaxY();
+    pos[0] = box.MaxZ();
     return true;
 }
 
@@ -217,6 +229,25 @@ void CSketch::GetProperties(std::list<Property *> *list)
 }
 
 static CSketch* sketch_for_tools = NULL;
+
+
+class RepairSketch : public Tool{
+public:
+    void Run(){
+        if(sketch_for_tools == NULL)return;
+        double tolerance = 0.01;
+        if(!wxGetApp().InputLength(_("Enter point tolerance distance"), _("Tolerance"), tolerance)) {
+            return;
+        }
+
+        sketch_for_tools->LinesToPoints(tolerance);
+        sketch_for_tools->RemoveDuplicates();
+        sketch_for_tools->ReLinkSketch(tolerance);
+    }
+    const wxChar* GetTitle(){return _("Repair Sketch");}
+};
+
+static RepairSketch repair_sketch;
 
 class SplitSketch:public Tool{
 public:
@@ -478,28 +509,14 @@ public:
 
 ClickWesternMidpointOfSketch click_western_midpoint_of_sketch;
 
-class RemoveDuplicateLines: public Tool
-{
-public:
-    void Run()
-    {
-        sketch_for_tools->RemoveDuplicates();
-    }
-
-    const wxChar* GetTitle(){return _("Remove duplicate lines");}
-    wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/remove_duplicate_lines.png");}
-};
-
-RemoveDuplicateLines remove_duplicate_lines;
-
 void CSketch::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 {
 	sketch_for_tools = this;
 
 	if (GetNumChildren() > 1)
 	{
+	    t_list->push_back(&repair_sketch);
         t_list->push_back(&split_sketch);
-        t_list->push_back(&remove_duplicate_lines);
 	}
 
 	t_list->push_back(&convert_sketch_to_face);
@@ -520,22 +537,55 @@ void CSketch::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 }
 
 // static
-void CSketch::ReverseObject(HeeksObj* object)
+void CSketch::ReverseObject ( HeeksObj* object )
 {
-	// reverse object
-	switch(object->GetType()){
-case LineType:
-	((HLine*)object)->Reverse();
-	break;
-case ArcType:
-	((HArc*)object)->Reverse();
-	break;
-case SplineType:
-	((HSpline*)object)->Reverse();
-	break;
-default:
-	break;
-	}
+    // reverse object
+    switch ( object->GetType ( ) )
+    {
+    case LineType:
+        ( (HLine*) object )->Reverse ( );
+        break;
+    case ArcType:
+        ( (HArc*) object )->Reverse ( );
+        break;
+    case SplineType:
+        ( (HSpline*) object )->Reverse ( );
+        break;
+    default:
+        break;
+    }
+}
+
+// static
+void CSketch::SetObjectStartPoint ( HeeksObj* object, double* new_point )
+{
+    switch ( object->GetType ( ) )
+    {
+    case ArcType:
+    case LineType:
+    case SplineType:
+        ( (EndedObject*) object )->A->m_p = make_point ( new_point );
+        break;
+
+    default:
+        break;
+    }
+}
+
+// static
+void CSketch::SetObjectEndPoint ( HeeksObj* object, double* new_point )
+{
+    switch ( object->GetType ( ) )
+    {
+    case ArcType:
+    case LineType:
+    case SplineType:
+        ( (EndedObject*) object )->B->m_p = make_point ( new_point );
+        break;
+
+    default:
+        break;
+    }
 }
 
 HeeksObj *CSketch::MakeACopy(void)const
@@ -663,7 +713,7 @@ bool CSketch::ReOrderSketch(SketchOrderType new_order)
 		case SketchOrderTypeBad:
 			break;
 		default:
-			ReLinkSketch();
+			ReLinkSketch(wxGetApp().m_geom_tol);
 			done = true;
 			break;
 		}
@@ -700,10 +750,10 @@ bool CSketch::ReOrderSketch(SketchOrderType new_order)
 	return done;
 }
 
-void CSketch::ReLinkSketch()
+void CSketch::ReLinkSketch(double tolerance)
 {
 	CSketchRelinker relinker(m_objects);
-	relinker.Do();
+	relinker.Do(tolerance);
 
 	std::list<HeeksObj*> new_list;
 
@@ -715,7 +765,8 @@ void CSketch::ReLinkSketch()
 		}
 	}
 
-	wxGetApp().DoUndoable(new ReorderTool(this, new_list));
+	ReorderTool* reorder = new ReorderTool(this, new_list);
+	reorder->Run(false);
 
 	if(relinker.m_new_lists.size() > 1)
 	{
@@ -751,41 +802,84 @@ void CSketch::ReverseSketch()
 	}
 }
 
+void CSketch::LinesToPoints(double tolerance)
+{
+    std::list<HeeksObj*> list = m_objects; // Copy to avoid problems deleting while iterating
+
+    for ( std::list<HeeksObj*>::iterator It = list.begin ( ); It != list.end ( ); It++ )
+    {
+        HeeksObj* object = *It;
+
+        if ( object->GetType ( )  == ArcType ||
+             object->GetType ( )  == LineType ||
+             object->GetType ( )  == SplineType )
+        {
+            double d[3];
+            object->GetStartPoint ( d );
+            gp_Pnt start = make_point ( d );
+            object->GetEndPoint ( d );
+            gp_Pnt end = make_point ( d );
+            if ( start.Distance ( end ) <= tolerance )
+            {
+                HeeksColor color = object->GetColor();
+                Remove ( object );
+                bool point_is_unique = true;
+                for ( std::list<HeeksObj*>::iterator It2 = m_objects.begin ( ); It2 != m_objects.end ( ); It2++ )
+                {
+                    HeeksObj* object2 = *It2;
+
+                    if ( ( object2->GetStartPoint ( d ) &&
+                           start.Distance ( make_point ( d ) ) <= tolerance ) ||
+                         ( object2->GetEndPoint ( d ) &&
+                           end.Distance ( make_point ( d ) ) <= tolerance ) )
+                    {
+                        point_is_unique = false;
+                        break;
+                    }
+                }
+
+                if ( point_is_unique )
+                {
+                    Add ( new HPoint(start, color ) );
+                }
+            }
+        }
+    }
+}
+
 void CSketch::RemoveDuplicates()
 {
+    std::list<HeeksObj*> list = m_objects;  // Copy to avoid problems deleting while iterating
     std::list<HeeksObj*> new_list;
-    std::list<HeeksObj*> old_list = m_objects;
     bool duplicate;
 
-    for(std::list<HeeksObj*>::iterator It = m_objects.begin(); It != m_objects.end() ;It++)
+    for(std::list<HeeksObj*>::iterator It = list.begin(); It != list.end() ;It++)
     {
         HeeksObj* object1 = *It;
+        HeeksObj* reversed = object1->MakeACopy();
+        CSketch::ReverseObject(reversed);
 
         duplicate = false;
         for(std::list<HeeksObj*>::iterator It2 = new_list.begin(); It2 != new_list.end() ;It2++)
         {
             HeeksObj* object2 = *It2;
-            if ( object1->GetType() == object2->GetType() &&
-                 ! object1->IsDifferent(object2) )
+            if ( object1->GetType() == object2->GetType() )
             {
-                // Duplicate found
-                duplicate = true;
-                break;
+                if ( ! object1->IsDifferent(object2) ||
+                     ! reversed->IsDifferent(object2) )
+                {
+                    duplicate = true;
+                    Remove ( object2 );
+                    break;
+                }
             }
         }
+        delete reversed;
+
         if (duplicate == false)
         {
-            HeeksObj* object = *It;
-            HeeksObj* copy = object->MakeACopyWithSameID();
-            new_list.push_front(copy);
+            new_list.push_front(object1);
         }
-    }
-
-    Clear();
-    for(std::list<HeeksObj*>::iterator It = new_list.begin(); It != new_list.end(); It++)
-    {
-        HeeksObj* object = *It;
-        Add(object);
     }
 }
 
@@ -829,7 +923,7 @@ void CSketch::ExtractSeparateSketches(std::list<HeeksObj*> &new_separate_sketche
         // Make separate connected sketches from the child elements.
 		CSketchRelinker relinker(sketch->m_objects);
 
-		relinker.Do();
+		relinker.Do(wxGetApp().m_geom_tol);
 
 		for(std::list< std::list<HeeksObj*> >::iterator It = relinker.m_new_lists.begin(); It != relinker.m_new_lists.end(); It++)
 		{
@@ -916,7 +1010,7 @@ void CSketch::Remove(HeeksObj* object)
 	IdNamedObjList::Remove(object);
 }
 
-bool CSketchRelinker::TryAdd(HeeksObj* object)
+bool CSketchRelinker::TryAdd(HeeksObj* object, double tolerance)
 {
 	// if the object is not already added
 	if(m_added_from_old_set.find(object) == m_added_from_old_set.end())
@@ -927,9 +1021,10 @@ bool CSketchRelinker::TryAdd(HeeksObj* object)
 
 		// try the object, the right way round
 		object->GetStartPoint(new_point);
-		if(make_point(old_point).IsEqual(make_point(new_point), wxGetApp().m_geom_tol))
+		if(make_point(old_point).IsEqual(make_point(new_point), tolerance))
 		{
 			HeeksObj* new_object = object->MakeACopyWithSameID();
+			CSketch::SetObjectStartPoint(new_object, old_point);
 			m_new_lists.back().push_back(new_object);
 			m_new_back = new_object;
 			m_added_from_old_set.insert(object);
@@ -938,9 +1033,10 @@ bool CSketchRelinker::TryAdd(HeeksObj* object)
 
 		// try the object, the wrong way round
 		object->GetEndPoint(new_point);
-		if(make_point(old_point).IsEqual(make_point(new_point), wxGetApp().m_geom_tol))
+		if(make_point(old_point).IsEqual(make_point(new_point), tolerance))
 		{
 			HeeksObj* new_object = object->MakeACopyWithSameID();
+			CSketch::SetObjectEndPoint(new_object, old_point);
 			CSketch::ReverseObject(new_object);
 			m_new_lists.back().push_back(new_object);
 			m_new_back = new_object;
@@ -953,9 +1049,10 @@ bool CSketchRelinker::TryAdd(HeeksObj* object)
 
         // try the object, the right way round
         object->GetEndPoint(new_point);
-		if(make_point(old_point).IsEqual(make_point(new_point), wxGetApp().m_geom_tol))
+		if(make_point(old_point).IsEqual(make_point(new_point), tolerance))
 		{
 			HeeksObj* new_object = object->MakeACopyWithSameID();
+			CSketch::SetObjectEndPoint(new_object, old_point);
 			m_new_lists.back().push_front(new_object);
 			m_new_front = new_object;
 			m_added_from_old_set.insert(object);
@@ -964,9 +1061,10 @@ bool CSketchRelinker::TryAdd(HeeksObj* object)
 
 		// try the object, the wrong way round
 		object->GetStartPoint(new_point);
-		if(make_point(old_point).IsEqual(make_point(new_point), wxGetApp().m_geom_tol))
+		if(make_point(old_point).IsEqual(make_point(new_point), tolerance))
 		{
 			HeeksObj* new_object = object->MakeACopyWithSameID();
+			CSketch::SetObjectStartPoint(new_object, old_point);
 			CSketch::ReverseObject(new_object);
 			m_new_lists.back().push_front(new_object);
 			m_new_front = new_object;
@@ -978,7 +1076,7 @@ bool CSketchRelinker::TryAdd(HeeksObj* object)
 	return false;
 }
 
-bool CSketchRelinker::AddNext()
+bool CSketchRelinker::AddNext(double tolerance)
 {
 	// returns true, if another object was added to m_new_lists
 
@@ -994,7 +1092,7 @@ bool CSketchRelinker::AddNext()
 			    It = m_old_list.begin();
 			HeeksObj* object = *It;
 
-			added = TryAdd(object);
+			added = TryAdd(object, tolerance);
 
 		}while(It != m_old_front && !added);
 
@@ -1031,7 +1129,7 @@ bool CSketchRelinker::AddNext()
 	return false;
 }
 
-bool CSketchRelinker::Do()
+bool CSketchRelinker::Do(double tolerance)
 {
 	if(m_old_list.size() > 0)
 	{
@@ -1044,7 +1142,7 @@ bool CSketchRelinker::Do()
 		m_new_back = new_object;
 		m_new_front = new_object;
 
-		while(AddNext()){}
+		while(AddNext(tolerance)){}
 	}
 
 	return true;

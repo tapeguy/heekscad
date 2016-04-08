@@ -114,7 +114,7 @@ std::list<gp_Pnt> VectorFont::Glyph::GlyphArc::Interpolate(const gp_Pnt & locati
 	double start_angle = m_start_angle;
 	double end_angle = m_end_angle;
 
-	if (start_angle > end_angle)
+	if (start_angle >= end_angle)
 	{
 		end_angle += (2 * M_PI);
 	}
@@ -590,22 +590,18 @@ CxfFont::CxfFont( const wxChar *p_szFile, const double word_space_percentage, co
 					if (symbol.Length() > 0)
 					{
 						// It must be a multi-byte character.
-						if (((symbol[0] == '<') && (symbol[symbol.Length()-1] == '>')) ||
-							(symbol[0] == '#'))
-						{
-							std::vector<wxString> tokens = Tokens( symbol, _T("#<> \t") );
-							if (tokens.size() > 0)
-							{
-								unsigned long lCharacterName;
-								tokens[0].ToULong( &lCharacterName, 16 );
-								character_name = (wxChar) lCharacterName;
-							}
-						}
-						else
-						{
-							character_name = symbol[0];
-						}
+                        std::vector<wxString> tokens = Tokens( symbol, _T("#<> \t") );
+                        if (tokens.size() > 0)
+                        {
+                            unsigned long lCharacterName;
+                            tokens[0].ToULong( &lCharacterName, 16 );
+                            character_name = (wxChar) lCharacterName;
+                        }
 					}
+                    else
+                    {
+                        character_name = symbol[0];
+                    }
                 }
 				else if (line[0] == '#')
 				{
@@ -655,7 +651,7 @@ CxfFont::CxfFont( const wxChar *p_szFile, const double word_space_percentage, co
             character_name = 0;
         }
 
-//		printf("File '%s' contained %d glyphs\n", Ttc(p_szFile), m_glyphs.size() );
+//		printf("File '%s' contained %u glyphs\n", Ttc(p_szFile), (unsigned int)m_glyphs.size() );
 	}
 	else
 	{
@@ -870,7 +866,7 @@ HeeksObj *VectorFont::Sketch( const wxString & text, const gp_Trsf & transformat
 		} // End if - else
 	} // End for
 
-	((CSketch *) sketch)->ReOrderSketch( SketchOrderTypeMultipleCurves );
+	((CSketch *) sketch)->ReOrderSketch( SketchOrderTypeReOrder );
 	return(sketch);
 }
 

@@ -293,9 +293,14 @@ void HArc::ModifyByMatrix(const double* m)
 {
     this->in_edit = true;
 	EndedObject::ModifyByMatrix(m);
-	gp_Trsf mat = make_matrix(m);
-	m_axis_direction.Transform(mat);
-	C->m_p.Transform(mat);
+    if (!IsMatrixDifferentialScale(m))
+    {
+        gp_Trsf mat = make_matrix(m);
+        m_axis_direction.Transform(mat);
+
+        C->m_p.Transform(mat);
+    }
+
     this->in_edit = false;
 }
 
@@ -374,7 +379,7 @@ void HArc::OnChildModified(HeeksObj * child, Property& prop)
             C->m_p = centre;
             m_axis_direction = -axis;
         }
-        else if(child == B)
+        else if(child == B || child == C)
         {
             gp_Vec vp(centre, A->m_p);
             gp_Vec direction = gp_Vec(m_axis_direction) ^ vp;
@@ -696,6 +701,11 @@ void HArc::Reverse()
 	B->m_p = temp;
 	m_axis_direction.Reverse();
 	in_edit = false;
+}
+
+void HArc::Flip()
+{
+    m_axis_direction.Reverse();
 }
 
 double HArc::IncludedAngle() const

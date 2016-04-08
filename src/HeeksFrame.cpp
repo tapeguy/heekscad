@@ -1276,6 +1276,12 @@ class PanelForToolBar : public wxScrolledWindow
 public:
 	PanelForToolBar(wxWindow *parent):wxScrolledWindow(parent, wxID_ANY){}
 
+	~PanelForToolBar() {
+        if (this->HasCapture()) {
+            this->ReleaseMouse();
+        }
+	}
+
 	void OnMouse( wxMouseEvent& event );
 
 private:

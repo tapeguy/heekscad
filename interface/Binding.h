@@ -16,7 +16,7 @@ class Binding {
 protected:
 
     Property * m_p1;
-    Property * m_p2;
+    Property * m_p2, * m_p3;
 
 public:
 

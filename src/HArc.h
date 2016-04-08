@@ -62,6 +62,7 @@ public:
 	gp_Pnt GetPointAtFraction(double fraction) const;
 	static bool TangentialArc(const gp_Pnt &p0, const gp_Vec &v0, const gp_Pnt &p1, gp_Pnt &centre, gp_Dir &axis);
 	void Reverse();
+	void Flip();
 	double IncludedAngle() const;
 	double Radius() const;
 	gp_Vec Direction() const { return m_axis_direction; }

@@ -16,7 +16,8 @@ mkdir -p /Applications/HeeksCAD.app/Contents/MacOS/wx
 mkdir -p /Applications/HeeksCAD.app/Contents/MacOS/oce
 mkdir -p /Applications/HeeksCAD.app/Contents/share/heekscad
 cp -R ./bitmaps /Applications/HeeksCAD.app/Contents/share/heekscad
-cp -R ./icons  /Applications/HeeksCAD.app/Contents/share/heekscad
+cp -R ./fonts /Applications/HeeksCAD.app/Contents/share/heekscad
+cp -R ./icons /Applications/HeeksCAD.app/Contents/share/heekscad
 EOF
 
 if [ -d heekscnc ]; then
@@ -45,6 +46,10 @@ if [ -d heekscnc/nc ]; then
 	cp -R heekscnc/nc /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
 fi
 
+if [ -d heekscnc/postprocessor ]; then
+	cp -R heekscnc/postprocessor /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
+fi
+
 if [ -f heekscnc/script_ops.xml ]; then
 	cp heekscnc/script_ops.xml /Applications/HeeksCAD.app/Contents/share/plugins/heekscnc
 fi
@@ -58,8 +63,7 @@ resolve_dylibs()
 	sudo install_name_tool -id "$binary" "$binary"
 	otool -L $binary | tail +2 | awk '{ print $1 }' | while read dylib; do
 		destdir=""
-		if [ "`echo $dylib | grep libbase`" -o \
-		     "`echo $dylib | grep libheeksintf`" -o \
+		if [ "`echo $dylib | grep libheeksintf`" -o \
 		     "`echo $dylib | grep libtinyxml`" -o \
 		     "`echo $dylib | grep libjpeg`" -o \
 		     "`echo $dylib | grep libfreetype`" ]; then

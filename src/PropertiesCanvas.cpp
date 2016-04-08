@@ -361,7 +361,7 @@ void CPropertiesCanvas::OnPropertyGridChange( wxPropertyGridEvent& event ) {
 		break;
 	case PropertyTrsfType:
 		{
-			const gp_Trsf& trsf = *(PropertyTrsf*)p;
+			const gp_Trsf& trsf = *(PropertyTrsf*)property;
 			gp_Pnt pnt = trsf.TranslationPart();
 
 			gp_Dir xaxis(1, 0, 0);

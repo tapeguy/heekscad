@@ -72,9 +72,16 @@ bool EndedObject::IsDifferent(HeeksObj *other)
 
 void EndedObject::ModifyByMatrix(const double* m)
 {
-	gp_Trsf mat = make_matrix(m);
-	A->m_p.Transform(mat);
-	B->m_p.Transform(mat);
+	gp_GTrsf mat = make_general_matrix(m);
+	gp_XYZ pnt;
+
+	pnt = A->m_p.XYZ();
+	mat.Transforms(pnt);
+	A->m_p.SetValue( gp_Pnt ( pnt ) );
+
+    pnt = B->m_p.XYZ();
+    mat.Transforms(pnt);
+    B->m_p.SetValue( gp_Pnt ( pnt ) );
 }
 
 bool EndedObject::Stretch(const double *p, const double* shift, void* data)
