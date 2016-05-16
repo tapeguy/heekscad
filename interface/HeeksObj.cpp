@@ -271,6 +271,7 @@ void HeeksObj::WriteXML(TiXmlNode *root)
 {
     TiXmlElement * element;
     wxString type = this->GetTypeString();
+    type.erase(std::remove(type.begin(), type.end(), ' '), type.end());
     element = new TiXmlElement ( type );
     root->LinkEndChild ( element );
     WriteBaseXML ( element );

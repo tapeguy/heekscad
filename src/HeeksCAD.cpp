@@ -747,7 +747,7 @@ static HeeksObj* ReadSTEPFileFromXMLElement(TiXmlElement* pElem)
 {
 	std::map<int, CShapeData> index_map;
 
-	// get the children ( an index map)
+	// get the children (an index map)
 	for(TiXmlElement* subElem = TiXmlHandle(pElem).FirstChildElement().Element(); subElem; subElem = subElem->NextSiblingElement())
 	{
 		std::string subname(subElem->Value());
@@ -769,7 +769,6 @@ static HeeksObj* ReadSTEPFileFromXMLElement(TiXmlElement* pElem)
 						if(attr_name == std::string("index")){index = a->IntValue();}
 						else if(attr_name == std::string("id")){shape_data.m_id = a->IntValue();}
 						else if(attr_name == std::string("title")){shape_data.m_title.assign(Ctt(a->Value()));}
-						else if(attr_name == std::string("title_from_id")){shape_data.m_title_made_from_id = (a->IntValue() != 0);}
 						else if(attr_name == std::string("solid_type")){shape_data.m_solid_type = (SolidTypeEnum)(a->IntValue());}
 						else if(attr_name == std::string("vis")){shape_data.m_visible = (a->IntValue() != 0);}
 						else shape_data.m_xml_element.SetAttribute(a->Name(), a->Value());

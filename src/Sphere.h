@@ -7,6 +7,9 @@
 #include "Solid.h"
 
 class CSphere: public CSolid{
+private:
+    bool in_set;
+
 protected:
 	// CShape's virtual functions
 	void MakeTransformedShape(const gp_Trsf &mat);

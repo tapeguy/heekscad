@@ -17,7 +17,6 @@ CShapeData::CShapeData(CShape* shape): m_xml_element("")
 {
 	m_id = shape->GetID();
 	m_title = shape->GetTitle();
-	m_title_made_from_id = shape->m_title_made_from_id;
 	m_visible = shape->IsVisible();
 	m_solid_type = SOLID_TYPE_UNKNOWN;
 	if(shape->GetType() == SolidType)m_solid_type = ((CSolid*)shape)->GetSolidType();
@@ -42,11 +41,17 @@ CShapeData::CShapeData(CShape* shape): m_xml_element("")
 
 void CShapeData::SetShape(CShape* shape, bool apply_id)
 {
-	if(apply_id && (m_id != -1))
-	    shape->SetID(m_id);
-	if(m_title.length() > 0)
-	    shape->SetTitle(m_title);
-	shape->m_title_made_from_id = m_title_made_from_id;
+    if(m_title.length() > 0) {
+        shape->SetTitle(m_title);
+    }
+    else {
+        shape->m_title_made_from_id = true;
+    }
+
+    if(apply_id && (m_id != -1)) {
+        shape->SetID(m_id);
+    }
+
 	shape->SetVisible ( m_visible );
 	shape->SetFromXMLElement(&m_xml_element);
 

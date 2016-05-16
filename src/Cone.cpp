@@ -10,14 +10,14 @@
 
 CCone::CCone(const gp_Ax2& pos, double r1, double r2, double height, const wxChar* title, const HeeksColor& col, float opacity)
  : CSolid(BRepPrimAPI_MakeCone(pos, r1, r2, height), title, col, opacity), m_render_without_OpenCASCADE(false),
- m_pos(pos), m_r1(r1), m_r2(r2), m_height(height)
+ in_set(false), m_pos(pos), m_r1(r1), m_r2(r2), m_height(height)
 {
 	InitializeProperties();
 }
 
 CCone::CCone(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity)
  : CSolid(solid, title, col, opacity), m_render_without_OpenCASCADE(false),
- m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0))
+ in_set(false), m_pos(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0))
 {
 	InitializeProperties();
 }
@@ -194,6 +194,9 @@ void CCone::GetGripperPositions(std::list<GripData> *list, bool just_for_endof)
 
 void CCone::OnPropertySet(Property& prop)
 {
+    if (in_set) {
+        return;
+    }
 	if (prop == m_r1 || prop == m_r2 || prop == m_height) {
 	    m_shape = BRepPrimAPI_MakeCone(m_pos, m_r1, m_r2, m_height).Shape();
         delete_faces_and_edges();
@@ -350,6 +353,7 @@ void CCone::SetFromXMLElement(TiXmlElement* pElem)
 	double d[3] = {0, 0, 1};
 	double x[3] = {1, 0, 0};
 
+	in_set = true;
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
 	{
 		std::string name(a->Name());
@@ -372,5 +376,6 @@ void CCone::SetFromXMLElement(TiXmlElement* pElem)
 
 	m_pos = gp_Ax2(make_point(l), make_vector(d), make_vector(x));
 
+    in_set = false;
 	CSolid::SetFromXMLElement(pElem);
 }

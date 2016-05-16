@@ -25,7 +25,6 @@ public:
 	int m_id;
 	bool m_visible;
 	wxString m_title;
-	bool m_title_made_from_id;
 	SolidTypeEnum m_solid_type;
 
 	TiXmlElement m_xml_element;

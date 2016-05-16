@@ -65,6 +65,7 @@ resolve_dylibs()
 		destdir=""
 		if [ "`echo $dylib | grep libheeksintf`" -o \
 		     "`echo $dylib | grep libtinyxml`" -o \
+		     "`echo $dylib | grep libarea`" -o \
 		     "`echo $dylib | grep libjpeg`" -o \
 		     "`echo $dylib | grep libfreetype`" ]; then
 			destdir="."

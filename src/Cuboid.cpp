@@ -10,20 +10,20 @@
 
 CCuboid::CCuboid(const gp_Ax2& pos, double x, double y, double z, const wxChar* title, const HeeksColor& col, float opacity)
  : CSolid(BRepPrimAPI_MakeBox(gp_Ax2(pos.Location().XYZ() + gp_XYZ((x < 0) ? x:0.0, (y < 0) ? y:0.0, (z < 0) ? z:0.0), pos.Direction(), pos.XDirection()), fabs(x), fabs(y), fabs(z)), title, col, opacity),
- m_pos(pos), m_x(x), m_y(y), m_z(z)
+   in_set(false), m_pos(pos), m_x(x), m_y(y), m_z(z)
 {
 	InitializeProperties();
 }
 
 CCuboid::CCuboid(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity)
  : CSolid(solid, title, col, opacity),
- m_pos(gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)))
+   in_set(false), m_pos(gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1), gp_Dir(1, 0, 0)))
 {
 	InitializeProperties();
 }
 
 CCuboid::CCuboid( const CCuboid & rhs )
- : CSolid(rhs)
+ : CSolid(rhs), in_set(false)
 {
     InitializeProperties();
     HeeksObj::operator=(rhs);   // Just copy my immediate properties.
@@ -114,6 +114,9 @@ void CCuboid::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 
 void CCuboid::OnPropertySet(Property& prop)
 {
+    if (in_set) {
+        return;
+    }
 	if (prop == m_pos || prop == m_x || prop == m_y || prop == m_z) {
 	    m_shape = BRepPrimAPI_MakeBox(m_pos, m_x, m_y, m_z).Shape();
 	    delete_faces_and_edges();
@@ -202,6 +205,7 @@ void CCuboid::SetFromXMLElement(TiXmlElement* pElem)
 	double d[3] = {0, 0, 1};
 	double x[3] = {1, 0, 0};
 
+	in_set = true;
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
 	{
 		std::string name(a->Name());
@@ -221,8 +225,8 @@ void CCuboid::SetFromXMLElement(TiXmlElement* pElem)
 		else if(name == "wy"){m_y = a->DoubleValue();}
 		else if(name == "wz"){m_z = a->DoubleValue();}
 	}
-
 	m_pos = gp_Ax2(make_point(l), make_vector(d), make_vector(x));
 
+	in_set = false;
 	CSolid::SetFromXMLElement(pElem);
 }

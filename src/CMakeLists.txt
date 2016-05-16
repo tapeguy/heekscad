@@ -21,9 +21,11 @@ else() #look for OpenCASCADE
 endif()
 
 find_package( OpenGL REQUIRED )
-FIND_PACKAGE( wxWidgets REQUIRED COMPONENTS adv base core gl aui propgrid )
+find_package( wxWidgets REQUIRED COMPONENTS adv base core gl aui propgrid )
 find_package( PythonLibs REQUIRED )
-INCLUDE(${wxWidgets_USE_FILE})
+include(${wxWidgets_USE_FILE})
+
+set( AREA_LIBS area )
 
 include_directories (
     ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
@@ -32,25 +34,16 @@ include_directories (
     )
 set ( EXECUTABLE_OUTPUT_PATH ../bin )
 
-set( LIBAREA_PATH ../libarea/ )
-
 set( heekscad_HDRS
     AboutBox.h
-    ${LIBAREA_PATH}/Arc.h
-    ${LIBAREA_PATH}/Area.h
-    ${LIBAREA_PATH}/AreaOrderer.h
     AutoSave.h
     BezierCurve.h
     ../interface/Box.h
-    ${LIBAREA_PATH}/Box2D.h
-    ${LIBAREA_PATH}/Circle.h
-    ${LIBAREA_PATH}/clipper.hpp
     Cone.h
     ConversionTools.h
     CoordinateSystem.h
     CorrelationTool.h
     Cuboid.h
-    ${LIBAREA_PATH}/Curve.h
     CxfFont.h
     Cylinder.h
     Dexel.cpp
@@ -68,7 +61,6 @@ set( heekscad_HDRS
     Face.h
     FaceTools.h
     FastCurves.h
-    ${LIBAREA_PATH}/kurve/geometry.h
     glfont2.h
     GLList.h
     GraphicsCanvas.h
@@ -118,7 +110,6 @@ set( heekscad_HDRS
     OrientationModifier.h
     ../interface/PictureFrame.h
     Plugins.h
-    ${LIBAREA_PATH}/Point.h
     PointDrawing.h
     PointOrWindow.h
     PropBinding.h
@@ -166,22 +157,13 @@ set( heekscad_HDRS
 
 set( heekscad_SRCS
     AboutBox.cpp
-    ${LIBAREA_PATH}/Arc.cpp
-    ${LIBAREA_PATH}/Area.cpp
-    ${LIBAREA_PATH}/AreaClipper.cpp
-    ${LIBAREA_PATH}/AreaOrderer.cpp
-    ${LIBAREA_PATH}/AreaPocket.cpp
     AutoSave.cpp
     BezierCurve.cpp
-    ${LIBAREA_PATH}/Circle.cpp
-    ${LIBAREA_PATH}/clipper.cpp
     Cone.cpp
-    ${LIBAREA_PATH}/kurve/Construction.cpp
     ConversionTools.cpp
     CoordinateSystem.cpp
     CorrelationTool.cpp
     Cuboid.cpp
-    ${LIBAREA_PATH}/Curve.cpp
     CxfFont.cpp
     Cylinder.cpp
     Dexel.cpp
@@ -199,7 +181,6 @@ set( heekscad_SRCS
     Face.cpp
     FaceTools.cpp
     FastCurves.cpp
-    ${LIBAREA_PATH}/kurve/Finite.cpp
     glfont2.cpp
     GLList.cpp
     GraphicsCanvas.cpp
@@ -228,14 +209,11 @@ set( heekscad_SRCS
     HXml.cpp
     Input.cpp
     InputModeCanvas.cpp
-    ${LIBAREA_PATH}/kurve/kurve.cpp
     LineArcDrawing.cpp
     Loop.cpp
     MagDragWindow.cpp
     MarkedList.cpp
-    ${LIBAREA_PATH}/kurve/Matrix.cpp
     ObjPropsCanvas.cpp
-    ${LIBAREA_PATH}/kurve/offset.cpp
     OptionsCanvas.cpp
     OrientationModifier.cpp
     Plugins.cpp
@@ -283,7 +261,7 @@ set( HeeksCAD_LIBS
 add_executable( heekscad ${heekscad_SRCS} ${platform_SRCS} ${heekscad_HDRS} )
 # Link ${HeeksCAD_LIBS} first to prevent installed libs from being found first in the search order
 target_link_libraries( heekscad
-                       ${HeeksCAD_LIBS}
+                       ${HeeksCAD_LIBS} ${AREA_LIBS}
                        ${wxWidgets_LIBRARIES}  ${OpenCASCADE_LIBRARIES}
                        ${PYTHON_LIBRARIES} ${OSX_LIBS} ${OPENGL_LIBRARIES} )
 

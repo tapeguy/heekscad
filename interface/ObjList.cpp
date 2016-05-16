@@ -323,21 +323,22 @@ void ObjList::WriteBaseXML(TiXmlElement *element)
 
 void ObjList::ReadBaseXML(TiXmlElement* element)
 {
-	// loop through all the objects
-	for(TiXmlElement* pElem = TiXmlHandle(element).FirstChildElement().Element(); pElem; pElem = pElem->NextSiblingElement())
-	{
-	    HeeksObj *existing = NULL;
-
-		HeeksObj* object = wxGetApp().ReadXMLElement(pElem);
+    // loop through all the objects
+    for(TiXmlElement* pElem = TiXmlHandle(element).FirstChildElement().Element(); pElem; pElem = pElem->NextSiblingElement())
+    {
+        HeeksObj *existing = NULL;
 
         wxString name = pElem->Value ( );
         Property * my_prop = this->GetProperty ( name );
         if ( my_prop )
         {
-            my_prop->ReadFromXmlElement ( pElem );
+            continue;   // Property will be read by HeeksObj parent class
         }
-        else if ( object )
-		{
+
+        HeeksObj* object = wxGetApp().ReadXMLElement(pElem);
+
+        if ( object )
+        {
             if ((object->GetType() != 0) && (object->GetID() != 0))
             {
                 existing = wxGetApp().GetIDObject( object->GetType(), object->GetID() );
@@ -355,10 +356,10 @@ void ObjList::ReadBaseXML(TiXmlElement* element)
                 // Add the new object.
                 Add(object, NULL);
             }
-		}
-	}
+        }
+    }
 
-	HeeksObj::ReadBaseXML(element);
+    HeeksObj::ReadBaseXML(element);
 }
 
 void ObjList::ModifyByMatrix(const double *m)

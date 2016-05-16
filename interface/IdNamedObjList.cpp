@@ -17,10 +17,12 @@ void IdNamedObjList::OnSetID(ObjectId_t id)
 
 void IdNamedObjList::OnSetTitle(const wxString& title)
 {
-    temp_pattern_string = wxString::Format(_T("%s %d"), GetTypeString(), GetID());
-    m_title_made_from_id = (title == temp_pattern_string);
-    if ( ! m_title_made_from_id ) {
-        OnEditString(title);
+    if (!title.IsEmpty()) {
+        temp_pattern_string = wxString::Format(_T("%s %d"), GetTypeString(), GetID());
+        m_title_made_from_id = (title == temp_pattern_string);
+        if ( ! m_title_made_from_id ) {
+            OnEditString(title);
+        }
     }
     HeeksObj::OnSetTitle(title);
 }

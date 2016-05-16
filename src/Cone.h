@@ -7,6 +7,9 @@
 #include "Solid.h"
 
 class CCone: public CSolid{
+private:
+    bool in_set;
+
 protected:
 	bool m_render_without_OpenCASCADE;
 

@@ -8,19 +8,21 @@
 #include "MarkedList.h"
 
 CSphere::CSphere(const gp_Pnt& pos, double radius, const wxChar* title, const HeeksColor& col, float opacity) :
- CSolid(BRepPrimAPI_MakeSphere(pos, radius), title, col, opacity), m_pos(pos), m_radius(radius)
+ CSolid(BRepPrimAPI_MakeSphere(pos, radius), title, col, opacity),
+ in_set(false), m_pos(pos), m_radius(radius)
 {
 	InitializeProperties();
 }
 
 CSphere::CSphere(const TopoDS_Solid &solid, const wxChar* title, const HeeksColor& col, float opacity) :
- CSolid(solid, title, col, opacity), m_pos(0, 0, 0), m_radius(0.0)
+ CSolid(solid, title, col, opacity),
+ in_set(false), m_pos(0, 0, 0), m_radius(0.0)
 {
 	InitializeProperties();
 }
 
 CSphere::CSphere( const CSphere & rhs ) :
- CSolid(rhs)
+ CSolid(rhs), in_set(false)
 {
 	InitializeProperties();
 	m_pos = rhs.m_pos;
@@ -85,6 +87,10 @@ void CSphere::GetGripperPositions(std::list<GripData> *list, bool just_for_endof
 
 void CSphere::OnPropertySet(Property& prop)
 {
+    if (in_set) {
+        return;
+    }
+
 	if (prop == m_pos || prop == m_radius) {
 	    m_shape = BRepPrimAPI_MakeSphere(m_pos, m_radius).Shape();
         delete_faces_and_edges();
@@ -122,6 +128,8 @@ void CSphere::SetXMLElement(TiXmlElement* element)
 
 void CSphere::SetFromXMLElement(TiXmlElement* pElem)
 {
+    in_set = true;
+
 	// get the attributes
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
 	{
@@ -132,5 +140,6 @@ void CSphere::SetFromXMLElement(TiXmlElement* pElem)
 		else if(name == "r"){m_radius = a->DoubleValue();}
 	}
 
+	in_set = false;
 	CSolid::SetFromXMLElement(pElem);
 }

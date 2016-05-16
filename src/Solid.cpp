@@ -38,7 +38,19 @@ void CSolid::SetFromXMLElement(TiXmlElement* pElem)
 	for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
 	{
 		std::string name(a->Name());
-		if(name == "col")
+        if(name == "id")
+        {
+            SetID(a->IntValue());
+        }
+        else if(name == "title")
+        {
+            SetTitle(_(a->Value()));
+        }
+        else if(name == "vis")
+        {
+            SetVisible(a->IntValue() != 0 ? TRUE : FALSE);
+        }
+        else if(name == "col")
 		{
 		    SetColor(HeeksColor((long)(a->IntValue())));
 		}

@@ -76,7 +76,7 @@ CPyramid::CPyramid( const CPyramid & rhs )
 const wxBitmap &CPyramid::GetIcon()
 {
 	static wxBitmap* icon = NULL;
-	if(icon == NULL)icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/cube.png")));
+	if(icon == NULL)icon = new wxBitmap(wxImage(wxGetApp().GetResFolder() + _T("/icons/pyramid.png")));
 	return *icon;
 }
 
