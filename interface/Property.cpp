@@ -114,10 +114,58 @@ void Property::ReadFromXmlElement ( TiXmlElement *element )
 
 void Property::WriteToXmlElement ( TiXmlElement *element ) const
 {
-    if (writeToXmlFunc)
+    if (writeToXmlFunc) {
         (*writeToXmlFunc) ( this, element );
-    else
+    }
+    else {
         DefaultWriteToXmlElement ( element );
+    }
+}
+
+void Property::DefaultReadBindingFromXmlElement ( TiXmlElement *element )
+{
+    const char * binding = element->Attribute ( "binding" );
+    if ( binding != NULL ) {
+        int id;
+        const char * binding_owner = element->Attribute ( "binding_owner");
+        const char * binding_owner_id = element->Attribute ( "binding_owner_id", &id );
+        const char * binding_prop = element->Attribute ( "binding_prop" );
+        if ( binding_owner != NULL && binding_owner_id != NULL && binding_prop != NULL ) {
+            ObjType type = GetObjTypeFromString ( wxString ( binding_owner ) );
+            HeeksObj* hobj = wxGetApp().GetIDObject ( type, id );
+            if ( hobj != NULL ) {
+                std::list<Property *> list;
+                hobj->GetProperties ( &list );
+                Property * prop = hobj->FindPropertyByXmlName ( &list, binding_prop );
+                if ( prop != NULL ) {
+                    new EqualityBinding ( this, prop );
+                }
+            }
+        }
+    }
+}
+
+void Property::DefaultWriteBindingToXmlElement ( TiXmlElement *element ) const
+{
+    if ( m_binding != NULL ) {
+        wxString bindingType ( m_binding->GetPropertyTypeName() );
+        Property * otherProp = m_binding->GetOtherProperty ( this );
+        DomainObject * obj = otherProp->GetOwner();
+        if ( obj != NULL ) {
+            element->SetAttribute ( "binding", bindingType );
+            HeeksObj * hobj = dynamic_cast<HeeksObj *>( obj );
+            if ( hobj != NULL ) {
+                // Use the full type name, not the short name (don't use GetTypeString() here).
+                wxString typeString = AsString ( (ObjType) hobj->GetType() );
+                element->SetAttribute ( "binding_owner", typeString );
+                element->SetAttribute ( "binding_owner_id", hobj->GetID() );
+            }
+            else {
+                element->SetAttribute ( "binding_owner", obj->GetName() );
+            }
+            element->SetAttribute ( "binding_prop", otherProp->GetXmlName() );
+        }
+    }
 }
 
 void Property::SetXmlName(const wxChar * name)
@@ -157,6 +205,7 @@ void PropertyCheck::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyCheck::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     prop_element->LinkEndChild ( new TiXmlText ( m_value ? "true" : "false" ) );
 }
@@ -186,6 +235,7 @@ void PropertyChoice::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyChoice::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     wxString text;
     text << m_value;
@@ -220,6 +270,7 @@ void PropertyColor::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyColor::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     prop_element->LinkEndChild ( new TiXmlText ( m_value.ToHtmlColor() ) );
 }
@@ -271,7 +322,8 @@ void PropertyDouble::DefaultReadFromXmlElement ( TiXmlElement *element )
 
 void PropertyDouble::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
-    AddDoubleToXmlElement ( element, this->GetXmlName(), m_value );
+    TiXmlElement * new_element = AddDoubleToXmlElement ( element, this->GetXmlName(), m_value );
+    DefaultWriteBindingToXmlElement ( new_element );
 }
 
 PropertyLength::PropertyLength()
@@ -360,6 +412,7 @@ void PropertyLength::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     wxString units = ::GetShortString(this->m_units);
     TiXmlElement * new_element = AddDoubleToXmlElement ( element, this->GetXmlName(), m_value );
+    DefaultWriteBindingToXmlElement ( new_element );
     new_element->SetAttribute("units", units);
 }
 
@@ -388,6 +441,7 @@ void PropertyInt::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyInt::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     wxString text;
     text << m_value;
@@ -416,6 +470,7 @@ void PropertyString::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyString::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     prop_element->LinkEndChild ( new TiXmlText ( m_value ) );
 }
@@ -477,6 +532,7 @@ void PropertyVector::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyVector::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     AddDoubleToXmlElement ( prop_element, "x", m_value.X() );
     AddDoubleToXmlElement ( prop_element, "y", m_value.Y() );
@@ -632,6 +688,8 @@ void PropertyVertex::DefaultReadFromXmlElement ( TiXmlElement *element )
     if ( ! CallPreSetFunction() )
         return;
 
+    DefaultReadBindingFromXmlElement ( element );
+
     m_value.SetX ( GetDoubleFromXmlElement (element, "x") );
     m_value.SetY ( GetDoubleFromXmlElement (element, "y") );
     if ( ! this->xyOnly() ) {
@@ -647,7 +705,8 @@ void PropertyVertex::DefaultReadFromXmlElement ( TiXmlElement *element )
 
 void PropertyVertex::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
-    TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    TiXmlElement* prop_element = new TiXmlElement ( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     m_x.DefaultWriteToXmlElement ( prop_element );
     m_y.DefaultWriteToXmlElement ( prop_element );
@@ -713,6 +772,7 @@ void PropertyTrsf::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyTrsf::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
     AddDoubleToXmlElement ( prop_element, "a11", m_value.Value(1, 1) );
     AddDoubleToXmlElement ( prop_element, "a12", m_value.Value(1, 2) );
@@ -764,6 +824,7 @@ void PropertyAxis::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyAxis::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
 
     const gp_Pnt& l = m_value.Location();
@@ -817,6 +878,7 @@ void PropertyCoord::DefaultReadFromXmlElement ( TiXmlElement *element )
 void PropertyCoord::DefaultWriteToXmlElement ( TiXmlElement *element ) const
 {
     TiXmlElement* prop_element = new TiXmlElement( this->GetXmlName() );
+    DefaultWriteBindingToXmlElement ( prop_element );
     element->LinkEndChild ( prop_element );
 
     const gp_Pnt& l = m_value.Location();

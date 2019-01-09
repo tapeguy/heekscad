@@ -757,3 +757,12 @@ void LineArcDrawing::set_draw_step_not_undoable(int s)
 		spline_points.push_back(GetStartPos());
 	}
 }
+
+void LineArcDrawing::AddObjectsMade()
+{
+    Drawing::AddObjectsMade();
+    CSketch* sketch = dynamic_cast<CSketch *>(GetOwnerForDrawingObjects());
+    if ( sketch != NULL ) {
+        sketch->BindConnectedPoints();
+    }
+}

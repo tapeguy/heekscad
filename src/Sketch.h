@@ -74,6 +74,7 @@ public:
 	static void SetObjectEndPoint ( HeeksObj* object, double* new_point );
 	double GetArea()const;
 	CSketch* SplineToBiarcs(double tolerance)const;
+	void BindConnectedPoints ( );
 };
 
 class CSketchRelinker{

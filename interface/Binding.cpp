@@ -37,7 +37,7 @@ void Binding::RemoveProperty ( Property* prop )
     }
 }
 
-Property * Binding::GetOtherProperty ( Property* prop )
+Property * Binding::GetOtherProperty ( const Property* prop ) const
 {
     if ( prop == m_p1 )
     {

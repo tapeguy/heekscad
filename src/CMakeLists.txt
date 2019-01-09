@@ -46,10 +46,6 @@ set( heekscad_HDRS
     Cuboid.h
     CxfFont.h
     Cylinder.h
-    Dexel.cpp
-    DexelContour.cpp
-    DexelGrid.h
-    DexelSolid.h
     DigitizedPoint.h
     DigitizeMode.h
     DimensionDrawing.h
@@ -166,10 +162,6 @@ set( heekscad_SRCS
     Cuboid.cpp
     CxfFont.cpp
     Cylinder.cpp
-    Dexel.cpp
-    DexelContour.cpp
-    DexelGrid.cpp
-    DexelSolid.cpp
     DigitizedPoint.cpp
     DigitizeMode.cpp
     DimensionDrawing.cpp

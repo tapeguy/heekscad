@@ -76,5 +76,6 @@ public:
 
 	// Drawing's virtual functions
 	void set_draw_step_not_undoable(int s);
+	void AddObjectsMade();
 };
 

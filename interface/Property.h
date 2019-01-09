@@ -122,7 +122,9 @@ public:
     virtual void WriteToXmlElement ( TiXmlElement *element ) const;
 
     virtual void DefaultReadFromXmlElement ( TiXmlElement *element ) = 0;
+    virtual void DefaultReadBindingFromXmlElement ( TiXmlElement *element );
     virtual void DefaultWriteToXmlElement ( TiXmlElement *element ) const = 0;
+    virtual void DefaultWriteBindingToXmlElement ( TiXmlElement *element ) const;
 
     virtual void operator = ( const Property& prop ) = 0;
     virtual bool operator == ( const Property& prop ) const { return this == &prop; }

@@ -47,8 +47,10 @@ void Drawing::AddToTempObjects(HeeksObj* object)
 
 void Drawing::AddObjectsMade()
 {
-    wxGetApp().AddUndoably(m_temp_object_in_list,((ObjList*)GetOwnerForDrawingObjects()));
-    if(DragDoneWithXOR())wxGetApp().m_current_viewport->DrawObjectsOnFront(m_temp_object_in_list, true);
+    wxGetApp().AddUndoably(m_temp_object_in_list, ((ObjList*)GetOwnerForDrawingObjects()));
+    if(DragDoneWithXOR()) {
+        wxGetApp().m_current_viewport->DrawObjectsOnFront(m_temp_object_in_list, true);
+    }
     m_temp_object_in_list.clear();
 }
 

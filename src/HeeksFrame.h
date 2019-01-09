@@ -29,11 +29,6 @@ enum{
 	ID_NEXT_ID = ID_FIRST_POP_UP_MENU_TOOL + 1000
 };
 
-class CFlyOutToolBar{
-public:
-	wxToolBar* toolbar;
-};
-
 class CFlyOutItem{
 public:
 	virtual ~CFlyOutItem() { }

@@ -9,6 +9,9 @@
 
 class CPyramid: public CSolid
 {
+private:
+    bool in_set;
+
 protected:
 	// CShape's virtual functions
 	void MakeTransformedShape(const gp_Trsf &mat);
@@ -37,6 +40,10 @@ public:
 	void OnPropertySet(Property& prop);
 	bool GetScaleAboutMatrix(double *m);
 	bool DescendForUndo(){return false;}
+
+    // CShape's virtual functions
+    void SetXMLElement(TiXmlElement* element);
+    void SetFromXMLElement(TiXmlElement* pElem);
 
 	// CSolid's virtual functions
 	SolidTypeEnum GetSolidType(){return SOLID_TYPE_PYRAMID;}

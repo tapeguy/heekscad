@@ -48,6 +48,7 @@ public:
 	void GetTools(std::list<Tool*> *f_list, const wxPoint *p);
 	void OnPropertyEdit(Property *prop);
 	void GetProperties(std::list<Property *> *list);
+	void AddObjectsMade();
 
 	void ClearSketch();
 };

@@ -3,7 +3,6 @@
 // This program is released under the BSD license. See the file COPYING for details.
 #include "stdafx.h"
 #include "StlSolid.h"
-#include "DexelSolid.h"
 
 
 using namespace std;
@@ -351,26 +350,9 @@ void CStlSolid::GetTriangles(void(*callbackfunc)(const double* x, const double* 
 
 static CStlSolid* solid_for_tools = NULL;
 
-class DexelateTool:public Tool{
-public:
-    // Tool's virtual functions
-    void Run() {
-        DexelSolid* new_object = new DexelSolid();
-        new_object->FromStlSolid(solid_for_tools);
-
-        solid_for_tools->GetOwner()->Add(new_object);
-        solid_for_tools->GetOwner()->Remove(solid_for_tools);
-    }
-    const wxChar* GetTitle(){ return _("Dexelate");}
-    wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/offsetsolid.png");}
-};
-
-static DexelateTool dexelate_tool;
-
 void CStlSolid::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
 {
     solid_for_tools = this;
-    t_list->push_back(&dexelate_tool);
 }
 
 void CStlSolid::WriteXML(TiXmlNode *root)

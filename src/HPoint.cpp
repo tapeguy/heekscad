@@ -148,3 +148,34 @@ void HPoint::Draw(wxDC& dc)
 	extract(m_p, e); e[0] += line_length; e[1] += line_length; wxGetApp().PlotLine(s, e);
 }
 
+HPoint* point_for_tool = NULL;
+
+class FilletAtPoint : public Tool
+{
+public:
+    void Run() {
+        double rad = 2.0;
+        HeeksConfig& config = wxGetApp().GetConfig();
+        config.Read(_T("PointFilletRadius"), &rad);
+        if(wxGetApp().InputLength(_("Enter Fillet Radius"), _("Radius"), rad))
+        {
+            CSketch* sketch = dynamic_cast<CSketch *>(point_for_tool->GetOwner()->GetOwner());
+            sketch->FilletAtPoint(point_for_tool->m_p, rad);
+            config.Write(_T("PointFilletRadius"), rad);
+        }
+    }
+    const wxChar* GetTitle(){return _("Fillet At Point");}
+    wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/fillet.png");}
+};
+static FilletAtPoint fillet_at_point;
+
+void HPoint::GetTools(std::list<Tool*>* t_list, const wxPoint* p)
+{
+    point_for_tool = this;
+    if (GetOwner() != NULL && GetOwner()->GetOwner() != NULL) {
+        CSketch* sketch = dynamic_cast<CSketch *>(GetOwner()->GetOwner());
+        if (sketch != NULL) {
+            t_list->push_back(&fillet_at_point);
+        }
+    }
+}

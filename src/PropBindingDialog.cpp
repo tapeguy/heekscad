@@ -316,6 +316,7 @@ PropBindingDialog::PropBindingDialog ( wxWindow* parent, wxWindowID id, const wx
 {
     this->SetSize ( wxSize ( 845, 480 ) );
 
+    // wxFlexGridSizer (int rows, int cols, int vgap, int hgap)
     wxFlexGridSizer* topSizer = new wxFlexGridSizer ( 4, 1, 0, 0 );
     topSizer->AddGrowableCol ( 0 );
     topSizer->AddGrowableRow ( 0 );
@@ -326,37 +327,40 @@ PropBindingDialog::PropBindingDialog ( wxWindow* parent, wxWindowID id, const wx
     gridSizer->AddGrowableRow ( 0 );
 
     prop1 = new wxDataViewCtrl ( this, wxID_ANY );
+
+    // Add (wxWindow *window, int proportion=0, int flag=0, int border=0, wxObject *userData=NULL)
     gridSizer->Add( prop1, 0, wxALL | wxEXPAND, 5 );
 
+    wxDataViewTextRenderer *text_renderer = new wxDataViewTextRenderer();
     wxDataViewColumn* column;
-    column = new wxDataViewColumn ( "subscriber", new wxDataViewTextRenderer(), 0, 120, wxALIGN_LEFT,
+    column = new wxDataViewColumn ( "subscriber", text_renderer, 0, 115, wxALIGN_LEFT,
                                wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE );
     prop1->AppendColumn ( column );
 
-    column = new wxDataViewColumn ( "type", new wxDataViewTextRenderer(), 1, 100, wxALIGN_LEFT,
+    column = new wxDataViewColumn ( "type", text_renderer, 1, 100, wxALIGN_LEFT,
                                wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE );
     prop1->AppendColumn ( column );
 
-    column = new wxDataViewColumn ( "binding", new wxDataViewTextRenderer(), 2, 80, wxALIGN_LEFT,
+    column = new wxDataViewColumn ( "binding", text_renderer, 2, 95, wxALIGN_LEFT,
                                wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE );
     prop1->AppendColumn ( column );
 
-    column = new wxDataViewColumn ( "observed", new wxDataViewTextRenderer(), 3, 120, wxALIGN_LEFT,
+    column = new wxDataViewColumn ( "observed", text_renderer, 3, 115, wxALIGN_LEFT,
                                wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE );
     prop1->AppendColumn ( column );
 
-    column = new wxDataViewColumn ( "property", new wxDataViewTextRenderer(), 4, 120, wxALIGN_LEFT,
+    column = new wxDataViewColumn ( "property", text_renderer, 4, 115, wxALIGN_LEFT,
                                wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE );
     prop1->AppendColumn ( column );
 
     prop2 = new wxDataViewCtrl ( this, wxID_ANY );
     gridSizer->Add ( prop2, 0, wxEXPAND | wxALL, 5 );
 
-    column = new wxDataViewColumn ( "observed", new wxDataViewTextRenderer(), 0, 120, wxALIGN_LEFT,
+    column = new wxDataViewColumn ( "observed", text_renderer, 0, 120, wxALIGN_LEFT,
                                wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE );
     prop2->AppendColumn ( column );
 
-    column = new wxDataViewColumn ( "type", new wxDataViewTextRenderer(), 1, 100, wxALIGN_LEFT,
+    column = new wxDataViewColumn ( "type", text_renderer, 1, 100, wxALIGN_LEFT,
                                wxDATAVIEW_COL_SORTABLE | wxDATAVIEW_COL_RESIZABLE );
     prop2->AppendColumn ( column );
 
@@ -463,6 +467,21 @@ void PropBindingDialog::OnBindButton ( wxCommandEvent& event )
 
 void PropBindingDialog::OnUnbindButton ( wxCommandEvent& event )
 {
+    wxDataViewItem selected1 = prop1->GetSelection ( );
+    if ( !selected1.IsOk ( ) )
+    {
+        return;
+    }
+    PropBindingSubscriberModelNode* subscriber = (PropBindingSubscriberModelNode*) selected1.GetID ( );
+    wxDataViewItem selected2 = prop2->GetSelection ( );
+    if ( !selected2.IsOk ( ) )
+    {
+        return;
+    }
+    PropBindingObservedModelNode* observed = (PropBindingObservedModelNode*) selected2.GetID ( );
+    Binding * binding = observed->m_observed->GetBinding ( );
+    delete binding;
+
 }
 
 void PropBindingDialog::WhenMarkedListChanges ( bool selection_cleared,

@@ -261,7 +261,7 @@ void CGraphicsCanvas::OnPaint( wxPaintEvent& WXUNUSED(event) )
 void CGraphicsCanvas::OnSize(wxSizeEvent& event)
 {
     // this is also necessary to update the context on some platforms
-    wxGLCanvas::OnSize(event);
+//    wxGLCanvas::OnSize(event);
     int w, h;
     GetClientSize(&w, &h);
 	WidthAndHeightChanged(w, h);

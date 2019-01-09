@@ -4,6 +4,11 @@ export skip_resolve=$1
 export CFLAGS="$CFLAGS -DMACOSX -mmacosx-version-min=10.5"
 export CXXFLAGS="$CXXFLAGS -DMACOSX -mmacosx-version-min=10.5"
 set -e
+cd libarea
+cmake .
+make
+cp -p libarea*.dylib ../bin/
+cd ..
 cmake .
 make
 
@@ -94,11 +99,12 @@ resolve_dylibs()
 					cp -R "$src_dylib" "$destdir"
 					link=`readlink "$src_dylib"`
 					linkdir=`dirname "$link"`
-					if [ $linkdir == '.' ]; then
+					if [[ $linkdir == .* ]]; then
 						linkdir="$srcdir"
 					fi
 					src_dylib="${linkdir}/${link}"
 				done
+				rm -f $base
 				cp -R "$src_dylib" "$destdir"
 				echo $dest_dylib
 			fi

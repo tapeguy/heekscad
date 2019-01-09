@@ -178,6 +178,7 @@ public:
 	virtual void WriteXML(TiXmlNode *root);
 	virtual void WriteBaseXML(TiXmlElement *element);
 	virtual void ReadBaseXML(TiXmlElement* element);
+	virtual Property * FindPropertyByXmlName(std::list<Property *> * propList, const wxString& name);
 	bool OnVisibleLayer();
     const std::list<HeeksObj*>& GetLinks ( ) const;
 	virtual const TopoDS_Shape& GetShape() const { return(empty_shape); }

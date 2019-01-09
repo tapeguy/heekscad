@@ -243,6 +243,7 @@ public:
         sketch_for_tools->LinesToPoints(tolerance);
         sketch_for_tools->RemoveDuplicates();
         sketch_for_tools->ReLinkSketch(tolerance);
+        sketch_for_tools->BindConnectedPoints();
     }
     const wxChar* GetTitle(){return _("Repair Sketch");}
 };
@@ -344,12 +345,12 @@ class CopyParallel: public Tool
 public:
 	void Run()
 	{
-	    wxString message(_("Use negative for smaller and Positive for larger)"));
+	    wxString message(_("Use negative for smaller and Positive for larger."));
 	    wxString prompt(_("Enter the distance"));
 	    wxString caption(_("Distance"));
 
 		double distance;
-		if(wxGetApp().InputDouble(wxString(_("Use negative for smaller and Positive for larger)") ), _("Enter the distance"), distance))
+		if(wxGetApp().InputDouble(wxString(_("Use negative for smaller and Positive for larger.") ), _("Enter the distance"), distance))
 		{
 			HeeksObj *parallel_sketch = sketch_for_tools->Parallel( double(distance) );
 			if (parallel_sketch != NULL)
@@ -1002,6 +1003,38 @@ bool CSketch::Add(HeeksObj* object, HeeksObj* prev_object)
 {
 	m_order = SketchOrderTypeUnknown;
 	return IdNamedObjList::Add(object, prev_object);
+}
+
+
+void CSketch::BindConnectedPoints()
+{
+    // Compare every point to every other point.
+    for(std::list<HeeksObj*>::iterator It=m_objects.begin(); It!=m_objects.end() ;It++)
+    {
+        EndedObject * endedObj = dynamic_cast<EndedObject *>(*It);
+        if ( endedObj != NULL )
+        {
+            for(std::list<HeeksObj*>::iterator It2 = It; It2!=m_objects.end() ;It2++)
+            {
+                EndedObject * endedObj2 = dynamic_cast<EndedObject *>(*It2);
+                if ( endedObj != endedObj2 && endedObj2 != NULL )
+                {
+                    if ( ! endedObj->A->IsDifferent(endedObj2->A) ) {
+                        new EqualityBinding ( &(endedObj->A->m_p), &(endedObj2->A->m_p) );
+                    }
+                    if ( ! endedObj->A->IsDifferent(endedObj2->B) ) {
+                        new EqualityBinding ( &(endedObj->A->m_p), &(endedObj2->B->m_p) );
+                    }
+                    if ( ! endedObj->B->IsDifferent(endedObj2->A) ) {
+                        new EqualityBinding ( &(endedObj->B->m_p), &(endedObj2->A->m_p) );
+                    }
+                    if ( ! endedObj->B->IsDifferent(endedObj2->B) ) {
+                        new EqualityBinding ( &(endedObj->B->m_p), &(endedObj2->B->m_p) );
+                    }
+                }
+            }
+        }
+    }
 }
 
 void CSketch::Remove(HeeksObj* object)

@@ -309,17 +309,26 @@ void HeeksObj::ReadBaseXML(TiXmlElement* element)
     for ( TiXmlElement* c = element->FirstChildElement ( ); c; c = c->NextSiblingElement ( ) )
     {
         wxString name = c->Value ( );
-        std::list<Property *>::iterator It;
-        for ( It = list.begin(); It != list.end(); It++ )
+        Property * prop = FindPropertyByXmlName ( &list, name );
+        if ( prop != NULL )
         {
-            Property * prop = *It;
-            if ( prop->GetXmlName() == name )
-            {
-                prop->ReadFromXmlElement ( c );
-                break;
-            }
+            prop->ReadFromXmlElement ( c );
         }
     }
+}
+
+Property * HeeksObj::FindPropertyByXmlName(std::list<Property *> * propList, const wxString& name)
+{
+    std::list<Property *>::iterator It;
+    for ( It = propList->begin(); It != propList->end(); It++ )
+    {
+        Property * prop = *It;
+        if ( prop->GetXmlName() == name )
+        {
+            return prop;
+        }
+    }
+    return NULL;
 }
 
 bool HeeksObj::OnVisibleLayer()

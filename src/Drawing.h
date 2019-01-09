@@ -52,7 +52,7 @@ protected:
 	HeeksObj* TempObject();
 	HeeksObj* PrevObject(){return m_prev_object;}
 	void AddToTempObjects(HeeksObj* object);
-	void AddObjectsMade();
+	virtual void AddObjectsMade();
 	void ClearPrevObject();
 
 public:

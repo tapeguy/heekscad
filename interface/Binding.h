@@ -30,7 +30,7 @@ public:
 
     virtual void Execute ( Property * observed ) = 0;
 
-    virtual Property * GetOtherProperty ( Property * prop );
+    virtual Property * GetOtherProperty ( const Property * prop ) const;
 
     virtual int GetBindingType() const {return BindingInvalidType;}
     virtual const wxChar* GetPropertyTypeName() const = 0;

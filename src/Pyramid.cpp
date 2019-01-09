@@ -137,6 +137,9 @@ void CPyramid::GetGripperPositions(std::list<GripData> *list, bool just_for_endo
 
 void CPyramid::OnPropertySet(Property& prop)
 {
+    if (in_set) {
+        return;
+    }
 	if (prop == m_pos || prop == m_sides || prop == m_length || prop == m_height) {
 	    m_shape = CreatePyramid(m_pos, m_sides, m_length, m_height);
         delete_faces_and_edges();
@@ -148,10 +151,66 @@ void CPyramid::OnPropertySet(Property& prop)
 	}
 }
 
-
 bool CPyramid::GetScaleAboutMatrix(double *m)
 {
 	gp_Trsf mat = make_matrix(m_pos.Location(), m_pos.XDirection(), m_pos.YDirection());
 	extract(mat, m);
 	return true;
+}
+
+
+void CPyramid::SetXMLElement(TiXmlElement* element)
+{
+    const gp_Pnt& l = m_pos.Location();
+    element->SetDoubleAttribute("lx", l.X());
+    element->SetDoubleAttribute("ly", l.Y());
+    element->SetDoubleAttribute("lz", l.Z());
+
+    const gp_Dir& d = m_pos.Direction();
+    element->SetDoubleAttribute("dx", d.X());
+    element->SetDoubleAttribute("dy", d.Y());
+    element->SetDoubleAttribute("dz", d.Z());
+
+    const gp_Dir& x = m_pos.XDirection();
+    element->SetDoubleAttribute("xx", x.X());
+    element->SetDoubleAttribute("xy", x.Y());
+    element->SetDoubleAttribute("xz", x.Z());
+
+    element->SetAttribute("sides", m_sides);
+    element->SetDoubleAttribute("length", m_length);
+    element->SetDoubleAttribute("height", m_height);
+
+    CSolid::SetXMLElement(element);
+}
+
+void CPyramid::SetFromXMLElement(TiXmlElement* pElem)
+{
+    double l[3] = {0, 0, 0};
+    double d[3] = {0, 0, 1};
+    double x[3] = {1, 0, 0};
+
+    in_set = true;
+    for(TiXmlAttribute* a = pElem->FirstAttribute(); a; a = a->Next())
+    {
+        std::string name(a->Name());
+        if(name == "lx")     {l[0] = a->DoubleValue();}
+        else if(name == "ly"){l[1] = a->DoubleValue();}
+        else if(name == "lz"){l[2] = a->DoubleValue();}
+
+        else if(name == "dx"){d[0] = a->DoubleValue();}
+        else if(name == "dy"){d[1] = a->DoubleValue();}
+        else if(name == "dz"){d[2] = a->DoubleValue();}
+
+        else if(name == "xx"){x[0] = a->DoubleValue();}
+        else if(name == "xy"){x[1] = a->DoubleValue();}
+        else if(name == "xz"){x[2] = a->DoubleValue();}
+
+        else if(name == "sides"){m_sides = a->IntValue();}
+        else if(name == "length"){m_length = a->DoubleValue();}
+        else if(name == "height"){m_height = a->DoubleValue();}
+    }
+    m_pos = gp_Ax2(make_point(l), make_vector(d), make_vector(x));
+
+    in_set = false;
+    CSolid::SetFromXMLElement(pElem);
 }

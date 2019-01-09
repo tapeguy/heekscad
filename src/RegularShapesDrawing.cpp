@@ -501,3 +501,13 @@ void RegularShapesDrawing::GetProperties(std::list<Property *> *list)
 void RegularShapesDrawing::GetTools(std::list<Tool*> *f_list, const wxPoint *p){
 	Drawing::GetTools(f_list, p);
 }
+
+void RegularShapesDrawing::AddObjectsMade()
+{
+    CSketch* sketch = dynamic_cast<CSketch *>(TempObject());
+    if ( sketch != NULL ) {
+        sketch->BindConnectedPoints();
+    }
+    Drawing::AddObjectsMade();
+}
+

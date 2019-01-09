@@ -29,7 +29,7 @@ bool HeeksCADapp::InputDouble(const wxChar* prompt, const wxChar* value_name, do
 		HDialog dlg(m_frame);
 		wxBoxSizer *sizerMain = new wxBoxSizer(wxVERTICAL);
 		wxStaticText *static_label = new wxStaticText(&dlg, wxID_ANY, prompt);
-		sizerMain->Add( static_label, 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, dlg.control_border );
+		sizerMain->Add( static_label, 0, wxALL | wxALIGN_LEFT, dlg.control_border );
 		CDoubleCtrl* value_control = new CDoubleCtrl(&dlg);
 		value_control->SetValueFromDouble(value);
 		dlg.AddLabelAndControl(sizerMain, value_name, value_control);
@@ -578,7 +578,7 @@ bool HeeksCADapp::InputLength(const wxChar* prompt, const wxChar* value_name, do
 		HDialog dlg(m_frame);
 		wxBoxSizer *sizerMain = new wxBoxSizer(wxVERTICAL);
 		wxStaticText *static_label = new wxStaticText(&dlg, wxID_ANY, prompt);
-		sizerMain->Add( static_label, 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, dlg.control_border );
+		sizerMain->Add( static_label, 0, wxALL | wxALIGN_LEFT, dlg.control_border );
 		CLengthCtrl* value_control = new CLengthCtrl(&dlg);
 		value_control->SetValueFromDouble(value);
 		dlg.AddLabelAndControl(sizerMain, value_name, value_control);
@@ -616,7 +616,7 @@ bool HeeksCADapp::InputScalingValues(double *xyzScaling)
     HDialog dlg(m_frame);
     wxBoxSizer *sizerMain = new wxBoxSizer(wxVERTICAL);
     wxStaticText *static_label = new wxStaticText(&dlg, wxID_ANY, _("Enter factors to scale by:"));
-    sizerMain->Add( static_label, 0, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, dlg.control_border );
+    sizerMain->Add( static_label, 0, wxALL | wxALIGN_LEFT, dlg.control_border );
     CDoubleCtrl* xcontrol;
     CDoubleCtrl* ycontrol;
     CDoubleCtrl* zcontrol;

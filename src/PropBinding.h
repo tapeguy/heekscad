@@ -13,6 +13,7 @@ public:
 
         // Tool's virtual functions
         const wxChar* GetTitle(){return _("Property Bindings");}
+        wxString BitmapPath(){ return wxGetApp().GetResFolder() + _T("/bitmaps/binding.png");}
 
         void Run();
 };

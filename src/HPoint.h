@@ -39,6 +39,7 @@ public:
 	void CopyFrom(const HeeksObj* object){operator=(*((HPoint*)object));}
 	bool IsDifferent(HeeksObj* other);
 	void Draw(wxDC& dc);
+    void GetTools(std::list<Tool*>* t_list, const wxPoint* p);
 
 	static HeeksObj* ReadFromXMLElement(TiXmlElement* pElem);
 };
